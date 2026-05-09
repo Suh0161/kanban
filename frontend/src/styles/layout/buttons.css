@@ -1,0 +1,41 @@
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  outline: none;
+}
+.btn-primary { background-color: var(--accent-color); color: #000; }
+.btn-primary:hover { background-color: var(--accent-color-hover); }
+.btn-outline { background-color: transparent; border-color: var(--border-strong); color: var(--text-primary); }
+.btn-outline:hover { background-color: var(--bg-hover); border-color: var(--border-focus); }
+.btn-active { border-color: var(--accent-blue); color: var(--accent-blue); }
+.btn-sm { padding: 4px 10px; font-size: 0.75rem; }
+.btn-icon {
+  padding: 6px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.btn-icon:hover { color: var(--text-primary); background-color: var(--bg-hover); border-color: var(--border-strong); }
+.btn-icon-small {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon-small:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+.btn-icon-small.danger-hover:hover { color: var(--color-red); background-color: rgba(255, 69, 58, 0.1); }

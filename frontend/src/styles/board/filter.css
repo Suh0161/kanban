@@ -1,0 +1,61 @@
+.filter-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dropdown);
+  z-index: 100;
+  width: 240px;
+  padding: 16px;
+  animation: slideDown 0.15s ease-out;
+}
+.filter-section { margin-bottom: 16px; }
+.filter-section:last-of-type { margin-bottom: 0; }
+.filter-section h4 {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.filter-option input[type="checkbox"] {
+  accent-color: var(--accent-blue);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+.filter-option .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.filter-option .dot.priority-Critical { background-color: var(--color-red); }
+.filter-option .dot.priority-High { background-color: var(--color-orange); }
+.filter-option .dot.priority-Medium { background-color: var(--color-yellow); }
+.filter-option .dot.priority-Low { background-color: var(--color-blue); }
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}

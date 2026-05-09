@@ -1,0 +1,32 @@
+.column-header {
+  padding: 0 4px 12px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.column-title { display: flex; align-items: center; gap: 8px; }
+.column-title h3 { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); }
+.task-count { color: var(--text-tertiary); font-size: 0.75rem; font-family: var(--font-mono); }
+
+.column-title-edit { flex: 1; }
+.column-title-edit input {
+  width: 100%;
+  background: var(--bg-hover);
+  border: 1px solid var(--accent-blue);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  outline: none;
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+.column-content {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px;
+  min-height: 10px;
+}
