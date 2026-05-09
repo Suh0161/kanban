@@ -1,147 +1,161 @@
 # Jokel
 
-A dark-themed Kanban board app for managing tasks across workspaces. Built with React 19 + Vite. Think Trello, but moodier.
+A workspace-based Kanban task management application built with React 19 and Vite. Supports drag-and-drop task organization, priority filtering, inline comments, file attachments, and multi-workspace navigation.
 
-![screenshot-placeholder]
+## Features
 
-## What is this?
+- **Workspace management** - Create and switch between independent workspaces
+- **Kanban board** - Drag-and-drop tasks across customizable columns via `@hello-pangea/dnd`
+- **Task details** - Priority levels, tags, due dates, descriptions, and file attachments (base64)
+- **Comments** - Threaded discussions on individual tasks
+- **Search and filter** - Filter by priority or tag; search tasks by keyword
+- **Multiple views** - Board, My Tasks, Inbox, Analytics, Team, Settings
+- **Collapsible sidebar** - Animated sidebar with workspace navigation and user dropdown
+- **Login flow** - Demo authentication with guest access option
 
-Jokel is a client-side demo app that lets you:
+## Prerequisites
 
-- Create and switch between workspaces
-- Drag-and-drop tasks across columns (Inbox → Triage → Investigating, or whatever you name them)
-- Add tasks with priorities, tags, due dates, descriptions, and attachments
-- Filter and search tasks by priority or tag
-- Leave comments on tasks
-- View tasks in different layouts (Board, My Tasks, Inbox, Analytics, Team, Settings)
+- Node.js 18 or higher
+- npm or compatible package manager
 
-Everything runs in the browser. No backend server needed — data persists in `localStorage`.
-
-## Tech Stack
-
-- **React 19** with hooks (no class components)
-- **Vite** for dev server and builds
-- **React Router v7** for routing (`/` → login, `/workspace` → workspace list, `/workspace/:id` → board)
-- **@hello-pangea/dnd** for drag-and-drop
-- **lucide-react** for icons
-- **uuid** for generating IDs
-
-## Quick Start
-
-You need **Node.js 18+**.
+## Installation
 
 ```bash
 cd frontend
 npm install
+```
+
+## Development
+
+```bash
 npm run dev
 ```
 
-Then open `http://localhost:5173`.
+The development server starts at `http://localhost:5173`.
 
-## Demo Account
+## Demo Credentials
 
-Use these credentials on the login page:
+Use the following credentials on the login page, or click **"Use demo account"** to autofill:
 
-- **Email:** `demo@demo.com`
-- **Password:** `Demo123`
+| Field | Value |
+|-------|-------|
+| Email | `demo@demo.com` |
+| Password | `Demo123` |
 
-Or click **"Use demo account"** to autofill.
+Guest access is also available via **"Continue as guest"**.
 
-You can also skip login and click **"Continue as guest"**.
+## Scripts
 
-## Available Scripts
-
-| Script | What it does |
-|--------|-------------|
-| `npm run dev` | Start dev server on port 5173 |
-| `npm run build` | Production build to `dist/` |
-| `npm run preview` | Preview the production build |
-| `npm run lint` | Run ESLint |
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start the Vite development server |
+| `npm run build` | Create a production build in `dist/` |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Run ESLint across the codebase |
 
 ## Project Structure
 
 ```
 frontend/
-├── src/
-│   ├── App.jsx                 # Router root
-│   ├── main.jsx                # Entry point
-│   ├── constants.js            # Initial demo data (tasks, columns)
-│   │
-│   ├── components/
-│   │   ├── board/              # Kanban board components
-│   │   │   ├── Board.jsx
-│   │   │   ├── BoardColumn.jsx
-│   │   │   ├── TaskCard.jsx
-│   │   │   ├── AddCardComposer.jsx
-│   │   │   ├── AddColumnComposer.jsx
-│   │   │   └── ColumnMenu.jsx
-│   │   ├── layout/             # App shell
-│   │   │   ├── Sidebar.jsx
-│   │   │   ├── Topbar.jsx
-│   │   │   └── WorkspaceLayout.jsx
-│   │   ├── modals/             # Modal overlays
-│   │   │   ├── TaskModal.jsx
-│   │   │   ├── NewIssueModal.jsx
-│   │   │   └── Lightbox.jsx
-│   │   ├── ui/                 # Reusable UI bits
-│   │   │   ├── FilterPanel.jsx
-│   │   │   ├── Select.jsx
-│   │   │   └── UserDropdown.jsx
-│   │   └── views/              # Full-page views
-│   │       ├── LoginPage.jsx
-│   │       ├── WorkspaceList.jsx
-│   │       ├── MyTasksView.jsx
-│   │       ├── InboxView.jsx
-│   │       ├── AnalyticsView.jsx
-│   │       ├── TeamView.jsx
-│   │       └── SettingsView.jsx
-│   │
-│   ├── hooks/
-│   │   ├── useAuth.js          # Demo auth (localStorage)
-│   │   ├── useBoard.js         # All board state + CRUD + drag-drop
-│   │   ├── useWorkspaces.js    # Workspace list (localStorage)
-│   │   └── useClickOutside.js
-│   │
-│   ├── styles/
-│   │   ├── index.css           # Imports all CSS files
-│   │   ├── base/               # Variables, reset, animations
-│   │   ├── layout/             # Sidebar, topbar, buttons
-│   │   ├── board/              # Canvas, columns, cards
-│   │   ├── modals/             # Modal styles
-│   │   └── views/              # Page-specific styles
-│   │
-│   └── utils/
-│       └── helpers.js
-│
-├── index.html
-├── package.json
-└── vite.config.js
+src/
+  App.jsx                 # Application router
+  main.jsx                # React entry point
+  constants.js            # Seed data for initial workspace
+
+  components/
+    board/                # Kanban components
+      Board.jsx
+      BoardColumn.jsx
+      TaskCard.jsx
+      AddCardComposer.jsx
+      AddColumnComposer.jsx
+      ColumnMenu.jsx
+    layout/               # Application shell
+      Sidebar.jsx
+      Topbar.jsx
+      WorkspaceLayout.jsx
+    modals/               # Overlay modals
+      TaskModal.jsx
+      NewIssueModal.jsx
+      Lightbox.jsx
+    ui/                   # Shared UI primitives
+      FilterPanel.jsx
+      Select.jsx
+      UserDropdown.jsx
+    views/                # Page-level components
+      LoginPage.jsx
+      WorkspaceList.jsx
+      MyTasksView.jsx
+      InboxView.jsx
+      AnalyticsView.jsx
+      TeamView.jsx
+      SettingsView.jsx
+
+  hooks/
+    useAuth.js            # Authentication state (localStorage)
+    useBoard.js           # Board state, CRUD, drag-drop logic
+    useWorkspaces.js      # Workspace list persistence
+    useClickOutside.js
+
+  styles/
+    index.css             # Central CSS import file
+    base/                 # CSS variables, reset, keyframes
+    layout/               # Sidebar, topbar, buttons
+    board/                # Board canvas, columns, cards
+    modals/               # Modal, lightbox, attachments
+    views/                # Page-specific styles
+
+  utils/
+    helpers.js
 ```
 
-## Architecture Notes
+## Architecture
 
-- **State lives in hooks, not context.** `useBoard.js` is the single source of truth for everything inside a workspace. It holds tasks, columns, drag-drop logic, and all CRUD operations.
-- **Feature-based CSS.** Each component folder has a matching CSS file in `styles/`. No utility-class framework — just plain BEM-ish classes.
-- **Dark theme only.** Colors are defined in `styles/base/variables.css`.
-- **Client-side persistence.** Workspaces and auth state use `localStorage`. Board data is per-workspace but resets on hard refresh unless you wire up persistence in `useBoard.js`.
+### State Management
 
-## Customizing
+State is managed through custom React hooks rather than Context API or external libraries:
 
-### Adding a new workspace view
+- **`useBoard(workspaceId)`** - Single source of truth for all board data within a workspace. Exposes tasks, columns, drag-drop handlers, and CRUD operations.
+- **`useAuth()`** - Handles demo login/logout with `localStorage` persistence.
+- **`useWorkspaces()`** - Manages workspace list with `localStorage` key `jokel-workspaces`.
 
-1. Create the view component in `src/components/views/`
+### Styling
+
+The application uses a single dark theme. All colors are defined as CSS custom properties in `styles/base/variables.css`. Each feature folder has a corresponding stylesheet in `styles/`, imported via `styles/index.css`.
+
+### Routing
+
+React Router handles three routes:
+
+| Route | Component |
+|-------|-----------|
+| `/` | `LoginPage` |
+| `/workspace` | `WorkspaceList` |
+| `/workspace/:workspaceId/*` | `WorkspaceLayout` |
+
+`WorkspaceLayout` renders the sidebar and switches the main view based on `activeView` state.
+
+### Data Persistence
+
+- **Workspaces** and **auth state** persist to `localStorage`.
+- **Board data** is per-workspace and currently resets on page reload. Persistence can be added by extending `useBoard.js`.
+
+## Extending the Application
+
+### Adding a New View
+
+1. Create the component in `src/components/views/`
 2. Export it from `src/components/views/index.js`
-3. Add a nav item in `Sidebar.jsx`
-4. Wire it up in `WorkspaceLayout.jsx` inside `renderActiveView()`
+3. Add a navigation item in `src/components/layout/Sidebar.jsx`
+4. Register the view in `src/components/layout/WorkspaceLayout.jsx` within `renderActiveView()`
 
-### Changing the color theme
+### Adding a New Component
 
-Edit `src/styles/base/variables.css`. The app uses CSS custom properties throughout.
+1. Create the `.jsx` file in the appropriate `components/` subfolder
+2. Add the named export to the subfolder's `index.js`
+3. Create the `.css` file in the matching `styles/` subfolder
+4. Import the stylesheet in `styles/index.css`
 
-### Making board data persist
+### Theming
 
-`useBoard.js` currently initializes fresh on every reload. Add `localStorage` get/set around the reducer if you want persistence.
-
-## License
-
-MIT — do whatever you want with it.
+Edit `src/styles/base/variables.css`. The application references CSS custom properties throughout all stylesheets.

@@ -1,152 +1,201 @@
-# Jokel Repo Skill
+# Jokel Deep Skill
 
-Use this when working on the Jokel frontend — a React 19 Kanban board app. This skill covers architecture, conventions, and common workflows.
+Use this when AGENTS.md context is not enough — complex feature work, debugging, or architectural decisions.
 
-## Scope
+## When to Load This
 
-- Only applies to `frontend/` — the backend and database folders are empty.
-- Do not introduce TypeScript, Next.js, or Tailwind. The stack is React 19 + Vite + plain CSS.
-- Do not add a real backend or auth server. Auth is demo-only (`demo@demo.com` / `Demo123`).
+- Adding a major new feature (e.g., new view type, new modal, new data model)
+- Debugging state management issues in `useBoard.js`
+- Refactoring across multiple component layers
+- Working on drag-drop edge cases or filter interactions
 
-## Project Map
+## State Management Deep Dive
 
-```
-frontend/src/
-├── App.jsx              # Routes: / → LoginPage, /workspace → WorkspaceList, /workspace/:id → WorkspaceLayout
-├── constants.js         # Demo seed data (tasks, columns, comments, attachments)
-├── main.jsx             # ReactDOM root + BrowserRouter
-│
-├── components/
-│   ├── board/           # Kanban components: Board, BoardColumn, TaskCard, composers, ColumnMenu
-│   ├── layout/          # App shell: Sidebar, Topbar, WorkspaceLayout
-│   ├── modals/          # TaskModal, NewIssueModal, Lightbox
-│   ├── ui/              # Reusable: FilterPanel, Select, UserDropdown
-│   └── views/           # Pages: LoginPage, WorkspaceList, MyTasksView, InboxView, AnalyticsView, TeamView, SettingsView
-│
-├── hooks/
-│   ├── useAuth.js       # Demo auth with localStorage. login() only accepts demo@demo.com / Demo123
-│   ├── useBoard.js      # All board state: tasks, columns, drag-drop, CRUD, comments, attachments
-│   ├── useWorkspaces.js # Workspace list with localStorage persistence
-│   └── useClickOutside.js
-│
-└── styles/
-    ├── index.css        # @imports all CSS files
-    ├── base/            # variables.css, reset.css, animations.css
-    ├── layout/          # sidebar.css, topbar.css, buttons.css, workspace.css
-    ├── board/           # canvas.css, column.css, card.css, composer.css, menu.css, filter.css
-    ├── modals/          # modal.css, lightbox.css, attachments.css, comments.css, forms.css
-    └── views/           # workspacelist.css, login.css
-```
+### useBoard.js
 
-## How to Run
-
-All commands run from `frontend/`:
-
-```bash
-npm install    # first time only
-npm run dev    # dev server on http://localhost:5173
-npm run build  # production build
-npm run lint   # eslint
-```
-
-## Conventions
-
-### Components
-
-- Use functional components with hooks.
-- Named exports from feature folders via `index.js` barrel files.
-- Import pattern: `import { ComponentName } from '../components'` (uses `components/index.js`).
-- Modals are controlled by state in `WorkspaceLayout.jsx`, not by URL routes.
-
-### State
-
-- **No context providers.** All state lives in custom hooks.
-- `useBoard(workspaceId)` is the single source of truth for board data. It returns an object with:
-  - `data: { tasks, columns, columnOrder }`
-  - CRUD methods: `createTask`, `updateTask`, `deleteTask`, `addColumn`, `renameColumn`, `deleteColumn`, `clearColumn`
-  - `onDragEnd(result, isFiltered)` for @hello-pangea/dnd
-  - `addComment(taskId, text)`, `handleFileSelect(files, taskId)` (base64 via FileReader)
-  - `allTags` (memoized)
-- `useAuth()` returns `{ user, isLoggedIn, login, logout }`. Demo credentials only.
-- `useWorkspaces()` persists to `localStorage` key `jokel-workspaces`.
-
-### Styling
-
-- **Plain CSS files**, no CSS-in-JS, no Tailwind.
-- Dark monochrome theme. Colors are CSS custom properties in `styles/base/variables.css`:
-  - `--bg-app: #000000`
-  - `--bg-card: #121212`
-  - `--bg-hover: #1a1a1a`
-  - `--border-subtle: #222222`
-  - `--border-strong: #333333`
-  - `--text-primary: #ededed`
-  - `--text-secondary: #a1a1aa`
-  - `--text-tertiary: #71717a`
-  - `--accent-blue: #0a84ff`
-  - `--color-red: #ff453a`, `--color-orange: #ff9f0a`, `--color-yellow: #ffd60a`, etc.
-- Class naming: component-prefixed lowercase with hyphens. Example: `.wl-card`, `.login-submit`, `.user-dropdown-menu`.
-- Each feature folder has a matching CSS file in `styles/`. Add `@import` to `styles/index.css` for new files.
-- Use existing CSS variables before hardcoding colors.
-
-### Routing
+This hook is the brain of the app. It encapsulates:
 
 ```
-/                          → LoginPage
-/workspace                 → WorkspaceList
-/workspace/:workspaceId/*  → WorkspaceLayout (renders Sidebar + active view)
+data: { tasks, columns, columnOrder }
+
+createTask(columnId, { title, priority, tags, description, dueDate })
+updateTask(taskId, partialTask)
+deleteTask(taskId)
+
+addColumn(title)
+renameColumn(columnId, title)
+deleteColumn(columnId)
+clearColumn(columnId)
+
+addComment(taskId, text)
+handleFileSelect(files, taskId)  // FileReader → base64
+
+onDragEnd(result, isFiltered)    // @hello-pangea/dnd handler
+allTags                          // memoized from tasks
 ```
 
-`WorkspaceLayout` uses `activeView` state (`boards`, `my-tasks`, `inbox`, `analytics`, `team`, `settings`) to switch views inside the same route.
+**Important:** Board data is NOT persisted to localStorage yet. It resets on page refresh. If asked to add persistence, wire `localStorage` around the reducer in `useBoard.js` using key `jokel-board-{workspaceId}`.
+
+### useAuth.js
+
+```
+login(email, password)  // Only accepts demo@demo.com / Demo123
+logout()
+user / isLoggedIn
+```
+
+Stores user object in `localStorage` key `jokel-auth`. Session flag `jokel-welcome` controls the welcome toast on `/workspace`.
+
+### useWorkspaces.js
+
+```
+workspaces / addWorkspace(name) / deleteWorkspace(id)
+```
+
+Persists to `localStorage` key `jokel-workspaces`. Default workspace: `Trust & Safety`.
+
+## Component Patterns
+
+### Good vs Bad
+
+```jsx
+// ✅ Good — small, focused, uses existing hooks
+export default function MyComponent() {
+  const board = useBoard(workspaceId);
+  return <div>{board.data.tasks[taskId].title}</div>;
+}
+
+// ❌ Bad — passes board data through 3 layers of props
+function Parent({ board }) {
+  return <Child board={board} />;
+}
+function Child({ board }) {
+  return <Grandchild board={board} />;
+}
+```
+
+```jsx
+// ✅ Good — consumes hook directly where needed
+const { createTask } = useBoard(workspaceId);
+
+// ❌ Bad — lifting all hook methods to parent and drilling down
+```
+
+### Modal Pattern
+
+Modals are controlled by `WorkspaceLayout.jsx` state:
+
+```jsx
+// WorkspaceLayout.jsx
+const [selectedTask, setSelectedTask] = useState(null);
+
+// In render:
+<TaskModal
+  task={selectedTask}
+  onClose={() => setSelectedTask(null)}
+  board={board}
+/>
+```
+
+Never use URL routes for modals. Always lift modal state to `WorkspaceLayout`.
+
+### View Switching Pattern
+
+```jsx
+// WorkspaceLayout.jsx
+const renderActiveView = () => {
+  if (activeView === 'my-tasks') return <MyTasksView tasks={allTasks} ... />;
+  if (activeView === 'analytics') return <AnalyticsView ... />;
+  return <Board data={board.data} onDragEnd={...} ... />;
+};
+```
+
+Add new views by:
+1. Creating the component in `components/views/`
+2. Exporting from `components/views/index.js`
+3. Adding to `Sidebar.jsx` `navItems`
+4. Adding a case in `renderActiveView()`
+
+## CSS Architecture
+
+### Variable Reference
+
+```css
+/* Backgrounds */
+--bg-app: #000000
+--bg-sidebar: #0a0a0a
+--bg-header: #0a0a0a
+--bg-card: #121212
+--bg-card-hover: #1a1a1a
+--bg-hover: #1a1a1a
+
+/* Borders */
+--border-subtle: #222222
+--border-strong: #333333
+--border-focus: #ffffff
+
+/* Text */
+--text-primary: #ededed
+--text-secondary: #a1a1aa
+--text-tertiary: #71717a
+
+/* Accents */
+--accent-blue: #0a84ff
+--color-red: #ff453a
+--color-orange: #ff9f0a
+--color-yellow: #ffd60a
+--color-green: #30d158
+
+/* Shadows */
+--shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.7)
+```
+
+### Adding a New CSS File
+
+1. Create file in appropriate `styles/` subfolder
+2. Add `@import './subfolder/file.css';` to `styles/index.css`
+3. Use component-prefixed class names
+
+## Data Flow Examples
+
+### Creating a Task
+
+```
+User clicks "New Issue" → WorkspaceLayout opens NewIssueModal
+User fills form → submits → board.createTask(columnId, payload)
+useBoard adds task to tasks map + column.taskIds
+Board re-renders → new TaskCard appears in column
+```
 
 ### Drag and Drop
 
-- Uses `@hello-pangea/dnd`.
-- Drag-drop is **disabled when filters are active** (`isFiltered` flag passed to `onDragEnd`).
-- The `onDragEnd` handler lives in `useBoard.js`.
+```
+User drags TaskCard → @hello-pangea/dnd captures
+onDragEnd fires → board.onDragEnd(result, isFiltered)
+If isFiltered: return early (no reorder)
+Otherwise: reorder column.taskIds immutably
+Board re-renders with new order
+```
 
-## Workflows
+### File Attachment
 
-### Adding a new component
+```
+User drops file on TaskModal
+handleFileSelect reads File → FileReader.readAsDataURL()
+Base64 string stored in task.attachments[]
+Lightbox can display it directly
+```
 
-1. Create the `.jsx` file in the appropriate `components/` subfolder.
-2. Add the export to that subfolder's `index.js`.
-3. Create the `.css` file in the matching `styles/` subfolder.
-4. Add `@import './path/file.css';` to `styles/index.css`.
-5. Import the component from `../components` (or `../../components`, etc.).
+## Known Limitations
 
-### Adding a new workspace view
+- Board data is ephemeral (no localStorage persistence)
+- Auth is demo-only (no real backend validation)
+- Comments use static timestamps, not real-time
+- Attachments are base64 in memory (no cloud storage)
+- "Analytics", "Team", "Settings" views are placeholder shells
 
-1. Create the view component in `components/views/`.
-2. Export it from `components/views/index.js`.
-3. Add a nav item in `Sidebar.jsx` `navItems` array.
-4. Add a case in `WorkspaceLayout.jsx` `renderActiveView()`.
+## Escape Hatches
 
-### Adding a new hook
-
-1. Create the file in `src/hooks/`.
-2. Export it as a named export.
-3. Import directly from `../../hooks/hookName.js` (no barrel file for hooks).
-
-### Persisting new data
-
-- If it's workspace-level (like board data), extend `useBoard.js`.
-- If it's app-level (like user preferences), use `localStorage` directly or extend an existing hook.
-- Use a consistent key prefix: `jokel-{feature}`.
-
-## Guardrails
-
-- **Do not run `git commit`, `git push`, `git reset`, or `git rebase` unless explicitly asked.**
-- **Do not install packages outside `frontend/` without confirmation.**
-- **Do not change the dark theme to light.** The app is intentionally dark-only.
-- **Do not add real backend auth.** The login page is a visual demo; `useAuth.js` handles validation client-side.
-- **Minimal changes.** When fixing bugs, change the smallest amount of code needed. Do not refactor unrelated files.
-- **Build before finishing.** Always run `npm run build` from `frontend/` to verify there are no compile errors.
-- **Do not hardcode colors in CSS.** Use CSS custom properties from `styles/base/variables.css`.
-
-## Common Pitfalls
-
-- **Sidebar overflow clipping:** The sidebar has `overflow: hidden`. Dropdown menus (like `UserDropdown`) must use React Portal + `position: fixed` to render outside the sidebar bounds, or they get clipped.
-- **Avatar rendering:** Dicebear SVGs can have viewBox issues when cropped to circles. Use the PNG endpoint (`.../notionists-neutral/png?seed=...`) and `object-fit: cover` for reliable circular avatars.
-- **Task card `key` prop:** Task cards must use `task.id` as the React key, not index, because `column.taskIds` reordering depends on it.
-- **Filter + drag-drop conflict:** When `filterPriorities` or `filterTags` are active, drag-drop must be disabled. Pass `isFiltered` to `onDragEnd` and return early if true.
-- **Initial data:** `constants.js` contains seed data. Modifying it only affects new workspaces (or first loads without localStorage). Existing workspaces load from `localStorage`.
+- When adding a feature that touches multiple hooks: propose a plan first
+- When state gets confusing: trace from `useBoard.js` outward
+- When CSS conflicts arise: check `styles/index.css` import order
