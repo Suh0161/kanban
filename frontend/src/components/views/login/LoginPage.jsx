@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layers, ArrowRight, Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth.js';
+import { useAuth } from '../../../hooks/useAuth.js';
+import './css/login.css';
 
 export default function LoginPage() {
   const navigate = useNavigate();

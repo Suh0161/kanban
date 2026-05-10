@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -7,6 +7,7 @@ import {
   TaskModal,
   NewIssueModal,
   Lightbox,
+  BacklogView,
   MyTasksView,
   InboxView,
   AnalyticsView,
@@ -19,14 +20,10 @@ import { initialData } from '../../constants.js';
 
 export default function WorkspaceLayout() {
   const { workspaceId } = useParams();
-  const { workspaces } = useWorkspaces();
+  const { workspaces, updateWorkspace } = useWorkspaces();
   const board = useBoard(workspaceId);
 
   const currentWorkspace = workspaces.find(w => w.id === workspaceId);
-
-  if (!currentWorkspace) {
-    return <Navigate to="/workspace" replace />;
-  }
 
   const [selectedTask, setSelectedTask] = useState(null);
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -48,8 +45,8 @@ export default function WorkspaceLayout() {
   const [addingColumn, setAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState('boards');
+  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('jokel-sidebar-open') !== 'false');
+  const [activeView, setActiveView] = useState(() => localStorage.getItem(`jokel-active-view-${workspaceId}`) || 'boards');
 
   const [menuOpenCol, setMenuOpenCol] = useState(null);
   const [editingCol, setEditingCol] = useState(null);
@@ -61,8 +58,17 @@ export default function WorkspaceLayout() {
   const isFiltered = !!searchQuery || activeFilterCount > 0;
   const isBoardView = activeView === 'boards';
 
+  useEffect(() => {
+    localStorage.setItem('jokel-sidebar-open', sidebarOpen ? 'true' : 'false');
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    localStorage.setItem(`jokel-active-view-${workspaceId}`, activeView);
+  }, [activeView, workspaceId]);
+
   const viewTitles = {
     boards: 'Boards',
+    backlog: 'Backlog',
     'my-tasks': 'My Tasks',
     inbox: 'Inbox',
     analytics: 'Analytics',
@@ -73,7 +79,7 @@ export default function WorkspaceLayout() {
   const allTasks = useMemo(() => {
     return Object.values(board.data.tasks).map(task => {
       const column = Object.values(board.data.columns).find(col => col.taskIds.includes(task.id));
-      return { ...task, columnTitle: column?.title || 'Backlog' };
+      return { ...task, columnId: column?.id, columnTitle: column?.title || 'Backlog' };
     });
   }, [board.data]);
 
@@ -89,8 +95,6 @@ export default function WorkspaceLayout() {
     if (filterTags.length > 0 && !task.tags.some(tag => filterTags.includes(tag))) return false;
     return true;
   }, [searchQuery, filterPriorities, filterTags]);
-
-  const selectedColumnTitle = selectedTask ? board.getColumnForTask(selectedTask.id)?.title : null;
 
   const handleAddTask = (columnId) => {
     if (!newTaskTitle.trim()) { setAddingToCol(null); return; }
@@ -147,11 +151,52 @@ export default function WorkspaceLayout() {
   };
 
   const renderActiveView = () => {
-    if (activeView === 'my-tasks') return <MyTasksView tasks={allTasks} onSelectTask={setSelectedTask} />;
-    if (activeView === 'inbox') return <InboxView tasks={allTasks} onSelectTask={setSelectedTask} />;
-    if (activeView === 'analytics') return <AnalyticsView tasks={allTasks} />;
-    if (activeView === 'team') return <TeamView />;
-    if (activeView === 'settings') return <SettingsView />;
+    if (activeView === 'backlog') {
+      return (
+        <BacklogView
+          tasks={allTasks}
+          columns={board.data.columns}
+          columnOrder={board.data.columnOrder}
+          onSelectTask={setSelectedTask}
+          onMoveTask={board.moveTask}
+          onUpdateTask={handleUpdateTask}
+        />
+      );
+    }
+    if (activeView === 'my-tasks') {
+      return (
+        <MyTasksView
+          tasks={allTasks}
+          columns={board.data.columns}
+          columnOrder={board.data.columnOrder}
+          onSelectTask={setSelectedTask}
+          onMoveTask={board.moveTask}
+          onUpdateTask={handleUpdateTask}
+        />
+      );
+    }
+    if (activeView === 'inbox') {
+      return (
+        <InboxView
+          tasks={allTasks}
+          columns={board.data.columns}
+          columnOrder={board.data.columnOrder}
+          onSelectTask={setSelectedTask}
+          onMoveTask={board.moveTask}
+          onUpdateTask={handleUpdateTask}
+        />
+      );
+    }
+    if (activeView === 'analytics') return <AnalyticsView tasks={allTasks} onSelectTask={setSelectedTask} />;
+    if (activeView === 'team') return <TeamView tasks={allTasks} onSelectTask={setSelectedTask} />;
+    if (activeView === 'settings') {
+      return (
+        <SettingsView
+          workspace={currentWorkspace}
+          onUpdateWorkspace={(updates) => updateWorkspace(currentWorkspace.id, updates)}
+        />
+      );
+    }
 
     return (
       <Board
@@ -197,6 +242,10 @@ export default function WorkspaceLayout() {
     );
   };
 
+  if (!currentWorkspace) {
+    return <Navigate to="/workspace" replace />;
+  }
+
   return (
     <div className={`app-container ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
       <Sidebar
@@ -239,6 +288,9 @@ export default function WorkspaceLayout() {
           onUpdateDescription={(taskId, desc) => handleUpdateTask(taskId, { description: desc })}
           onUpdateDueDate={(taskId, date) => handleUpdateTask(taskId, { dueDate: date || null })}
           onUpdateTask={handleUpdateTask}
+          onMoveTask={board.moveTask}
+          columns={board.data.columns}
+          columnOrder={board.data.columnOrder}
           onAddComment={board.addComment}
           onFileSelect={board.handleFileSelect}
           onDeleteAttachment={board.deleteAttachment}

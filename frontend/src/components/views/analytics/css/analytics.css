@@ -1,0 +1,172 @@
+.analytics-page {
+  gap: 20px;
+}
+
+.analytics-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.analytics-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 23vw);
+  gap: 18px;
+  align-items: start;
+}
+
+.analytics-main,
+.analytics-rail {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.analytics-rail {
+  position: sticky;
+  top: 0;
+}
+
+.analytics-chart-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.55fr);
+  gap: 14px;
+}
+
+.analytics-chart-grid .analytics-panel:first-child {
+  grid-row: span 2;
+}
+
+.analytics-health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+
+.analytics-health-grid div {
+  min-height: 94px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-hover);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.analytics-health-grid span,
+.analytics-health-grid em,
+.analytics-risk-summary span,
+.analytics-risk-list span,
+.analytics-risk-list em,
+.analytics-empty-chart span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-style: normal;
+}
+
+.analytics-health-grid strong,
+.analytics-risk-summary strong,
+.analytics-risk-list strong,
+.analytics-empty-chart strong {
+  color: var(--text-primary);
+}
+
+.analytics-health-grid .workspace-load {
+  grid-column: 1 / -1;
+}
+
+.analytics-health-grid em {
+  grid-column: 1 / -1;
+}
+
+.analytics-empty-chart {
+  min-height: 96px;
+  padding: 18px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.analytics-risk-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+
+.analytics-risk-summary div {
+  min-height: 64px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-hover);
+  display: grid;
+  gap: 6px;
+}
+
+.analytics-risk-list {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+}
+
+.analytics-risk-list button {
+  min-height: 72px;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 12px;
+  text-align: left;
+}
+
+.analytics-risk-list button:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.analytics-risk-list strong {
+  grid-column: 1 / -1;
+  font-size: 0.84rem;
+}
+
+.analytics-risk-list em {
+  text-align: right;
+}
+
+.analytics-risk-list em.danger {
+  color: var(--color-red);
+}
+
+@media (max-width: 1280px) {
+  .analytics-stats,
+  .analytics-health-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-layout,
+  .analytics-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-chart-grid .analytics-panel:first-child {
+    grid-row: auto;
+  }
+
+  .analytics-rail {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .analytics-stats,
+  .analytics-health-grid,
+  .analytics-risk-summary {
+    grid-template-columns: 1fr;
+  }
+}

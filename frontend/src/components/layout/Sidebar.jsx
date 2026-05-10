@@ -6,6 +6,7 @@ import {
   BarChart2,
   Users,
   Settings,
+  ListTodo,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
@@ -23,6 +24,7 @@ export default function Sidebar({ isOpen, activeView, onSelectView, onToggle }) 
   };
   const navItems = [
     { id: 'boards', label: 'Boards', icon: LayoutDashboard },
+    { id: 'backlog', label: 'Backlog', icon: ListTodo },
     { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare },
     { id: 'inbox', label: 'Inbox', icon: Inbox, badge: 3 },
     { id: 'analytics', label: 'Analytics', icon: BarChart2 },

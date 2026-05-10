@@ -1,26 +1,37 @@
 # Jokel Deep Skill
 
-Use this when AGENTS.md context is not enough — complex feature work, debugging, or architectural decisions.
+Use this when `AGENTS.md` is not enough: complex feature work, debugging, architectural decisions, or refactors across view folders, hooks, and styles.
 
-## When to Load This
+## When To Load This
 
-- Adding a major new feature (e.g., new view type, new modal, new data model)
-- Debugging state management issues in `useBoard.js`
+- Adding or redesigning a workspace view
+- Touching `useBoard.js`, task movement, persistence, or drag-drop
 - Refactoring across multiple component layers
-- Working on drag-drop edge cases or filter interactions
+- Working on filter interactions, modal behavior, attachments, comments, or checklists
+- Reorganizing feature folders
+
+## Product Model
+
+Jokel is a dark Taiga plus Trello style app:
+
+- Trello-like board movement and card details
+- Taiga-like backlog planning, grooming, sprint draft, and workspace administration
+- Operational views for My Tasks and Inbox
+- Client-only persistence through `localStorage`
 
 ## State Management Deep Dive
 
-### useBoard.js
+### `useBoard(workspaceId)`
 
-This hook is the brain of the app. It encapsulates:
+This hook is the brain of workspace board data.
 
-```
+```txt
 data: { tasks, columns, columnOrder }
 
-createTask(columnId, { title, priority, tags, description, dueDate })
+createTask(columnId, payload)
 updateTask(taskId, partialTask)
 deleteTask(taskId)
+moveTask(taskId, targetColumnId)
 
 addColumn(title)
 renameColumn(columnId, title)
@@ -28,174 +39,247 @@ deleteColumn(columnId)
 clearColumn(columnId)
 
 addComment(taskId, text)
-handleFileSelect(files, taskId)  // FileReader → base64
+addChecklist(taskId, title)
+addChecklistItem(taskId, checklistId, text)
+toggleChecklistItem(taskId, checklistId, itemId)
+deleteChecklist(taskId, checklistId)
 
-onDragEnd(result, isFiltered)    // @hello-pangea/dnd handler
-allTags                          // memoized from tasks
+handleFileSelect(files, taskId)
+deleteAttachment(taskId, attachmentId)
+
+onDragEnd(result, isFiltered)
+allTags
+getColumnForTask(taskId)
 ```
 
-**Important:** Board data is NOT persisted to localStorage yet. It resets on page refresh. If asked to add persistence, wire `localStorage` around the reducer in `useBoard.js` using key `jokel-board-{workspaceId}`.
+Board data persists to `localStorage` key:
 
-### useAuth.js
-
+```txt
+jokel-board-{workspaceId}
 ```
-login(email, password)  // Only accepts demo@demo.com / Demo123
+
+When changing task shape, make sure old saved tasks remain safe with fallback reads. Seed data lives in `constants.js`.
+
+### `useAuth.js`
+
+```txt
+login(email, password)  # demo@demo.com / Demo123
 logout()
-user / isLoggedIn
+user
+isLoggedIn
 ```
 
-Stores user object in `localStorage` key `jokel-auth`. Session flag `jokel-welcome` controls the welcome toast on `/workspace`.
+Stores the user object in `localStorage` key `jokel-auth`. The `jokel-welcome` session flag controls the workspace welcome toast.
 
-### useWorkspaces.js
+### `useWorkspaces.js`
 
+```txt
+workspaces
+addWorkspace(name)
+deleteWorkspace(id)
+updateWorkspace(id, updates)
 ```
-workspaces / addWorkspace(name) / deleteWorkspace(id)
+
+Persists to `localStorage` key `jokel-workspaces`.
+
+## View Folder Architecture
+
+Workspace views are feature folders:
+
+```txt
+components/views/<feature>/
+  <Feature>View.jsx       # top-level orchestration
+  components/             # view-specific pieces
+    index.js
+  css/                    # view-specific styles when needed
+    <feature>.css
+  index.js                # default export for the view
 ```
 
-Persists to `localStorage` key `jokel-workspaces`. Default workspace: `Trust & Safety`.
+Current view folders:
 
-## Component Patterns
+```txt
+analytics/
+backlog/
+inbox/
+login/
+mytasks/
+settings/
+shared/
+team/
+workspace-list/
+```
 
-### Good vs Bad
+Rules:
+
+- Keep root `components/views/` clean. It should only contain `index.js` plus feature folders.
+- View-specific components stay inside that view's `components/`.
+- Shared view-only pieces go in `views/shared/`.
+- Reusable primitives go in `components/ui/`.
+- View-specific CSS is colocated under the view's `css/` folder and imported by the view.
+- Global shell, board, modal, and base styles stay under `src/styles/`.
+
+## View Switching Pattern
+
+`WorkspaceLayout.jsx` owns the app shell and modal state.
 
 ```jsx
-// ✅ Good — small, focused, uses existing hooks
-export default function MyComponent() {
-  const board = useBoard(workspaceId);
-  return <div>{board.data.tasks[taskId].title}</div>;
-}
-
-// ❌ Bad — passes board data through 3 layers of props
-function Parent({ board }) {
-  return <Child board={board} />;
-}
-function Child({ board }) {
-  return <Grandchild board={board} />;
-}
-```
-
-```jsx
-// ✅ Good — consumes hook directly where needed
-const { createTask } = useBoard(workspaceId);
-
-// ❌ Bad — lifting all hook methods to parent and drilling down
-```
-
-### Modal Pattern
-
-Modals are controlled by `WorkspaceLayout.jsx` state:
-
-```jsx
-// WorkspaceLayout.jsx
-const [selectedTask, setSelectedTask] = useState(null);
-
-// In render:
-<TaskModal
-  task={selectedTask}
-  onClose={() => setSelectedTask(null)}
-  board={board}
-/>
-```
-
-Never use URL routes for modals. Always lift modal state to `WorkspaceLayout`.
-
-### View Switching Pattern
-
-```jsx
-// WorkspaceLayout.jsx
 const renderActiveView = () => {
+  if (activeView === 'backlog') return <BacklogView tasks={allTasks} ... />;
   if (activeView === 'my-tasks') return <MyTasksView tasks={allTasks} ... />;
-  if (activeView === 'analytics') return <AnalyticsView ... />;
+  if (activeView === 'inbox') return <InboxView tasks={allTasks} ... />;
+  if (activeView === 'analytics') return <AnalyticsView tasks={allTasks} />;
+  if (activeView === 'team') return <TeamView tasks={allTasks} />;
+  if (activeView === 'settings') return <SettingsView workspace={currentWorkspace} ... />;
   return <Board data={board.data} onDragEnd={...} ... />;
 };
 ```
 
 Add new views by:
-1. Creating the component in `components/views/`
-2. Exporting from `components/views/index.js`
-3. Adding to `Sidebar.jsx` `navItems`
-4. Adding a case in `renderActiveView()`
 
-## CSS Architecture
+1. Creating `components/views/<feature>/<Feature>View.jsx`
+2. Exporting default from `components/views/<feature>/index.js`
+3. Exporting named view from `components/views/index.js`
+4. Adding a sidebar nav item
+5. Adding a `renderActiveView()` case
 
-### Variable Reference
+## Modal Pattern
 
-```css
-/* Backgrounds */
---bg-app: #000000
---bg-sidebar: #0a0a0a
---bg-header: #0a0a0a
---bg-card: #121212
---bg-card-hover: #1a1a1a
---bg-hover: #1a1a1a
+Modals are controlled by `WorkspaceLayout.jsx` state. Do not route modals.
 
-/* Borders */
---border-subtle: #222222
---border-strong: #333333
---border-focus: #ffffff
+```jsx
+const [selectedTask, setSelectedTask] = useState(null);
 
-/* Text */
---text-primary: #ededed
---text-secondary: #a1a1aa
---text-tertiary: #71717a
-
-/* Accents */
---accent-blue: #0a84ff
---color-red: #ff453a
---color-orange: #ff9f0a
---color-yellow: #ffd60a
---color-green: #30d158
-
-/* Shadows */
---shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.7)
+{selectedTask && (
+  <TaskModal
+    task={board.data.tasks[selectedTask.id]}
+    onClose={() => setSelectedTask(null)}
+    onUpdateTask={handleUpdateTask}
+    onMoveTask={board.moveTask}
+    columns={board.data.columns}
+    columnOrder={board.data.columnOrder}
+  />
+)}
 ```
-
-### Adding a New CSS File
-
-1. Create file in appropriate `styles/` subfolder
-2. Add `@import './subfolder/file.css';` to `styles/index.css`
-3. Use component-prefixed class names
 
 ## Data Flow Examples
 
-### Creating a Task
+### Creating A Task
 
-```
-User clicks "New Issue" → WorkspaceLayout opens NewIssueModal
-User fills form → submits → board.createTask(columnId, payload)
-useBoard adds task to tasks map + column.taskIds
-Board re-renders → new TaskCard appears in column
+```txt
+Topbar New Issue -> WorkspaceLayout opens NewIssueModal
+Submit -> board.createTask(columnId, payload)
+useBoard adds task to tasks map and column.taskIds
+Board/views re-render from board.data
 ```
 
-### Drag and Drop
+### Moving A Task
 
+```txt
+Board drag-drop or view Select/action -> board.moveTask(taskId, targetColumnId)
+useBoard removes task from source column.taskIds
+useBoard appends task to target column.taskIds
+localStorage persists the new board data
 ```
-User drags TaskCard → @hello-pangea/dnd captures
-onDragEnd fires → board.onDragEnd(result, isFiltered)
-If isFiltered: return early (no reorder)
+
+### Drag And Drop
+
+```txt
+TaskCard drag -> @hello-pangea/dnd result
+WorkspaceLayout calls board.onDragEnd(result, isFiltered)
+If filtered: return early
 Otherwise: reorder column.taskIds immutably
-Board re-renders with new order
+localStorage persists board data
 ```
 
 ### File Attachment
 
-```
-User drops file on TaskModal
-handleFileSelect reads File → FileReader.readAsDataURL()
+```txt
+TaskModal file input -> handleFileSelect(files, taskId)
+FileReader.readAsDataURL()
 Base64 string stored in task.attachments[]
-Lightbox can display it directly
+Lightbox displays attachment directly
 ```
+
+## CSS Architecture
+
+### Variables
+
+Use `styles/base/variables.css`.
+
+```css
+--bg-app
+--bg-sidebar
+--bg-header
+--bg-card
+--bg-card-hover
+--bg-hover
+
+--border-subtle
+--border-strong
+--border-focus
+
+--text-primary
+--text-secondary
+--text-tertiary
+
+--accent-color
+--accent-color-hover
+--accent-blue
+
+--color-red
+--color-orange
+--color-yellow
+--color-blue
+--color-purple
+```
+
+### Adding CSS
+
+For app-wide systems:
+
+```txt
+styles/base/
+styles/layout/
+styles/board/
+styles/modals/
+```
+
+For view-specific surfaces:
+
+```txt
+components/views/<feature>/css/<feature>.css
+```
+
+Import feature CSS from the view file:
+
+```jsx
+import './css/mytasks.css';
+```
+
+## Current View Responsibilities
+
+- **Board** - Drag-and-drop Kanban columns and cards.
+- **Backlog** - Planning filters, readiness, sprint draft, priority/status/date edits.
+- **My Tasks** - Personal open/urgent/watching/done queues with inline status and date edits.
+- **Inbox** - Intake filtering, selection, bulk triage/archive, row-level routing.
+- **Analytics** - Priority mix and board flow.
+- **Team** - Workload and coverage.
+- **Settings** - General, notifications, permissions, toggles, status aside.
+- **Workspace List** - Workspace search and creation.
+- **Login** - Demo login and guest entry.
 
 ## Known Limitations
 
-- Board data is ephemeral (no localStorage persistence)
-- Auth is demo-only (no real backend validation)
-- Comments use static timestamps, not real-time
-- Attachments are base64 in memory (no cloud storage)
-- "Analytics", "Team", "Settings" views are placeholder shells
+- Auth is demo-only with no backend validation.
+- Comments use static timestamps.
+- Attachments are base64 in local storage, not cloud storage.
+- Analytics are derived from current board data, not historical events.
+- Sprint draft is task metadata, not a full sprint/release model yet.
 
 ## Escape Hatches
 
-- When adding a feature that touches multiple hooks: propose a plan first
-- When state gets confusing: trace from `useBoard.js` outward
-- When CSS conflicts arise: check `styles/index.css` import order
+- When state gets confusing, trace from `useBoard.js` outward.
+- When a view grows, split it into `components/views/<feature>/components/`.
+- When CSS conflicts arise, check whether the class belongs in feature CSS or shared `styles/layout/workspace.css`.
+- When changing task shape, test against existing localStorage data or provide safe fallbacks.

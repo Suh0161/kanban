@@ -27,10 +27,16 @@ export function useWorkspaces() {
     return newWorkspace;
   };
 
+  const updateWorkspace = (id, updates) => {
+    setWorkspaces(prev => prev.map(workspace =>
+      workspace.id === id ? { ...workspace, ...updates } : workspace
+    ));
+  };
+
   const deleteWorkspace = (id) => {
     setWorkspaces(prev => prev.filter(w => w.id !== id));
     localStorage.removeItem(`jokel-board-${id}`);
   };
 
-  return { workspaces, addWorkspace, deleteWorkspace };
+  return { workspaces, addWorkspace, updateWorkspace, deleteWorkspace };
 }

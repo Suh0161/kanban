@@ -57,11 +57,8 @@
 .comment-input-wrap {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
-}
-.comment-input-wrap .btn {
-  align-self: flex-end;
 }
 .comment-input {
   width: 100%;
@@ -81,4 +78,25 @@
 }
 .comment-input::placeholder {
   color: var(--text-tertiary);
+}
+.comment-send-btn {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--accent-color);
+  color: var(--bg-app);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.comment-send-btn:hover {
+  background-color: var(--accent-color-hover);
+}
+.comment-send-btn:disabled {
+  cursor: default;
+  opacity: 0.42;
 }

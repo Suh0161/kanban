@@ -1,17 +1,19 @@
 # Jokel
 
-A workspace-based Kanban task management application built with React 19 and Vite. Supports drag-and-drop task organization, priority filtering, inline comments, file attachments, and multi-workspace navigation.
+Jokel is a dark-themed workspace Kanban app inspired by Taiga planning and Trello board movement. It is a client-side React app with workspace navigation, a live board, backlog planning, personal task queues, inbox triage, analytics, team workload, and workspace settings.
 
 ## Features
 
-- **Workspace management** - Create and switch between independent workspaces
-- **Kanban board** - Drag-and-drop tasks across customizable columns via `@hello-pangea/dnd`
-- **Task details** - Priority levels, tags, due dates, descriptions, and file attachments (base64)
-- **Comments** - Threaded discussions on individual tasks
-- **Search and filter** - Filter by priority or tag; search tasks by keyword
-- **Multiple views** - Board, My Tasks, Inbox, Analytics, Team, Settings
-- **Collapsible sidebar** - Animated sidebar with workspace navigation and user dropdown
-- **Login flow** - Demo authentication with guest access option
+- **Workspace management** - Create and switch between independent workspaces.
+- **Kanban board** - Drag-and-drop tasks across customizable columns with `@hello-pangea/dnd`.
+- **Backlog planning** - Groom issues, mark sprint draft items, edit priority/status/due dates, and track planning health.
+- **My Tasks** - Personal queues for open, urgent, watching, and done work with inline status and due-date edits.
+- **Inbox triage** - Filter incoming reports, select reports, bulk triage/archive, and route issues into board lists.
+- **Task details** - Editable title, status, priority, assignee, tags, due dates, descriptions, comments, checklists, and image attachments.
+- **Analytics and team views** - Priority mix, board flow, workload, and coverage summaries.
+- **Workspace settings** - General, notifications, and permissions settings with dropdowns, toggles, save/reset state, and status rail.
+- **Collapsible sidebar** - Persistent sidebar state with compact and expanded modes.
+- **Demo auth** - Demo login and guest access.
 
 ## Prerequisites
 
@@ -35,19 +37,19 @@ The development server starts at `http://localhost:5173`.
 
 ## Demo Credentials
 
-Use the following credentials on the login page, or click **"Use demo account"** to autofill:
+Use the following credentials on the login page, or click **Use demo account** to autofill:
 
 | Field | Value |
-|-------|-------|
+| --- | --- |
 | Email | `demo@demo.com` |
 | Password | `Demo123` |
 
-Guest access is also available via **"Continue as guest"**.
+Guest access is also available via **Continue as guest**.
 
 ## Scripts
 
 | Command | Description |
-|---------|-------------|
+| --- | --- |
 | `npm run dev` | Start the Vite development server |
 | `npm run build` | Create a production build in `dist/` |
 | `npm run preview` | Preview the production build locally |
@@ -55,55 +57,61 @@ Guest access is also available via **"Continue as guest"**.
 
 ## Project Structure
 
-```
-frontend/
-src/
+```txt
+frontend/src/
   App.jsx                 # Application router
   main.jsx                # React entry point
-  constants.js            # Seed data for initial workspace
+  constants.js            # Seed data and priority constants
 
   components/
-    board/                # Kanban components
-      Board.jsx
-      BoardColumn.jsx
-      TaskCard.jsx
-      AddCardComposer.jsx
-      AddColumnComposer.jsx
-      ColumnMenu.jsx
-    layout/               # Application shell
-      Sidebar.jsx
-      Topbar.jsx
-      WorkspaceLayout.jsx
-    modals/               # Overlay modals
-      TaskModal.jsx
-      NewIssueModal.jsx
-      Lightbox.jsx
-    ui/                   # Shared UI primitives
-      FilterPanel.jsx
-      Select.jsx
-      UserDropdown.jsx
-    views/                # Page-level components
-      LoginPage.jsx
-      WorkspaceList.jsx
-      MyTasksView.jsx
-      InboxView.jsx
-      AnalyticsView.jsx
-      TeamView.jsx
-      SettingsView.jsx
+    board/                # Kanban board, columns, cards, composers, menus
+    layout/               # Sidebar, Topbar, WorkspaceLayout
+    modals/               # TaskModal, NewIssueModal, Lightbox
+    ui/                   # Shared UI primitives: Select, FilterPanel, UserDropdown
+    views/
+      index.js            # Barrel exports for all views
+      analytics/
+        AnalyticsView.jsx
+        components/
+      backlog/
+        BacklogView.jsx
+        components/
+        css/
+      inbox/
+        InboxView.jsx
+        components/
+        css/
+      login/
+        LoginPage.jsx
+        css/
+      mytasks/
+        MyTasksView.jsx
+        components/
+        css/
+      settings/
+        SettingsView.jsx
+        components/
+      shared/
+        ViewTaskRow.jsx
+      team/
+        TeamView.jsx
+        components/
+      workspace-list/
+        WorkspaceList.jsx
+        css/
 
   hooks/
-    useAuth.js            # Authentication state (localStorage)
-    useBoard.js           # Board state, CRUD, drag-drop logic
+    useAuth.js            # Demo authentication state
+    useBoard.js           # Board state, CRUD, drag-drop, comments, attachments
     useWorkspaces.js      # Workspace list persistence
     useClickOutside.js
 
   styles/
-    index.css             # Central CSS import file
-    base/                 # CSS variables, reset, keyframes
-    layout/               # Sidebar, topbar, buttons
-    board/                # Board canvas, columns, cards
-    modals/               # Modal, lightbox, attachments
-    views/                # Page-specific styles
+    index.css             # Global CSS import file
+    base/                 # Variables, reset, animations
+    board/                # Board canvas, columns, cards, composers, filter
+    layout/               # Sidebar, topbar, buttons, workspace shell
+    modals/               # Modal, lightbox, attachments, comments, forms
 
   utils/
     helpers.js
@@ -113,49 +121,55 @@ src/
 
 ### State Management
 
-State is managed through custom React hooks rather than Context API or external libraries:
+State is managed through custom hooks rather than Context API or external state libraries:
 
-- **`useBoard(workspaceId)`** - Single source of truth for all board data within a workspace. Exposes tasks, columns, drag-drop handlers, and CRUD operations.
-- **`useAuth()`** - Handles demo login/logout with `localStorage` persistence.
-- **`useWorkspaces()`** - Manages workspace list with `localStorage` key `jokel-workspaces`.
+- **`useBoard(workspaceId)`** - Single source of truth for board data in a workspace. Exposes tasks, columns, drag-drop handlers, CRUD methods, comments, checklists, attachments, task movement, and task updates. Board data persists to `localStorage` key `jokel-board-{workspaceId}`.
+- **`useAuth()`** - Handles demo login/logout with `localStorage` key `jokel-auth`.
+- **`useWorkspaces()`** - Manages the workspace list with `localStorage` key `jokel-workspaces`.
 
 ### Styling
 
-The application uses a single dark theme. All colors are defined as CSS custom properties in `styles/base/variables.css`. Each feature folder has a corresponding stylesheet in `styles/`, imported via `styles/index.css`.
+The app uses a single dark theme. Colors live in `styles/base/variables.css` and should be consumed through CSS custom properties.
+
+Global/shell styles stay in `src/styles/`. View-specific styles live beside the view feature when that view has its own surface, for example `components/views/mytasks/css/mytasks.css`, and are imported by the view.
 
 ### Routing
 
-React Router handles three routes:
-
 | Route | Component |
-|-------|-----------|
+| --- | --- |
 | `/` | `LoginPage` |
 | `/workspace` | `WorkspaceList` |
 | `/workspace/:workspaceId/*` | `WorkspaceLayout` |
 
-`WorkspaceLayout` renders the sidebar and switches the main view based on `activeView` state.
+`WorkspaceLayout` owns the app shell and switches the main view with `activeView`: `boards`, `backlog`, `my-tasks`, `inbox`, `analytics`, `team`, and `settings`.
 
 ### Data Persistence
 
-- **Workspaces** and **auth state** persist to `localStorage`.
-- **Board data** is per-workspace and currently resets on page reload. Persistence can be added by extending `useBoard.js`.
+- Auth state persists through `useAuth()`.
+- Workspace list persists through `useWorkspaces()`.
+- Board data persists per workspace through `useBoard(workspaceId)`.
+- Sidebar open state and active view are persisted by `WorkspaceLayout`.
 
-## Extending the Application
+## Extending The App
 
-### Adding a New View
+### Adding A Workspace View
 
-1. Create the component in `src/components/views/`
-2. Export it from `src/components/views/index.js`
-3. Add a navigation item in `src/components/layout/Sidebar.jsx`
-4. Register the view in `src/components/layout/WorkspaceLayout.jsx` within `renderActiveView()`
+1. Create a feature folder under `src/components/views/<feature>/`.
+2. Add `<Feature>View.jsx`.
+3. Add `components/` for view-specific subcomponents when needed.
+4. Add `css/<feature>.css` when the view has dedicated styling, and import it from `<Feature>View.jsx`.
+5. Add `index.js` in the feature folder that exports the view as default.
+6. Export the view from `src/components/views/index.js`.
+7. Add the nav item in `Sidebar.jsx`.
+8. Add the render case in `WorkspaceLayout.jsx`.
 
-### Adding a New Component
+### Adding A Component
 
-1. Create the `.jsx` file in the appropriate `components/` subfolder
-2. Add the named export to the subfolder's `index.js`
-3. Create the `.css` file in the matching `styles/` subfolder
-4. Import the stylesheet in `styles/index.css`
+1. If it is feature-specific, place it under that feature's `components/` folder.
+2. If it is app-wide reusable UI, place it under `components/ui/`.
+3. Export through the nearest `index.js`.
+4. Keep class names component-prefixed, lowercase, and hyphenated.
 
 ### Theming
 
-Edit `src/styles/base/variables.css`. The application references CSS custom properties throughout all stylesheets.
+Edit `src/styles/base/variables.css`. Avoid hardcoded colors in components and stylesheets.

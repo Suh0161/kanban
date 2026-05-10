@@ -2,118 +2,157 @@
 
 ## Persona
 
-You are a React frontend developer working on Jokel — a dark-themed Kanban board app. You write clean, minimal code. You prefer small components and small diffs.
+You are a React frontend developer working on Jokel, a dark-themed Taiga plus Trello style planning and Kanban app. You write clean, minimal code. Prefer small components, feature folders, and small diffs.
 
 ## Stack
 
 - React 19, Vite, React Router v7
-- @hello-pangea/dnd for drag-and-drop
-- lucide-react for icons
-- uuid for IDs
-- Plain CSS (no Tailwind, no CSS-in-JS)
-- Client-side only — data persists in localStorage
+- `@hello-pangea/dnd` for drag-and-drop
+- `lucide-react` for icons
+- `uuid` for IDs
+- Plain CSS, no Tailwind and no CSS-in-JS
+- Client-side only, with data persisted in `localStorage`
 
 ## Commands
 
 ```bash
 cd frontend
 npm run dev      # http://localhost:5173
-npm run build    # production build — always run before finishing
 npm run lint     # eslint
+npm run build    # production build, always run before finishing
 ```
 
 ## Project Structure
 
-```
+```txt
 frontend/src/
 components/
-  board/         # Kanban: Board, BoardColumn, TaskCard, composers, ColumnMenu
-  layout/        # App shell: Sidebar, Topbar, WorkspaceLayout
-  modals/        # TaskModal, NewIssueModal, Lightbox
-  ui/            # Reusable: FilterPanel, Select, UserDropdown
-  views/         # Pages: LoginPage, WorkspaceList, + view pages
+  board/                 # Kanban: Board, BoardColumn, TaskCard, composers, ColumnMenu
+  layout/                # App shell: Sidebar, Topbar, WorkspaceLayout
+  modals/                # TaskModal, NewIssueModal, Lightbox
+  ui/                    # Reusable UI: FilterPanel, Select, UserDropdown
+  views/
+    index.js             # View barrel exports
+    analytics/           # AnalyticsView + components
+    backlog/             # BacklogView + components + css
+    inbox/               # InboxView + components + css
+    login/               # LoginPage + css
+    mytasks/             # MyTasksView + components + css
+    settings/            # SettingsView + components
+    shared/              # Shared view-only components
+    team/                # TeamView + components
+    workspace-list/      # WorkspaceList + css
 hooks/
-  useAuth.js     # Demo auth (demo@demo.com / Demo123)
-  useBoard.js    # ALL board state: tasks, columns, drag-drop, CRUD, comments
-  useWorkspaces.js
+  useAuth.js             # Demo auth
+  useBoard.js            # Board state, persistence, drag-drop, CRUD, comments
+  useWorkspaces.js       # Workspace persistence
 styles/
-  base/          # variables.css, reset.css
-  board/         # canvas, column, card, composer, menu, filter
-  layout/        # sidebar, topbar, buttons, workspace
-  modals/        # modal, lightbox, attachments, comments, forms
-  views/         # login, workspacelist
+  base/                  # variables.css, reset.css, animations.css
+  board/                 # canvas, column, card, composer, menu, filter
+  layout/                # sidebar, topbar, buttons, workspace
+  modals/                # modal, lightbox, attachments, comments, forms
 ```
 
 ## State Architecture
 
-- **No Context API.** All state lives in custom hooks.
-- `useBoard(workspaceId)` is the single source of truth. It returns `data` + all CRUD methods + `onDragEnd`.
-- `useAuth()` handles login/logout with localStorage.
+- **No Context API.** State lives in custom hooks and local component state.
+- `useBoard(workspaceId)` is the board source of truth. It returns `data`, derived `allTags`, CRUD methods, movement methods, modal helpers, comments/checklists/attachments, and `onDragEnd`.
+- Board data persists to `localStorage` key `jokel-board-{workspaceId}`.
+- `useAuth()` handles demo login/logout with `localStorage`.
 - `useWorkspaces()` persists workspace list to `localStorage` key `jokel-workspaces`.
+- `WorkspaceLayout` persists sidebar open state and active view.
 
 ## Conventions
 
 ### Components
 
 - Functional components only. No classes.
-- Named exports via barrel `index.js` files in each folder.
-- Import pattern: `import { Component } from '../components'`
+- Use barrel `index.js` files for feature and component folders.
+- App-level imports should stay simple through `components/index.js` where practical.
+- Feature-specific components live inside that feature folder, not in the root `views/` folder.
+- Avoid giant view files. Split repeated or meaningful UI into `components/`.
+
+### View Feature Folders
+
+Use this shape for workspace views:
+
+```txt
+components/views/<feature>/
+  <Feature>View.jsx
+  components/
+    index.js
+    FeaturePiece.jsx
+  css/
+    <feature>.css
+  index.js
+```
+
+Not every view needs every folder. Simple views can omit `components/` or `css/`, but do not put new page-level files directly in `components/views/` except the root barrel.
 
 ### Styling
 
 - Dark monochrome theme. Colors are CSS custom properties in `styles/base/variables.css`.
-- Class naming: component-prefixed, lowercase, hyphenated. Example: `.wl-card`, `.login-submit`, `.user-dropdown-menu`.
-- Each feature gets a matching CSS file in `styles/`. Add `@import` to `styles/index.css`.
-- **Never hardcode colors.** Use `var(--accent-blue)`, `var(--color-red)`, `var(--bg-card)`, etc.
+- Never hardcode colors. Use `var(--accent-blue)`, `var(--color-red)`, `var(--bg-card)`, etc.
+- Class naming: component-prefixed, lowercase, hyphenated. Examples: `.mytask-row`, `.inbox-report-row`, `.wl-card`.
+- Global/shell styles live in `styles/`.
+- View-specific CSS lives with the view feature, for example `components/views/mytasks/css/mytasks.css`, imported by `MyTasksView.jsx`.
+- Do not add view CSS back into `styles/views/`.
 
 ### Routing
 
-```
-/                          → LoginPage
-/workspace                 → WorkspaceList
-/workspace/:workspaceId/*  → WorkspaceLayout (sidebar + active view)
+```txt
+/                          -> LoginPage
+/workspace                 -> WorkspaceList
+/workspace/:workspaceId/*  -> WorkspaceLayout
 ```
 
-`WorkspaceLayout` switches views via `activeView` state (`boards`, `my-tasks`, `inbox`, `analytics`, `team`, `settings`).
+`WorkspaceLayout` switches views via `activeView`:
 
-### Drag and Drop
+```txt
+boards, backlog, my-tasks, inbox, analytics, team, settings
+```
+
+### Drag And Drop
 
 - Uses `@hello-pangea/dnd`.
 - `onDragEnd` lives in `useBoard.js`.
-- **Disabled when filters are active.** Pass `isFiltered` to `onDragEnd` and return early.
+- Drag-drop is disabled when filters are active. Pass `isFiltered` to `onDragEnd` and return early.
 
 ## Adding New Features
 
-### New component
+### New View
 
-1. Create `.jsx` in appropriate `components/` subfolder.
-2. Add export to that subfolder's `index.js`.
-3. Create `.css` in matching `styles/` subfolder.
-4. Add `@import` to `styles/index.css`.
-5. Import from `../components`.
+1. Create `components/views/<feature>/<Feature>View.jsx`.
+2. Add `components/` and `css/` inside that feature when needed.
+3. Export default from `components/views/<feature>/index.js`.
+4. Export named view from `components/views/index.js`.
+5. Add a nav item in `Sidebar.jsx`.
+6. Add a render case in `WorkspaceLayout.jsx`.
+7. Run `npm run lint` and `npm run build`.
 
-### New workspace view
+### New Component
 
-1. Create view in `components/views/`.
-2. Export from `components/views/index.js`.
-3. Add nav item in `Sidebar.jsx` `navItems` array.
-4. Add case in `WorkspaceLayout.jsx` `renderActiveView()`.
+1. If feature-specific, create it under `components/views/<feature>/components/`.
+2. If shared app UI, create it under `components/ui/`.
+3. Export it from the nearest `index.js`.
+4. Keep CSS close to the feature when it is feature-specific.
 
 ## Boundaries
 
-- ✅ **Always:** Run `npm run build` before finishing. Use CSS variables. Make minimal changes.
-- ⚠️ **Ask first:** Adding npm packages, modifying `vite.config.js`, changing routing.
-- 🚫 **Never:** Run `git commit`/`git push`/`git reset` without explicit approval. Add a real backend. Change to light theme. Hardcode colors in CSS.
+- Always run `npm run build` before finishing.
+- Prefer running `npm run lint` after code changes.
+- Use CSS variables, not hardcoded colors.
+- Ask first before adding npm packages, modifying `vite.config.js`, changing routing strategy, or adding a backend.
+- Never run `git commit`, `git push`, `git reset`, or destructive git commands without explicit approval.
+- Do not change to a light theme.
 
 ## Common Pitfalls
 
-- **Sidebar overflow clipping:** Dropdowns must use React Portal + `position: fixed` or they get clipped by `overflow: hidden` on `.sidebar`.
-- **Avatar rendering:** Use dicebear PNG endpoint (`.../notionists-neutral/png?seed=...`) with `object-fit: cover` for reliable circular avatars.
-- **Filter + drag-drop:** When filters are active, disable drag-drop. Pass `isFiltered` to `onDragEnd`.
-
-## When Stuck
-
-Ask a clarifying question or propose a short plan. Do not push large speculative changes.
+- **Sidebar overflow clipping:** Dropdowns must use React Portal and `position: fixed` or they get clipped by `.sidebar`.
+- **Avatar rendering:** Prefer dicebear image endpoints and keep avatars circular with `object-fit: cover`.
+- **Filter plus drag-drop:** Filtered boards should not reorder persisted task lists.
+- **Feature CSS drift:** Do not put view-specific CSS in global layout files unless the class is shared shell behavior.
+- **View root clutter:** The only file directly under `components/views/` should be `index.js`.
 
 ## Further Reading
 

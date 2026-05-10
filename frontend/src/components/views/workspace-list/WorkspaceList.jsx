@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layers, Plus, X, ArrowRight, Users, Bell, Search, Sparkles } from 'lucide-react';
-import { useWorkspaces } from '../../hooks/useWorkspaces.js';
-import { useAuth } from '../../hooks/useAuth.js';
-import { UserDropdown } from '../ui';
+import { useWorkspaces } from '../../../hooks/useWorkspaces.js';
+import { useAuth } from '../../../hooks/useAuth.js';
+import { UserDropdown } from '../../ui';
+import './css/workspacelist.css';
 
 export default function WorkspaceList() {
   const { workspaces, addWorkspace } = useWorkspaces();
@@ -11,17 +12,16 @@ export default function WorkspaceList() {
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [query, setQuery] = useState('');
-  const [welcome, setWelcome] = useState(false);
+  const [welcome, setWelcome] = useState(() => sessionStorage.getItem('jokel-welcome') === '1');
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (sessionStorage.getItem('jokel-welcome')) {
-      setWelcome(true);
+    if (welcome) {
       sessionStorage.removeItem('jokel-welcome');
       const timer = setTimeout(() => setWelcome(false), 4000);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [welcome]);
 
   const filtered = workspaces.filter(w =>
     w.name.toLowerCase().includes(query.toLowerCase())

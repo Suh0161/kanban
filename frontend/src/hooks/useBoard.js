@@ -85,7 +85,7 @@ export function useBoard(workspaceId) {
     }));
   }, [data.columns, data.columnOrder]);
 
-  const createTask = (columnId, { title, priority, tags, dueDate }) => {
+  const createTask = (columnId, { title, priority, tags, description, dueDate, assigneeId, assigneeName, assigneeImg }) => {
     const newTaskId = uuidv4();
     const parsedTags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : (tags || []);
     const newTask = {
@@ -95,9 +95,10 @@ export function useBoard(workspaceId) {
       tags: parsedTags,
       metrics: { comments: 0, attachments: 0 },
       code: `SKY-${Math.floor(1000 + Math.random() * 9000)}`,
-      description: '',
-      assigneeImg: null,
-      assigneeName: null,
+      description: description || '',
+      assigneeId: assigneeId || null,
+      assigneeImg: assigneeImg || null,
+      assigneeName: assigneeName || null,
       comments: [],
       attachments: [],
       checklists: [],
@@ -175,6 +176,32 @@ export function useBoard(workspaceId) {
       ...prev,
       tasks: { ...prev.tasks, [taskId]: { ...prev.tasks[taskId], ...updates } }
     }));
+  };
+
+  const moveTask = (taskId, targetColumnId) => {
+    if (!data.tasks[taskId] || !data.columns[targetColumnId]) return;
+
+    setData(prev => {
+      const sourceColumnId = Object.keys(prev.columns).find(colId =>
+        prev.columns[colId].taskIds.includes(taskId)
+      );
+      if (!sourceColumnId || sourceColumnId === targetColumnId) return prev;
+
+      return {
+        ...prev,
+        columns: {
+          ...prev.columns,
+          [sourceColumnId]: {
+            ...prev.columns[sourceColumnId],
+            taskIds: prev.columns[sourceColumnId].taskIds.filter(id => id !== taskId)
+          },
+          [targetColumnId]: {
+            ...prev.columns[targetColumnId],
+            taskIds: [...prev.columns[targetColumnId].taskIds, taskId]
+          }
+        }
+      };
+    });
   };
 
   const addComment = (taskId, text) => {
@@ -325,6 +352,7 @@ export function useBoard(workspaceId) {
     renameColumn,
     deleteTask,
     updateTask,
+    moveTask,
     addComment,
     addAttachment,
     handleFileSelect,

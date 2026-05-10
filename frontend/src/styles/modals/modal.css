@@ -39,6 +39,26 @@
 .modal-title { font-size: 1.1rem; font-weight: 500; color: var(--text-primary); line-height: 1.4; }
 .modal-id { font-family: var(--font-mono); color: var(--text-tertiary); font-size: 0.8rem; }
 
+.modal-title-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.4;
+  outline: none;
+  padding: 4px 0;
+}
+
+.modal-title-input:focus {
+  background-color: var(--bg-hover);
+  border-color: var(--border-subtle);
+  padding: 4px 8px;
+}
+
 .modal-header-actions {
   display: flex;
   align-items: center;

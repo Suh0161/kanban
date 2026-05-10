@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Trash2, AlignLeft, Paperclip, MessageSquare, Upload, CheckSquare, Plus, Trash } from 'lucide-react';
+import { X, Trash2, AlignLeft, Paperclip, MessageSquare, Upload, CheckSquare, Plus, Trash, SendHorizontal } from 'lucide-react';
 import { TEAM_MEMBERS } from '../../utils/helpers.js';
 import Select from '../ui/Select.jsx';
 import { PRIORITIES } from '../../constants.js';
@@ -13,6 +13,9 @@ export default function TaskModal({
   onDeleteAttachment,
   onLightboxOpen,
   onUpdateTask,
+  onMoveTask,
+  columns,
+  columnOrder,
   onAddChecklist,
   onAddChecklistItem,
   onToggleChecklistItem,
@@ -26,6 +29,12 @@ export default function TaskModal({
   const fileInputRef = useRef(null);
 
   const currentAssignee = TEAM_MEMBERS.find(m => m.id === task.assigneeId) || null;
+  const statusOptions = columnOrder.map(columnId => ({
+    value: columnId,
+    label: columns[columnId].title
+  }));
+  const currentColumnId = columnOrder.find(columnId => columns[columnId].taskIds.includes(task.id));
+  const tagValue = (task.tags || []).join(', ');
 
   const handleSubmitChecklist = (e) => {
     e.preventDefault();
@@ -48,7 +57,11 @@ export default function TaskModal({
         <div className="modal-header">
           <div className="modal-header-info">
             <span className="modal-id">{task.code}</span>
-            <h2 className="modal-title">{task.title}</h2>
+            <input
+              className="modal-title-input"
+              value={task.title}
+              onChange={e => onUpdateTask(task.id, { title: e.target.value })}
+            />
           </div>
           <div className="modal-header-actions">
             <button className="btn-icon-small danger-hover" onClick={() => onDelete(task.id)} title="Delete">
@@ -209,7 +222,16 @@ export default function TaskModal({
                         }
                       }}
                     />
-                    <button className="btn btn-primary btn-sm" onClick={() => { onAddComment(task.id, newCommentText); setNewCommentText(''); }}>Comment</button>
+                    <button
+                      className="comment-send-btn"
+                      type="button"
+                      onClick={() => { onAddComment(task.id, newCommentText); setNewCommentText(''); }}
+                      disabled={!newCommentText.trim()}
+                      aria-label="Send comment"
+                      title="Send comment"
+                    >
+                      <SendHorizontal size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -220,9 +242,11 @@ export default function TaskModal({
           <aside className="modal-sidebar">
             <div className="property">
               <span className="property-label">Status</span>
-              <span className="property-value">
-                <span className="tag type-label">{columnTitle || 'Unknown'}</span>
-              </span>
+              <Select
+                value={currentColumnId || ''}
+                onChange={val => onMoveTask(task.id, val)}
+                options={statusOptions}
+              />
             </div>
 
             <div className="property">
@@ -270,11 +294,21 @@ export default function TaskModal({
 
             <div className="property">
               <span className="property-label">Tags</span>
-              <div className="tags" style={{ flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                {task.tags.map(tag => (
-                  <span key={tag} className="tag type-label">{tag}</span>
-                ))}
-              </div>
+              <input
+                className="form-input"
+                value={tagValue}
+                onChange={e => onUpdateTask(task.id, {
+                  tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
+                })}
+                placeholder="Bug, Exploit"
+              />
+            </div>
+
+            <div className="property">
+              <span className="property-label">Current list</span>
+              <span className="property-value">
+                <span className="tag type-label">{columnTitle || 'Unknown'}</span>
+              </span>
             </div>
           </aside>
         </div>

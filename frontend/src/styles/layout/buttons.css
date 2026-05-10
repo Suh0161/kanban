@@ -12,6 +12,11 @@
   border: 1px solid transparent;
   outline: none;
 }
+.btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+  pointer-events: none;
+}
 .btn-primary { background-color: var(--accent-color); color: #000; }
 .btn-primary:hover { background-color: var(--accent-color-hover); }
 .btn-outline { background-color: transparent; border-color: var(--border-strong); color: var(--text-primary); }

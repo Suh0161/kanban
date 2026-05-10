@@ -1,0 +1,438 @@
+.backlog-view .workspace-page {
+  gap: 20px;
+}
+
+.backlog-bucket-tabs {
+  flex-wrap: nowrap;
+}
+
+.backlog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 23vw);
+  gap: 18px;
+  align-items: start;
+}
+
+.backlog-board,
+.backlog-sidebar {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.backlog-sidebar {
+  position: sticky;
+  top: 0;
+}
+
+.backlog-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr)) minmax(160px, 0.8fr);
+  gap: 12px;
+}
+
+.backlog-stat {
+  min-height: 86px;
+}
+
+.backlog-alert {
+  min-height: 86px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-card);
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+}
+
+.backlog-alert svg {
+  color: var(--color-orange);
+}
+
+.backlog-alert span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.backlog-alert strong {
+  color: var(--text-primary);
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.backlog-lane {
+  min-width: 0;
+}
+
+.backlog-lane-header {
+  min-height: 58px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.backlog-lane-header h2 {
+  color: var(--text-primary);
+  font-size: 0.94rem;
+  font-weight: 650;
+}
+
+.backlog-lane-header span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.backlog-lane-header strong {
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.backlog-list {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+}
+
+.backlog-issue-row {
+  position: relative;
+  min-height: 112px;
+  padding: 14px 12px 14px 18px;
+  border-radius: var(--radius-md);
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 124px 132px 140px 92px 92px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid transparent;
+}
+
+.backlog-issue-row:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.backlog-issue-accent {
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: var(--radius-full);
+  background-color: var(--text-tertiary);
+}
+
+.backlog-issue-accent.critical { background-color: var(--color-red); }
+.backlog-issue-accent.high { background-color: var(--color-orange); }
+.backlog-issue-accent.medium { background-color: var(--color-yellow); }
+.backlog-issue-accent.low { background-color: var(--color-blue); }
+
+.backlog-issue-main {
+  min-width: 0;
+}
+
+.backlog-issue-title {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.backlog-issue-title:hover {
+  color: var(--accent-color);
+}
+
+.backlog-readiness {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+
+.backlog-readiness span,
+.backlog-readiness em {
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-style: normal;
+}
+
+.backlog-readiness span {
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+}
+
+.backlog-readiness span.ready {
+  color: var(--accent-blue);
+}
+
+.backlog-readiness span.planned {
+  color: var(--color-purple);
+}
+
+.backlog-readiness span.grooming {
+  color: var(--color-orange);
+}
+
+.backlog-readiness em {
+  color: var(--text-secondary);
+  background-color: var(--bg-hover);
+}
+
+.backlog-field {
+  display: grid;
+  gap: 6px;
+}
+
+.backlog-field > span,
+.backlog-issue-meta {
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+}
+
+.backlog-select .custom-select-trigger,
+.backlog-field input {
+  min-height: 32px;
+  width: 100%;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.76rem;
+}
+
+.backlog-field input {
+  padding: 0 9px;
+}
+
+.backlog-select .custom-select-trigger:hover,
+.backlog-field input:hover,
+.backlog-field input:focus {
+  border-color: var(--border-strong);
+  background-color: var(--bg-hover);
+  outline: none;
+}
+
+.backlog-issue-meta,
+.backlog-assignee {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.backlog-issue-meta .workspace-priority {
+  display: none;
+}
+
+.backlog-assignee .avatar,
+.backlog-assignee .workspace-avatar-empty {
+  width: 28px;
+  height: 28px;
+}
+
+.backlog-plan-btn {
+  width: 82px;
+}
+
+.backlog-plan-btn.planned {
+  color: var(--color-purple);
+}
+
+.backlog-empty-lane {
+  min-height: 80px;
+  padding: 18px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.backlog-empty-lane strong {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.backlog-empty-lane span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.backlog-health,
+.backlog-sprint-draft,
+.backlog-workflow,
+.backlog-attention {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+}
+
+.backlog-health > div {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-hover);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+}
+
+.backlog-health span,
+.backlog-workflow span,
+.backlog-attention span,
+.backlog-sprint-draft span,
+.backlog-sprint-draft em {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-style: normal;
+}
+
+.backlog-health strong,
+.backlog-workflow strong,
+.backlog-attention strong {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+}
+
+.backlog-health .workspace-load {
+  grid-column: 1 / -1;
+}
+
+.backlog-sprint-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.backlog-sprint-item > button:first-child {
+  min-height: 66px;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 12px;
+  text-align: left;
+}
+
+.backlog-sprint-item > button:first-child:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.backlog-sprint-item .btn-icon-small {
+  height: 100%;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background-color: transparent;
+}
+
+.backlog-sprint-draft strong {
+  grid-column: 1 / -1;
+  color: var(--text-primary);
+  font-size: 0.84rem;
+}
+
+.backlog-sprint-draft em {
+  text-align: right;
+}
+
+.backlog-workflow div,
+.backlog-attention div {
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-hover);
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.backlog-workflow div {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.backlog-attention svg {
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 1360px) {
+  .backlog-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .backlog-alert {
+    grid-column: span 2;
+  }
+
+  .backlog-issue-row {
+    grid-template-columns: minmax(220px, 1fr) 120px 128px 132px 84px;
+  }
+
+  .backlog-assignee {
+    grid-column: 1 / -1;
+    grid-template-columns: auto auto;
+    justify-content: end;
+  }
+}
+
+@media (max-width: 1100px) {
+  .backlog-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .backlog-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .backlog-bucket-tabs,
+  .backlog-stats {
+    width: 100%;
+    grid-template-columns: 1fr;
+    overflow-x: auto;
+  }
+
+  .backlog-alert {
+    grid-column: auto;
+  }
+
+  .backlog-issue-row {
+    grid-template-columns: 1fr;
+  }
+
+  .backlog-issue-meta,
+  .backlog-assignee {
+    justify-items: start;
+  }
+}
