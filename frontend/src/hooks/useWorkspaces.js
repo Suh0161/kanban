@@ -1,42 +1,32 @@
-import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-
-const DEFAULT_WORKSPACES = [
-  { id: 'trust-and-safety', name: 'Trust & Safety', members: 4 }
-];
+import { useState, useEffect, useCallback } from 'react';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../api/client.js';
 
 export function useWorkspaces() {
-  const [workspaces, setWorkspaces] = useState(() => {
-    const saved = localStorage.getItem('jokel-workspaces');
-    if (saved) return JSON.parse(saved);
-    localStorage.setItem('jokel-workspaces', JSON.stringify(DEFAULT_WORKSPACES));
-    return DEFAULT_WORKSPACES;
-  });
+  const [workspaces, setWorkspaces] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem('jokel-workspaces', JSON.stringify(workspaces));
-  }, [workspaces]);
+    apiGet('/workspaces')
+      .then((data) => setWorkspaces(data))
+      .catch(() => setWorkspaces([]))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const addWorkspace = (name) => {
-    const newWorkspace = {
-      id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + uuidv4().slice(0, 4),
-      name,
-      members: 1
-    };
-    setWorkspaces(prev => [...prev, newWorkspace]);
-    return newWorkspace;
-  };
+  const addWorkspace = useCallback(async (name) => {
+    const ws = await apiPost('/workspaces', { name });
+    setWorkspaces((prev) => [...prev, ws]);
+    return ws;
+  }, []);
 
-  const updateWorkspace = (id, updates) => {
-    setWorkspaces(prev => prev.map(workspace =>
-      workspace.id === id ? { ...workspace, ...updates } : workspace
-    ));
-  };
+  const updateWorkspace = useCallback(async (id, updates) => {
+    const ws = await apiPatch(`/workspaces/${id}`, updates);
+    setWorkspaces((prev) => prev.map((w) => (w.id === id ? ws : w)));
+  }, []);
 
-  const deleteWorkspace = (id) => {
-    setWorkspaces(prev => prev.filter(w => w.id !== id));
-    localStorage.removeItem(`jokel-board-${id}`);
-  };
+  const deleteWorkspace = useCallback(async (id) => {
+    await apiDelete(`/workspaces/${id}`);
+    setWorkspaces((prev) => prev.filter((w) => w.id !== id));
+  }, []);
 
-  return { workspaces, addWorkspace, updateWorkspace, deleteWorkspace };
+  return { workspaces, loading, addWorkspace, updateWorkspace, deleteWorkspace };
 }

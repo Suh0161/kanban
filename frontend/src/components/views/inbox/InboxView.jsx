@@ -1,23 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Archive, CheckCheck, Inbox, ShieldAlert } from 'lucide-react';
+import { Archive, CheckCheck, ClipboardList, ShieldAlert, UserRound } from 'lucide-react';
 import { InboxReportRow, InboxSidebar, InboxStats } from './components/index.js';
 import './css/inbox.css';
-
-const filters = {
-  all: 'All',
-  urgent: 'Urgent',
-  exploit: 'Exploit',
-  harassment: 'Harassment',
-  unassigned: 'Unassigned'
-};
-
-function matchesFilter(task, filter) {
-  if (filter === 'urgent') return task.priority === 'Critical' || task.priority === 'High';
-  if (filter === 'exploit') return task.tags.some(tag => tag.toLowerCase() === 'exploit');
-  if (filter === 'harassment') return task.tags.some(tag => tag.toLowerCase() === 'harassment');
-  if (filter === 'unassigned') return !task.assigneeImg;
-  return true;
-}
 
 export default function InboxView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask }) {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -26,6 +10,36 @@ export default function InboxView({ tasks, columns, columnOrder, onSelectTask, o
     () => tasks.filter(task => task.columnTitle === 'Inbox'),
     [tasks]
   );
+
+  // Build dynamic filters from actual tags in inbox tasks
+  const dynamicFilters = useMemo(() => {
+    const tagCounts = new Map();
+    for (const task of inboxTasks) {
+      for (const tag of task.tags || []) {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      }
+    }
+    const tagFilters = Array.from(tagCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([tag]) => ({ key: tag.toLowerCase().replace(/\s+/g, '-'), label: tag }));
+    return [
+      { key: 'all', label: 'All' },
+      { key: 'urgent', label: 'Urgent' },
+      { key: 'unassigned', label: 'Unassigned' },
+      ...tagFilters,
+    ];
+  }, [inboxTasks]);
+
+  function matchesFilter(task, filter) {
+    if (filter === 'urgent') return task.priority === 'Critical' || task.priority === 'High';
+    if (filter === 'unassigned') return !task.assigneeImg;
+    if (filter === 'all') return true;
+    // Dynamic tag filter
+    const filterLabel = dynamicFilters.find(f => f.key === filter)?.label;
+    if (filterLabel) return task.tags?.some(tag => tag.toLowerCase() === filterLabel.toLowerCase());
+    return true;
+  }
   const visibleTasks = inboxTasks.filter(task => matchesFilter(task, activeFilter));
   const criticalCount = inboxTasks.filter(task => task.priority === 'Critical' || task.priority === 'High').length;
   const unassignedCount = inboxTasks.filter(task => !task.assigneeImg).length;
@@ -44,13 +58,9 @@ export default function InboxView({ tasks, columns, columnOrder, onSelectTask, o
 
   return (
     <section className="workspace-view inbox-view">
-      <div className="workspace-page">
+      <div className="workspace-page mywork-inner-page">
         <div className="workspace-page-header">
-          <div>
-            <span className="workspace-kicker">Intake</span>
-            <h1>Inbox</h1>
-          </div>
-          <div className="workspace-actions">
+          <div className="inbox-actions">
             <button className="btn btn-outline btn-sm" type="button" onClick={() => moveSelected(doneColumnId)} disabled={!selectedIds.length || !doneColumnId}>
               <Archive size={14} /> Archive
             </button>
@@ -62,9 +72,9 @@ export default function InboxView({ tasks, columns, columnOrder, onSelectTask, o
 
         <InboxStats
           items={[
-            { label: 'New reports', value: inboxTasks.length, icon: Inbox },
+            { label: 'New reports', value: inboxTasks.length, icon: ClipboardList },
             { label: 'Urgent', value: criticalCount, icon: ShieldAlert },
-            { label: 'Unassigned', value: unassignedCount, icon: Inbox }
+            { label: 'Unassigned', value: unassignedCount, icon: UserRound }
           ]}
         />
 
@@ -78,7 +88,7 @@ export default function InboxView({ tasks, columns, columnOrder, onSelectTask, o
               <span>{selectedIds.length} selected</span>
             </div>
             <div className="workspace-queue-toolbar inbox-filterbar">
-              {Object.entries(filters).map(([key, label]) => (
+              {dynamicFilters.map(({ key, label }) => (
                 <button key={key} type="button" className={activeFilter === key ? 'active' : ''} onClick={() => setActiveFilter(key)}>
                   {label}
                 </button>
@@ -110,9 +120,6 @@ export default function InboxView({ tasks, columns, columnOrder, onSelectTask, o
 
           <InboxSidebar
             inboxTasks={inboxTasks}
-            visibleTasks={visibleTasks}
-            criticalCount={criticalCount}
-            unassignedCount={unassignedCount}
             triageColumnId={triageColumnId}
             onMoveTask={onMoveTask}
             onSelectTask={onSelectTask}

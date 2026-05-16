@@ -17,11 +17,3 @@ export const isDueToday = (dateStr) => {
     d.getMonth() === today.getMonth() &&
     d.getDate() === today.getDate();
 };
-
-export const TEAM_MEMBERS = [
-  { id: 'user-1', name: 'Chatgpt_niy', avatar: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Felix' },
-  { id: 'user-2', name: 'Sam Lee', avatar: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Milo' },
-  { id: 'user-3', name: 'Jordan Kim', avatar: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Jasper' },
-  { id: 'user-4', name: 'Morgan Park', avatar: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Leo' },
-  { id: 'user-5', name: 'Taylor', avatar: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Maya' },
-];

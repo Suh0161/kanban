@@ -4,6 +4,12 @@
   gap: 12px;
 }
 
+.inbox-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .inbox-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 24vw);

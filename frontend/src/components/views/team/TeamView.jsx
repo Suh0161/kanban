@@ -1,78 +1,78 @@
-import { useMemo, useState } from 'react';
-import { MessageSquare, UserPlus } from 'lucide-react';
-import { TEAM_MEMBERS, isOverdue } from '../../../utils/helpers.js';
+import { useEffect, useMemo, useState } from 'react';
+import { Settings } from 'lucide-react';
 import { TeamCoverage, TeamMemberPanel, TeamStats, TeamWorkload } from './components/index.js';
+import { isOverdue } from '../../../utils/helpers.js';
+import { apiGet } from '../../../api/client.js';
+import { useParams, useNavigate } from 'react-router-dom';
 import './css/team.css';
 
-const focusByMember = {
-  Chatgpt_niy: 'Incident coordination',
-  'Sam Lee': 'Reproduction passes',
-  'Jordan Kim': 'Leak containment',
-  'Morgan Park': 'Player messaging',
-  Taylor: 'Crash investigation'
-};
+function buildMembersFromTasks(tasks, workspaceMembers) {
+  const memberMap = new Map();
+  for (const m of workspaceMembers) {
+    memberMap.set(m.id, {
+      id: m.id,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      avatar: m.avatar || `https://api.dicebear.com/7.x/notionists-neutral/svg?seed=${encodeURIComponent(m.name || m.id)}`,
+      owned: [],
+    });
+  }
 
-function ownerKey(task) {
-  return task.assigneeId || task.assigneeName || task.assigneeImg || 'unassigned';
-}
+  for (const task of tasks) {
+    if (!task.assigneeId) continue;
+    if (!memberMap.has(task.assigneeId)) {
+      memberMap.set(task.assigneeId, {
+        id: task.assigneeId,
+        name: task.assigneeName || 'Unknown',
+        avatar: task.assigneeImg || `https://api.dicebear.com/7.x/notionists-neutral/svg?seed=${encodeURIComponent(task.assigneeId)}`,
+        owned: [],
+      });
+    }
+    memberMap.get(task.assigneeId).owned.push(task);
+  }
 
-function tasksForMember(tasks, member) {
-  return tasks.filter(task =>
-    task.assigneeId === member.id ||
-    task.assigneeName === member.name ||
-    task.assigneeImg === member.avatar ||
-    task.assigneeImg === member.avatarPng
-  );
-}
-
-function buildMembers(tasks) {
-  const known = TEAM_MEMBERS.map(member => {
-    const owned = tasksForMember(tasks, member);
-    const urgent = owned.filter(task => task.priority === 'Critical' || task.priority === 'High').length;
-    const overdue = owned.filter(task => isOverdue(task.dueDate)).length;
-    const comments = owned.reduce((sum, task) => sum + (task.metrics.comments || 0), 0);
-    return {
-      ...member,
-      owned,
-      urgent,
-      overdue,
-      comments,
-      load: Math.min(owned.length * 18 + urgent * 14 + overdue * 12, 100),
-      focus: focusByMember[member.name] || 'Queue coverage',
-      status: overdue > 0 ? 'At risk' : urgent > 0 ? 'Watching' : owned.length > 0 ? 'Active' : 'Available'
-    };
-  });
-
-  const knownTaskIds = new Set(known.flatMap(member => member.owned.map(task => task.id)));
-  const extraOwners = [...new Set(tasks.filter(task => task.assigneeImg && !knownTaskIds.has(task.id)).map(ownerKey))].map((key, index) => {
-    const owned = tasks.filter(task => ownerKey(task) === key);
-    const sample = owned[0];
-    const urgent = owned.filter(task => task.priority === 'Critical' || task.priority === 'High').length;
-    const overdue = owned.filter(task => isOverdue(task.dueDate)).length;
-    return {
-      id: `external-${index}`,
-      name: sample.assigneeName || `Owner ${index + 1}`,
-      avatar: sample.assigneeImg,
-      owned,
-      urgent,
-      overdue,
-      comments: owned.reduce((sum, task) => sum + (task.metrics.comments || 0), 0),
-      load: Math.min(owned.length * 18 + urgent * 14 + overdue * 12, 100),
-      focus: 'Assigned work',
-      status: overdue > 0 ? 'At risk' : urgent > 0 ? 'Watching' : 'Active'
-    };
-  });
-
-  return [...known, ...extraOwners].filter(member => member.owned.length > 0 || TEAM_MEMBERS.some(teamMember => teamMember.id === member.id));
+  return Array.from(memberMap.values()).map(member => {
+    const owned = member.owned;
+    const urgent = owned.filter(t => t.priority === 'Critical' || t.priority === 'High').length;
+    const overdueCount = owned.filter(t => isOverdue(t.dueDate)).length;
+    const totalActiveLoad = Math.max(tasks.length, 1);
+    const load = Math.round((owned.length / totalActiveLoad) * 100);
+    let status = 'Available';
+    if (overdueCount > 0) status = 'At risk';
+    else if (urgent > 0) status = 'Watching';
+    else if (owned.length > 0) status = 'Active';
+    return { ...member, owned, urgent, overdue: overdueCount, load, status };
+  }).sort((a, b) => b.owned.length - a.owned.length);
 }
 
 export default function TeamView({ tasks, onSelectTask }) {
-  const activeTasks = useMemo(() => tasks.filter(task => task.columnTitle !== 'Done'), [tasks]);
-  const members = useMemo(() => buildMembers(activeTasks), [activeTasks]);
-  const [selectedMemberId, setSelectedMemberId] = useState(() => members[0]?.id || null);
-  const selectedMember = members.find(member => member.id === selectedMemberId) || members[0];
-  const unassigned = activeTasks.filter(task => !task.assigneeImg);
-  const overloaded = members.filter(member => member.load >= 70);
+  const { workspaceId } = useParams();
+  const navigate = useNavigate();
+  const [workspaceMembers, setWorkspaceMembers] = useState([]);
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    apiGet(`/workspaces/${workspaceId}/members`)
+      .then(data => setWorkspaceMembers(Array.isArray(data) ? data : []))
+      .catch(() => setWorkspaceMembers([]));
+  }, [workspaceId]);
+
+  const activeTasks = useMemo(
+    () => tasks.filter(task => task.columnTitle !== 'Done'),
+    [tasks]
+  );
+
+  const members = useMemo(
+    () => buildMembersFromTasks(activeTasks, workspaceMembers),
+    [activeTasks, workspaceMembers]
+  );
+
+  const effectiveSelectedId = selectedMemberId ?? members[0]?.id ?? null;
+  const selectedMember = members.find(m => m.id === effectiveSelectedId) || members[0];
+  const unassigned = activeTasks.filter(task => !task.assigneeId);
+  const overloaded = members.filter(member => member.load >= 50);
   const urgent = activeTasks.filter(task => task.priority === 'Critical' || task.priority === 'High');
 
   return (
@@ -83,25 +83,42 @@ export default function TeamView({ tasks, onSelectTask }) {
             <span className="workspace-kicker">People</span>
             <h1>Team</h1>
           </div>
-          <div className="workspace-actions">
-            <button className="btn btn-outline btn-sm" type="button"><MessageSquare size={14} /> Message</button>
-            <button className="btn btn-primary btn-sm" type="button"><UserPlus size={14} /> Invite</button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => navigate(`/workspace/${workspaceId}`)}
+            title="Manage members in Settings"
+          >
+            <Settings size={14} /> Manage members
+          </button>
         </div>
 
         <TeamStats
           items={[
-            { label: 'Active owners', value: members.filter(member => member.owned.length > 0).length },
-            { label: 'Assigned issues', value: activeTasks.length - unassigned.length },
+            { label: 'Members', value: members.length },
+            { label: 'Assigned', value: activeTasks.length - unassigned.length },
             { label: 'Unassigned', value: unassigned.length },
-            { label: 'Overloaded', value: overloaded.length }
+            { label: 'Overloaded', value: overloaded.length },
           ]}
         />
 
         <div className="team-layout">
-          <TeamWorkload members={members} selectedMemberId={selectedMember?.id} onSelectMember={setSelectedMemberId} />
-          <TeamMemberPanel member={selectedMember} unassigned={unassigned} onSelectTask={onSelectTask} />
-          <TeamCoverage tasks={activeTasks} urgent={urgent} unassigned={unassigned} onSelectTask={onSelectTask} />
+          <TeamWorkload
+            members={members}
+            selectedMemberId={selectedMember?.id}
+            onSelectMember={setSelectedMemberId}
+          />
+          <TeamMemberPanel
+            member={selectedMember}
+            unassigned={unassigned}
+            onSelectTask={onSelectTask}
+          />
+          <TeamCoverage
+            tasks={activeTasks}
+            urgent={urgent}
+            unassigned={unassigned}
+            onSelectTask={onSelectTask}
+          />
         </div>
       </div>
     </section>

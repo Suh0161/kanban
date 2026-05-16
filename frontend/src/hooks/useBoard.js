@@ -1,41 +1,57 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { initialData } from '../constants.js';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { apiGetBoard, apiPost, apiPatch, apiDelete, getApiBase } from '../api/client.js';
+
+function getToken() {
+  return localStorage.getItem('jokel-token');
+}
 
 export function useBoard(workspaceId) {
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem(`jokel-board-${workspaceId}`);
-    if (saved) return JSON.parse(saved);
-    
-    // For trust-and-safety we load our dummy data. For new workspaces, create empty columns.
-    if (workspaceId === 'trust-and-safety') {
-      return initialData;
-    }
-    
-    return {
-      tasks: {},
-      columns: {
-        'col-1': { id: 'col-1', title: 'To Do', taskIds: [] },
-        'col-2': { id: 'col-2', title: 'In Progress', taskIds: [] },
-        'col-3': { id: 'col-3', title: 'Done', taskIds: [] },
-      },
-      columnOrder: ['col-1', 'col-2', 'col-3']
-    };
-  });
+  const [data, setData] = useState({ tasks: {}, columns: {}, columnOrder: [], customFields: [], labels: [] });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [allAvailableTags, setAllAvailableTags] = useState([]);
+
+  const cancelledRef = useRef(false);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem(`jokel-board-${workspaceId}`, JSON.stringify(data));
-  }, [data, workspaceId]);
+    let cancelled = false;
+    async function load() {
+      if (!workspaceId) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+      if (!cancelled) {
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const boardData = await apiGetBoard(workspaceId);
+        if (!cancelled) {
+          setData(boardData || { tasks: {}, columns: {}, columnOrder: [], customFields: [], labels: [] });
+          // Compute all available tags from unfiltered data
+          const tags = new Set();
+          Object.values(boardData?.tasks || {}).forEach(t => t.tags?.forEach(tag => tags.add(tag)));
+          setAllAvailableTags(Array.from(tags));
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Failed to fetch board');
+          setLoading(false);
+        }
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [workspaceId]);
 
-  const allTags = useMemo(() => {
-    const tags = new Set();
-    Object.values(data.tasks).forEach(t => t.tags.forEach(tag => tags.add(tag)));
-    return Array.from(tags);
-  }, [data.tasks]);
+  const allTags = allAvailableTags;
 
   const getColumnForTask = useCallback((taskId) => {
     for (const colId of data.columnOrder) {
-      if (data.columns[colId].taskIds.includes(taskId)) return data.columns[colId];
+      if (data.columns[colId]?.taskIds?.includes(taskId)) return data.columns[colId];
     }
     return null;
   }, [data]);
@@ -46,12 +62,12 @@ export function useBoard(workspaceId) {
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    // Column reorder
     if (type === 'COLUMN') {
       const newColumnOrder = Array.from(data.columnOrder);
-      newColumnOrder.splice(source.index, 1);
-      newColumnOrder.splice(destination.index, 0, data.columnOrder[source.index]);
+      const [moved] = newColumnOrder.splice(source.index, 1);
+      newColumnOrder.splice(destination.index, 0, moved);
       setData(prev => ({ ...prev, columnOrder: newColumnOrder }));
+      apiPost('/columns/reorder', { columnOrder: newColumnOrder }).catch(() => {});
       return;
     }
 
@@ -83,110 +99,144 @@ export function useBoard(workspaceId) {
         [newFinish.id]: newFinish,
       }
     }));
+
+    apiPatch(`/tasks/${draggableId}/move`, { targetColumnId: destination.droppableId }).catch(() => {});
   }, [data.columns, data.columnOrder]);
 
-  const createTask = (columnId, { title, priority, tags, description, dueDate, assigneeId, assigneeName, assigneeImg }) => {
-    const newTaskId = uuidv4();
+  const createTask = async (columnId, { title, priority, tags, description, dueDate, assigneeId, assigneeName, assigneeImg }) => {
     const parsedTags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : (tags || []);
-    const newTask = {
-      id: newTaskId,
-      title,
-      priority,
-      tags: parsedTags,
-      metrics: { comments: 0, attachments: 0 },
-      code: `SKY-${Math.floor(1000 + Math.random() * 9000)}`,
-      description: description || '',
-      assigneeId: assigneeId || null,
-      assigneeImg: assigneeImg || null,
-      assigneeName: assigneeName || null,
-      comments: [],
-      attachments: [],
-      checklists: [],
-      dueDate: dueDate || null
-    };
-    const column = data.columns[columnId];
-    setData(prev => ({
-      ...prev,
-      tasks: { ...prev.tasks, [newTaskId]: newTask },
-      columns: { ...prev.columns, [columnId]: { ...column, taskIds: [...column.taskIds, newTaskId] } }
-    }));
-    return newTaskId;
-  };
-
-  const addColumn = (title) => {
-    const colId = `col-${uuidv4()}`;
-    setData(prev => ({
-      ...prev,
-      columns: { ...prev.columns, [colId]: { id: colId, title: title.trim(), taskIds: [] } },
-      columnOrder: [...prev.columnOrder, colId]
-    }));
-  };
-
-  const deleteColumn = (colId) => {
-    const col = data.columns[colId];
-    const newTasks = { ...data.tasks };
-    col.taskIds.forEach(tid => {
-      const inOtherCol = Object.values(data.columns).some(c => c.id !== colId && c.taskIds.includes(tid));
-      if (!inOtherCol) delete newTasks[tid];
+    const newTask = await apiPost('/tasks', {
+      columnId, title, priority, tags: parsedTags, description, dueDate, assigneeId
     });
-    const newColumns = { ...data.columns };
-    delete newColumns[colId];
+    
+    // Update all available tags if new tags were added
+    if (parsedTags.length > 0) {
+      setAllAvailableTags(prev => {
+        const newTags = new Set(prev);
+        parsedTags.forEach(tag => newTags.add(tag));
+        return Array.from(newTags);
+      });
+    }
+    
     setData(prev => ({
       ...prev,
-      tasks: newTasks,
-      columns: newColumns,
-      columnOrder: prev.columnOrder.filter(id => id !== colId)
+      tasks: {
+        ...prev.tasks,
+        [newTask.id]: {
+          ...newTask,
+          assigneeName: assigneeName || newTask.assigneeName || null,
+          assigneeImg: assigneeImg || newTask.assigneeImg || null,
+          metrics: newTask.metrics || { comments: 0, attachments: 0 }
+        }
+      },
+      columns: {
+        ...prev.columns,
+        [columnId]: { ...prev.columns[columnId], taskIds: [...prev.columns[columnId].taskIds, newTask.id] }
+      }
+    }));
+    return newTask.id;
+  };
+
+  const addColumn = async (title) => {
+    const newCol = await apiPost('/columns', { workspaceId, title });
+    setData(prev => ({
+      ...prev,
+      columns: { ...prev.columns, [newCol.id]: { ...newCol, taskIds: newCol.taskIds || [] } },
+      columnOrder: [...prev.columnOrder, newCol.id]
     }));
   };
 
-  const clearColumn = (colId) => {
-    const col = data.columns[colId];
-    const newTasks = { ...data.tasks };
-    col.taskIds.forEach(tid => {
-      const inOtherCol = Object.values(data.columns).some(c => c.id !== colId && c.taskIds.includes(tid));
-      if (!inOtherCol) delete newTasks[tid];
+  const deleteColumn = async (colId) => {
+    await apiDelete(`/columns/${colId}`);
+    setData(prev => {
+      const col = prev.columns[colId];
+      const newTasks = { ...prev.tasks };
+      col?.taskIds?.forEach(tid => {
+        const inOtherCol = Object.values(prev.columns).some(c => c.id !== colId && c.taskIds.includes(tid));
+        if (!inOtherCol) delete newTasks[tid];
+      });
+      const newColumns = { ...prev.columns };
+      delete newColumns[colId];
+      return {
+        ...prev,
+        tasks: newTasks,
+        columns: newColumns,
+        columnOrder: prev.columnOrder.filter(id => id !== colId)
+      };
     });
-    setData(prev => ({
-      ...prev,
-      tasks: newTasks,
-      columns: { ...prev.columns, [colId]: { ...col, taskIds: [] } }
-    }));
   };
 
-  const renameColumn = (colId, title) => {
+  const clearColumn = async (colId) => {
+    const col = data.columns[colId];
+    if (!col) return;
+    await Promise.all(col.taskIds.map(tid => apiDelete(`/tasks/${tid}`)));
+    setData(prev => {
+      const newTasks = { ...prev.tasks };
+      col.taskIds.forEach(tid => {
+        const inOtherCol = Object.values(prev.columns).some(c => c.id !== colId && c.taskIds.includes(tid));
+        if (!inOtherCol) delete newTasks[tid];
+      });
+      return {
+        ...prev,
+        tasks: newTasks,
+        columns: { ...prev.columns, [colId]: { ...prev.columns[colId], taskIds: [] } }
+      };
+    });
+  };
+
+  const renameColumn = async (colId, title) => {
     if (!title.trim()) return;
+    await apiPatch(`/columns/${colId}`, { title });
     setData(prev => ({
       ...prev,
       columns: { ...prev.columns, [colId]: { ...prev.columns[colId], title: title.trim() } }
     }));
   };
 
-  const deleteTask = (taskId) => {
-    const newTasks = { ...data.tasks };
-    delete newTasks[taskId];
-    const newColumns = { ...data.columns };
-    Object.keys(newColumns).forEach(cid => {
-      newColumns[cid] = { ...newColumns[cid], taskIds: newColumns[cid].taskIds.filter(tid => tid !== taskId) };
+  const deleteTask = async (taskId) => {
+    await apiDelete(`/tasks/${taskId}`);
+    setData(prev => {
+      const newTasks = { ...prev.tasks };
+      delete newTasks[taskId];
+      const newColumns = { ...prev.columns };
+      Object.keys(newColumns).forEach(cid => {
+        newColumns[cid] = { ...newColumns[cid], taskIds: newColumns[cid].taskIds.filter(tid => tid !== taskId) };
+      });
+      return { ...prev, tasks: newTasks, columns: newColumns };
     });
-    setData(prev => ({ ...prev, tasks: newTasks, columns: newColumns }));
   };
 
-  const updateTask = (taskId, updates) => {
+  const updateTask = async (taskId, updates) => {
+    await apiPatch(`/tasks/${taskId}`, updates);
+    
+    // Update all available tags if tags were updated
+    if (updates.tags) {
+      setAllAvailableTags(prev => {
+        const newTags = new Set(prev);
+        updates.tags.forEach(tag => newTags.add(tag));
+        return Array.from(newTags);
+      });
+    }
+    
     setData(prev => ({
       ...prev,
       tasks: { ...prev.tasks, [taskId]: { ...prev.tasks[taskId], ...updates } }
     }));
   };
 
-  const moveTask = (taskId, targetColumnId) => {
-    if (!data.tasks[taskId] || !data.columns[targetColumnId]) return;
+  const updateWorkspaceLabels = useCallback(async (labels) => {
+    await apiPatch(`/workspaces/${workspaceId}`, { labels });
+    setData(prev => ({ ...prev, labels }));
+  }, [workspaceId]);
 
+  const moveTask = async (taskId, targetColumnId) => {
+    if (!data.tasks[taskId] || !data.columns[targetColumnId]) return;
+    await apiPatch(`/tasks/${taskId}/move`, { targetColumnId });
     setData(prev => {
       const sourceColumnId = Object.keys(prev.columns).find(colId =>
         prev.columns[colId].taskIds.includes(taskId)
       );
       if (!sourceColumnId || sourceColumnId === targetColumnId) return prev;
-
       return {
         ...prev,
         columns: {
@@ -204,15 +254,9 @@ export function useBoard(workspaceId) {
     });
   };
 
-  const addComment = (taskId, text) => {
+  const addComment = async (taskId, text) => {
     if (!text.trim()) return;
-    const comment = {
-      id: `c-${uuidv4()}`,
-      text: text.trim(),
-      author: 'Chatgpt_niy',
-      avatar: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Felix',
-      time: 'Just now'
-    };
+    const comment = await apiPost(`/tasks/${taskId}/comments`, { text });
     setData(prev => {
       const task = prev.tasks[taskId];
       return {
@@ -229,8 +273,8 @@ export function useBoard(workspaceId) {
     });
   };
 
-  const addChecklist = (taskId, title) => {
-    const checklist = { id: `cl-${uuidv4()}`, title, items: [] };
+  const addChecklist = async (taskId, title) => {
+    const checklist = await apiPost(`/tasks/${taskId}/checklists`, { title });
     setData(prev => ({
       ...prev,
       tasks: {
@@ -240,8 +284,8 @@ export function useBoard(workspaceId) {
     }));
   };
 
-  const addChecklistItem = (taskId, checklistId, text) => {
-    const item = { id: `ci-${uuidv4()}`, text, done: false };
+  const addChecklistItem = async (taskId, checklistId, text, targetCount = 1) => {
+    const item = await apiPost(`/checklists/${checklistId}/items`, { text, targetCount: targetCount > 1 ? targetCount : undefined });
     setData(prev => ({
       ...prev,
       tasks: {
@@ -256,7 +300,13 @@ export function useBoard(workspaceId) {
     }));
   };
 
-  const toggleChecklistItem = (taskId, checklistId, itemId) => {
+  const toggleChecklistItem = async (taskId, checklistId, itemId) => {
+    const task = data.tasks[taskId];
+    const checklist = task?.checklists?.find(cl => cl.id === checklistId);
+    const item = checklist?.items?.find(i => i.id === itemId);
+    if (!item) return;
+    const done = !item.done;
+    const result = await apiPatch(`/checklist-items/${itemId}`, { done });
     setData(prev => ({
       ...prev,
       tasks: {
@@ -265,7 +315,7 @@ export function useBoard(workspaceId) {
           ...prev.tasks[taskId],
           checklists: prev.tasks[taskId].checklists.map(cl =>
             cl.id === checklistId
-              ? { ...cl, items: cl.items.map(item => item.id === itemId ? { ...item, done: !item.done } : item) }
+              ? { ...cl, items: cl.items.map(i => i.id === itemId ? { ...i, ...result } : i) }
               : cl
           )
         }
@@ -273,7 +323,26 @@ export function useBoard(workspaceId) {
     }));
   };
 
-  const deleteChecklist = (taskId, checklistId) => {
+  const updateChecklistItemCount = async (taskId, checklistId, itemId, currentCount) => {
+    const result = await apiPatch(`/checklist-items/${itemId}`, { currentCount });
+    setData(prev => ({
+      ...prev,
+      tasks: {
+        ...prev.tasks,
+        [taskId]: {
+          ...prev.tasks[taskId],
+          checklists: prev.tasks[taskId].checklists.map(cl =>
+            cl.id === checklistId
+              ? { ...cl, items: cl.items.map(i => i.id === itemId ? { ...i, ...result } : i) }
+              : cl
+          )
+        }
+      }
+    }));
+  };
+
+  const deleteChecklist = async (taskId, checklistId) => {
+    await apiDelete(`/checklists/${checklistId}`);
     setData(prev => ({
       ...prev,
       tasks: {
@@ -281,6 +350,24 @@ export function useBoard(workspaceId) {
         [taskId]: {
           ...prev.tasks[taskId],
           checklists: prev.tasks[taskId].checklists.filter(cl => cl.id !== checklistId)
+        }
+      }
+    }));
+  };
+
+  const deleteChecklistItem = async (taskId, checklistId, itemId) => {
+    await apiDelete(`/checklist-items/${itemId}`);
+    setData(prev => ({
+      ...prev,
+      tasks: {
+        ...prev.tasks,
+        [taskId]: {
+          ...prev.tasks[taskId],
+          checklists: prev.tasks[taskId].checklists.map(cl =>
+            cl.id === checklistId
+              ? { ...cl, items: cl.items.filter(i => i.id !== itemId) }
+              : cl
+          )
         }
       }
     }));
@@ -303,11 +390,11 @@ export function useBoard(workspaceId) {
     });
   };
 
-  const deleteAttachment = (taskId, attachmentId) => {
+  const deleteAttachment = async (taskId, attachmentId) => {
+    await apiDelete(`/attachments/${attachmentId}`);
     setData(prev => {
       const task = prev.tasks[taskId];
       if (!task.attachments) return prev;
-      
       const newAttachments = task.attachments.filter(a => a.id !== attachmentId);
       return {
         ...prev,
@@ -323,43 +410,89 @@ export function useBoard(workspaceId) {
     });
   };
 
-  const handleFileSelect = (files, taskId) => {
+  const handleFileSelect = async (files, taskId) => {
     if (!files || !files.length) return;
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        addAttachment(taskId, {
-          id: `a-${uuidv4()}`,
-          type: 'image',
-          url: e.target.result,
-          name: file.name
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+    const fileArray = Array.from(files).filter(file => file.type.startsWith('image/'));
+    for (const file of fileArray) {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${getApiBase()}/tasks/${taskId}/attachments`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+        body: formData
+      });
+      if (!res.ok) continue;
+      const attachment = await res.json();
+      setData(prev => {
+        const task = prev.tasks[taskId];
+        return {
+          ...prev,
+          tasks: {
+            ...prev.tasks,
+            [taskId]: {
+              ...task,
+              attachments: [...(task.attachments || []), attachment],
+              metrics: { ...task.metrics, attachments: (task.metrics.attachments || 0) + 1 }
+            }
+          }
+        };
+      });
+    }
   };
 
+  const refetch = useCallback(async (filters = {}) => {
+    if (!workspaceId) return;
+
+    setIsSearching(true);
+    setError(null);
+
+    try {
+      const boardData = await apiGetBoard(workspaceId, filters);
+      if (!cancelledRef.current) {
+        setData(boardData || { tasks: {}, columns: {}, columnOrder: [] });
+      }
+    } catch (err) {
+      if (!cancelledRef.current) {
+        setError(err.message || 'Failed to fetch board');
+      }
+    } finally {
+      if (!cancelledRef.current) {
+        setIsSearching(false);
+      }
+    }
+  }, [workspaceId]);
+
+  const searchBoard = useCallback((searchQuery, filters = {}) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      refetch({ ...filters, search: searchQuery || undefined });
+    }, 300);
+  }, [refetch]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    return () => { cancelledRef.current = true; };
+  }, [workspaceId]);
+
   return {
-    data,
-    allTags,
-    getColumnForTask,
-    onDragEnd,
-    createTask,
-    addColumn,
-    deleteColumn,
-    clearColumn,
-    renameColumn,
-    deleteTask,
-    updateTask,
-    moveTask,
-    addComment,
-    addAttachment,
-    handleFileSelect,
-    addChecklist,
-    addChecklistItem,
-    toggleChecklistItem,
-    deleteChecklist,
+    data, loading, error, isSearching, refetch, searchBoard,
+    allTags, getColumnForTask, onDragEnd,
+    createTask, addColumn, deleteColumn, clearColumn, renameColumn,
+    deleteTask, updateTask, moveTask,
+    addComment, addAttachment, handleFileSelect,
+    addChecklist, addChecklistItem, toggleChecklistItem, updateChecklistItemCount, deleteChecklist, deleteChecklistItem,
     deleteAttachment,
+    updateWorkspaceLabels,
   };
 }

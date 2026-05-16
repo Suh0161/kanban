@@ -67,6 +67,7 @@ frontend/src/
     board/                # Kanban board, columns, cards, composers, menus
     layout/               # Sidebar, Topbar, WorkspaceLayout
     modals/               # TaskModal, NewIssueModal, Lightbox
+    onboarding/           # Guided tour tooltip components, storage, and styles
     ui/                   # Shared UI primitives: Select, FilterPanel, UserDropdown
     views/
       index.js            # Barrel exports for all views
@@ -119,6 +120,18 @@ frontend/src/
 
 ## Architecture
 
+### Engineering Playbook
+
+Jokel is currently a client-side product, but the codebase is organized with production engineering habits in mind:
+
+- **Product engineering** - Views map to real planning workflows: board, backlog, personal queue, intake, analytics, team, and settings.
+- **Frontend engineering** - Feature folders, custom hooks, colocated view CSS, and small reusable UI primitives.
+- **System design** - Board and workspace data are shaped so they can later move from `localStorage` to an API without rewriting every view.
+- **SystemOps and DevOps** - Runtime assumptions, commands, and environment expectations should stay explicit in docs.
+- **CI/CD readiness** - A future pipeline should install dependencies, run lint/tests, build production assets, and publish immutable artifacts.
+- **QA and release discipline** - Verify drag-drop, filters, modals, settings, onboarding, sidebar collapse, and responsive layouts before shipping.
+- **Security posture** - No frontend secrets, defensive persisted-data reads, and demo-scoped attachment storage.
+
 ### State Management
 
 State is managed through custom hooks rather than Context API or external state libraries:
@@ -131,7 +144,7 @@ State is managed through custom hooks rather than Context API or external state 
 
 The app uses a single dark theme. Colors live in `styles/base/variables.css` and should be consumed through CSS custom properties.
 
-Global/shell styles stay in `src/styles/`. View-specific styles live beside the view feature when that view has its own surface, for example `components/views/mytasks/css/mytasks.css`, and are imported by the view.
+Global/shell styles stay in `src/styles/`. View-specific styles live beside the view feature when that view has its own surface, for example `components/views/mytasks/css/mytasks.css`, and are imported by the view. Feature-level UI that is not a workspace view, such as onboarding, keeps its own `components/`, `css/`, and `storage/` folders under that feature.
 
 ### Routing
 

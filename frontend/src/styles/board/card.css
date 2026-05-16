@@ -1,46 +1,30 @@
+/* ============================================================
+   Task card — Trello density, Taiga semantics, monochrome theme
+   ============================================================ */
+
 .card {
+  position: relative;
   background-color: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 12px;
+  padding: 8px 10px;
   cursor: grab;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
   text-align: left;
-  box-shadow: var(--shadow-subtle);
   user-select: none;
 }
-.card:hover { border-color: var(--border-strong); background-color: var(--bg-card-hover); }
-.card:active { cursor: grabbing; }
-.card.is-dragging { border-color: var(--border-focus); box-shadow: var(--shadow-hover); opacity: 0.9; }
-
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
-.card-id { font-size: 0.7rem; color: var(--text-tertiary); font-family: var(--font-mono); }
-.card-title { font-size: 0.85rem; font-weight: 400; line-height: 1.5; margin-bottom: 12px; color: var(--text-primary); }
-
-.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.tag {
-  font-size: 0.65rem;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.card:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-card-hover);
+  box-shadow: var(--shadow-hover);
 }
-.tag::before { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; }
-.tag.priority-High::before { background-color: var(--color-orange); }
-.tag.priority-Critical::before { background-color: var(--color-red); }
-.tag.priority-Medium::before { background-color: var(--color-yellow); }
-.tag.priority-Low::before { background-color: var(--color-blue); }
-.tag.type-label { border-color: transparent; background-color: var(--bg-hover); }
-.tag.type-label::before { display: none; }
+.card:active { cursor: grabbing; }
+.card.is-dragging { border-color: var(--border-focus); box-shadow: var(--shadow-hover); opacity: 0.92; }
 
+/* ---- Cover (full-bleed image at top) ---- */
 .card-cover {
-  margin: -12px -12px 10px -12px;
-  width: calc(100% + 24px);
-  height: 140px;
+  margin: -8px -10px 8px -10px;
+  height: 96px;
   overflow: hidden;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
@@ -51,8 +35,45 @@
   display: block;
 }
 
-.card-due {
+/* ---- Label strips (Trello-style) ---- */
+.card-label-strips {
   display: flex;
+  gap: 4px;
+  margin: -2px 0 8px;
+  flex-wrap: wrap;
+}
+.card-label-strip {
+  height: 6px;
+  flex: 1;
+  min-width: 28px;
+  max-width: 56px;
+  border-radius: 3px;
+  opacity: 0.9;
+  transition: height 0.15s, opacity 0.15s;
+}
+.card:hover .card-label-strip { height: 8px; opacity: 1; }
+
+/* ---- Header: code + due ---- */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  min-height: 14px;
+}
+.card-id {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-due {
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 0.65rem;
@@ -60,43 +81,36 @@
   background-color: var(--bg-hover);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+}
+.card-due.due-today {
+  color: var(--color-orange);
+  background-color: rgba(255, 159, 10, 0.10);
 }
 .card-due.overdue {
   color: var(--color-red);
-  background-color: rgba(255, 69, 58, 0.1);
+  background-color: rgba(255, 69, 58, 0.10);
 }
 
-.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
-.card-metrics { display: flex; gap: 12px; }
-.metric { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--text-tertiary); }
-.metric.active { color: var(--text-secondary); }
-
-.card-assignees { display: flex; }
-.avatar.tiny { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--bg-card); margin-left: -6px; object-fit: cover; }
-.avatar.tiny:first-child { margin-left: 0; }
-
-/* Due today color */
-.card-due.due-today {
-  color: var(--color-orange);
-  background-color: rgba(255, 159, 10, 0.1);
-}
-
-/* Checklist done metric */
-.metric.active.done { color: #30d158; }
-
+/* ---- Title row ---- */
 .card-title-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  min-height: 24px;
+}
+.card-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-primary);
+  word-break: break-word;
 }
 
-/* Quick-edit hover button */
 .card-quick-edit {
-  width: 24px;
-  height: 24px;
-  background-color: transparent;
+  width: 22px;
+  height: 22px;
+  background: transparent;
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text-tertiary);
@@ -105,11 +119,96 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: all 0.15s;
+  transition: opacity 0.15s, background-color 0.15s, color 0.15s;
   flex-shrink: 0;
-  margin-top: -2px;
+  margin-top: -1px;
 }
 .card-quick-edit.visible { opacity: 1; }
+.card:hover .card-quick-edit { opacity: 1; }
 .card-quick-edit:hover { background-color: var(--bg-hover); color: var(--text-primary); }
 
+/* ---- Tags row ---- */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.tag {
+  font-size: 0.65rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.4;
+}
+.tag.type-label {
+  border-color: transparent;
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+}
 
+/* ---- Footer: single-line metric strip + assignees ---- */
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  gap: 8px;
+}
+.card-metrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.metric svg { flex-shrink: 0; }
+.metric.active { color: var(--text-secondary); }
+.metric.active.done { color: var(--color-green, #30d158); }
+
+/* Assignee avatars */
+.card-assignees {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.avatar.tiny {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+  margin-left: -6px;
+  object-fit: cover;
+}
+.avatar.tiny:first-child { margin-left: 0; }
+.card:hover .avatar.tiny { border-color: var(--bg-card-hover); }
+
+.assignee-extra {
+  width: 22px;
+  height: 22px;
+  margin-left: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.card:hover .assignee-extra { border-color: var(--bg-card-hover); }

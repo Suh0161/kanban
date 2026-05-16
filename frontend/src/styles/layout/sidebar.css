@@ -107,6 +107,7 @@
   font: inherit;
   font-size: 0.85rem;
   font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
   min-height: 34px;
   transition: gap 0.3s cubic-bezier(0.32, 0.72, 0, 1), padding 0.3s cubic-bezier(0.32, 0.72, 0, 1), background-color 0.15s ease, color 0.15s ease;
@@ -343,4 +344,40 @@
 
 .user-dropdown-logout svg {
   color: var(--color-red);
+}
+
+.sidebar-api-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-api-link:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.sidebar-api-link svg {
+  flex-shrink: 0;
+}
+
+.sidebar.is-collapsed .sidebar-api-link {
+  justify-content: center;
+  padding: 6px 0;
+  gap: 0;
+}
+
+.sidebar.is-collapsed .sidebar-api-link span {
+  display: none;
 }

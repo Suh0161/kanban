@@ -1,14 +1,17 @@
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+
 .backlog-view .workspace-page {
   gap: 20px;
 }
 
 .backlog-bucket-tabs {
   flex-wrap: nowrap;
+  gap: 2px;
 }
 
 .backlog-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 23vw);
+  grid-template-columns: minmax(0, 1fr) 280px;
   gap: 18px;
   align-items: start;
 }
@@ -16,7 +19,7 @@
 .backlog-board,
 .backlog-sidebar {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -25,49 +28,75 @@
   top: 0;
 }
 
+/* ─── Stats bar ──────────────────────────────────────────────────────────── */
+
 .backlog-stats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(140px, 1fr)) minmax(160px, 0.8fr);
-  gap: 12px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.backlog-stat {
-  min-height: 86px;
-}
-
-.backlog-alert {
-  min-height: 86px;
+.backlog-stat-card {
+  min-height: 80px;
   padding: 14px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background-color: var(--bg-card);
   display: grid;
   align-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  text-align: left;
+  cursor: default;
+  transition: border-color 0.12s, background-color 0.12s;
 }
 
-.backlog-alert svg {
-  color: var(--color-orange);
+.backlog-stat-card.is-clickable {
+  cursor: pointer;
 }
 
-.backlog-alert span {
+.backlog-stat-card.is-clickable:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-hover);
+}
+
+.backlog-stat-card.is-active {
+  border-color: color-mix(in srgb, var(--accent-blue) 40%, var(--border-subtle));
+  background-color: color-mix(in srgb, var(--accent-blue) 8%, var(--bg-card));
+}
+
+.backlog-stat-icon {
+  color: var(--text-tertiary);
+}
+
+.backlog-stat-card.accent-blue .backlog-stat-icon,
+.backlog-stat-card.accent-blue.is-active .backlog-stat-value { color: var(--accent-blue); }
+.backlog-stat-card.accent-orange .backlog-stat-icon,
+.backlog-stat-card.accent-orange.is-active .backlog-stat-value { color: var(--color-orange); }
+.backlog-stat-card.accent-red .backlog-stat-icon,
+.backlog-stat-card.accent-red.is-active .backlog-stat-value { color: var(--color-red); }
+.backlog-stat-card.accent-purple .backlog-stat-icon,
+.backlog-stat-card.accent-purple.is-active .backlog-stat-value { color: var(--color-purple); }
+
+.backlog-stat-label {
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
 }
 
-.backlog-alert strong {
+.backlog-stat-value {
   color: var(--text-primary);
-  font-size: 1.7rem;
+  font-size: 1.6rem;
   line-height: 1;
 }
+
+/* ─── Lane ───────────────────────────────────────────────────────────────── */
 
 .backlog-lane {
   min-width: 0;
 }
 
 .backlog-lane-header {
-  min-height: 58px;
-  padding: 14px 16px;
+  min-height: 52px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
@@ -77,46 +106,54 @@
 
 .backlog-lane-header h2 {
   color: var(--text-primary);
-  font-size: 0.94rem;
+  font-size: 0.9rem;
   font-weight: 650;
 }
 
 .backlog-lane-header span {
   display: block;
-  margin-top: 4px;
-  color: var(--text-secondary);
-  font-size: 0.78rem;
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
 }
 
 .backlog-lane-header strong {
-  min-width: 28px;
-  height: 24px;
-  padding: 0 8px;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 7px;
   border-radius: var(--radius-full);
   background-color: var(--bg-hover);
   color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+}
+
+.backlog-lane-header strong.zero {
+  color: var(--text-tertiary);
+  background-color: transparent;
+  border: 1px solid var(--border-subtle);
 }
 
 .backlog-list {
   display: grid;
-  gap: 4px;
-  padding: 8px;
+  gap: 2px;
+  padding: 6px;
 }
+
+/* ─── Issue row ──────────────────────────────────────────────────────────── */
 
 .backlog-issue-row {
   position: relative;
-  min-height: 112px;
-  padding: 14px 12px 14px 18px;
+  padding: 12px 12px 12px 18px;
   border-radius: var(--radius-md);
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) 124px 132px 140px 92px 92px;
+  grid-template-columns: minmax(260px, 1fr) 120px 130px 136px minmax(140px, auto);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border: 1px solid transparent;
+  transition: background-color 0.1s, border-color 0.1s;
 }
 
 .backlog-issue-row:hover {
@@ -124,23 +161,67 @@
   border-color: var(--border-subtle);
 }
 
+.backlog-issue-row.is-overdue {
+  background-color: color-mix(in srgb, var(--color-red) 4%, transparent);
+}
+
+.backlog-issue-row.is-overdue:hover {
+  background-color: color-mix(in srgb, var(--color-red) 7%, var(--bg-hover));
+  border-color: color-mix(in srgb, var(--color-red) 30%, var(--border-subtle));
+}
+
 .backlog-issue-accent {
   position: absolute;
   left: 0;
-  top: 14px;
-  bottom: 14px;
+  top: 12px;
+  bottom: 12px;
   width: 3px;
   border-radius: var(--radius-full);
   background-color: var(--text-tertiary);
 }
 
 .backlog-issue-accent.critical { background-color: var(--color-red); }
-.backlog-issue-accent.high { background-color: var(--color-orange); }
-.backlog-issue-accent.medium { background-color: var(--color-yellow); }
-.backlog-issue-accent.low { background-color: var(--color-blue); }
+.backlog-issue-accent.high     { background-color: var(--color-orange); }
+.backlog-issue-accent.medium   { background-color: var(--color-yellow); }
+.backlog-issue-accent.low      { background-color: var(--color-blue); }
 
 .backlog-issue-main {
   min-width: 0;
+}
+
+.backlog-issue-meta-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+
+.backlog-code {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.backlog-col-name {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+}
+
+.backlog-col-name::before {
+  content: '·';
+  margin-right: 6px;
+  opacity: 0.5;
+}
+
+.backlog-tag {
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-hover);
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+  border: 1px solid var(--border-subtle);
 }
 
 .backlog-issue-title {
@@ -152,9 +233,13 @@
   cursor: pointer;
   display: block;
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 650;
+  font-size: 0.875rem;
+  font-weight: 600;
   text-align: left;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .backlog-issue-title:hover {
@@ -164,142 +249,201 @@
 .backlog-readiness {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
-  margin-top: 9px;
+  margin-top: 7px;
 }
 
 .backlog-readiness span,
 .backlog-readiness em {
-  min-height: 22px;
-  padding: 0 8px;
+  min-height: 20px;
+  padding: 0 7px;
   border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.7rem;
+  gap: 4px;
+  font-size: 0.68rem;
   font-style: normal;
 }
 
 .backlog-readiness span {
   border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   background-color: var(--bg-card);
 }
 
-.backlog-readiness span.ready {
-  color: var(--accent-blue);
-}
+.backlog-readiness span.ready   { color: var(--accent-blue); }
+.backlog-readiness span.planned { color: var(--color-purple); }
+.backlog-readiness span.grooming { color: var(--color-orange); }
 
-.backlog-readiness span.planned {
-  color: var(--color-purple);
-}
-
-.backlog-readiness span.grooming {
-  color: var(--color-orange);
+.backlog-readiness span.overdue-badge {
+  color: var(--color-red);
+  border-color: color-mix(in srgb, var(--color-red) 30%, var(--border-subtle));
+  background-color: color-mix(in srgb, var(--color-red) 8%, var(--bg-card));
 }
 
 .backlog-readiness em {
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   background-color: var(--bg-hover);
+  border: 1px solid transparent;
 }
+
+/* ─── Fields ─────────────────────────────────────────────────────────────── */
 
 .backlog-field {
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
-.backlog-field > span,
-.backlog-issue-meta {
+.backlog-field > span {
   color: var(--text-tertiary);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
 .backlog-select .custom-select-trigger,
-.backlog-field input {
-  min-height: 32px;
+.backlog-field input[type="date"] {
+  min-height: 30px;
   width: 100%;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background-color: var(--bg-card);
   color: var(--text-primary);
   font: inherit;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
 }
 
-.backlog-field input {
-  padding: 0 9px;
+.backlog-field input[type="date"] {
+  padding: 0 8px;
 }
 
 .backlog-select .custom-select-trigger:hover,
-.backlog-field input:hover,
-.backlog-field input:focus {
+.backlog-field input[type="date"]:hover,
+.backlog-field input[type="date"]:focus {
   border-color: var(--border-strong);
   background-color: var(--bg-hover);
   outline: none;
 }
 
-.backlog-issue-meta,
-.backlog-assignee {
+.backlog-field input[type="date"].overdue-input {
+  border-color: color-mix(in srgb, var(--color-red) 40%, var(--border-subtle));
+  color: var(--color-red);
+}
+
+/* ─── Actions column ─────────────────────────────────────────────────────── */
+
+.backlog-issue-actions {
   display: grid;
+  gap: 8px;
   justify-items: end;
-  gap: 7px;
 }
 
-.backlog-issue-meta .workspace-priority {
-  display: none;
+.backlog-metrics {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.backlog-assignee .avatar,
-.backlog-assignee .workspace-avatar-empty {
-  width: 28px;
-  height: 28px;
+.backlog-due {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.backlog-due.overdue {
+  color: var(--color-red);
+  font-weight: 600;
+}
+
+.backlog-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+}
+
+.backlog-row-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backlog-avatar {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
 }
 
 .backlog-plan-btn {
-  width: 82px;
+  min-width: 80px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .backlog-plan-btn.planned {
   color: var(--color-purple);
+  border-color: color-mix(in srgb, var(--color-purple) 30%, var(--border-subtle));
 }
 
+/* ─── Empty states ───────────────────────────────────────────────────────── */
+
 .backlog-empty-lane {
-  min-height: 80px;
-  padding: 18px;
+  min-height: 72px;
+  padding: 16px;
   border: 1px dashed var(--border-subtle);
   border-radius: var(--radius-md);
   display: grid;
   align-content: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .backlog-empty-lane strong {
-  color: var(--text-primary);
-  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
 }
 
 .backlog-empty-lane span {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
 }
+
+.backlog-empty-board {
+  padding: 48px 24px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  display: grid;
+  gap: 6px;
+}
+
+.backlog-empty-board strong {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.backlog-empty-board span {
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+}
+
+/* ─── Sidebar panels ─────────────────────────────────────────────────────── */
 
 .backlog-health,
 .backlog-sprint-draft,
 .backlog-workflow,
 .backlog-attention {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   padding: 8px;
 }
 
 .backlog-health > div {
-  padding: 12px;
+  padding: 10px 12px;
   border-radius: var(--radius-md);
   background-color: var(--bg-hover);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 9px;
+  gap: 8px;
 }
 
 .backlog-health span,
@@ -308,7 +452,7 @@
 .backlog-sprint-draft span,
 .backlog-sprint-draft em {
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-style: normal;
 }
 
@@ -316,7 +460,7 @@
 .backlog-workflow strong,
 .backlog-attention strong {
   color: var(--text-primary);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
 }
 
 .backlog-health .workspace-load {
@@ -325,14 +469,14 @@
 
 .backlog-sprint-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 32px;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  gap: 4px;
   align-items: stretch;
 }
 
 .backlog-sprint-item > button:first-child {
-  min-height: 66px;
-  padding: 12px;
+  min-height: 60px;
+  padding: 10px 12px;
   border: 0;
   border-radius: var(--radius-md);
   background-color: var(--bg-hover);
@@ -340,7 +484,7 @@
   cursor: pointer;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 5px 12px;
+  gap: 4px 10px;
   text-align: left;
 }
 
@@ -358,54 +502,94 @@
 .backlog-sprint-draft strong {
   grid-column: 1 / -1;
   color: var(--text-primary);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
 }
 
 .backlog-sprint-draft em {
   text-align: right;
 }
 
-.backlog-workflow div,
-.backlog-attention div {
-  min-height: 48px;
-  padding: 10px 12px;
+/* Workflow mix */
+.backlog-workflow div {
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-hover);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.1s;
+}
+
+.backlog-workflow div.muted {
+  opacity: 0.45;
+}
+
+/* Attention */
+.backlog-attention-row {
+  min-height: 40px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   background-color: var(--bg-hover);
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.1s, border-color 0.1s;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
 }
 
-.backlog-workflow div {
-  grid-template-columns: minmax(0, 1fr) auto;
+.backlog-attention-row:hover {
+  background-color: var(--bg-card-hover);
+  border-color: var(--border-subtle);
+}
+
+.backlog-attention-row.is-active {
+  border-color: color-mix(in srgb, var(--accent-blue) 35%, var(--border-subtle));
+  background-color: color-mix(in srgb, var(--accent-blue) 8%, var(--bg-hover));
+}
+
+.backlog-attention-row.no-action {
+  cursor: default;
+}
+
+.backlog-attention-row.no-action:hover {
+  background-color: var(--bg-hover);
+  border-color: transparent;
 }
 
 .backlog-attention svg {
   color: var(--text-tertiary);
 }
 
-@media (max-width: 1360px) {
+.accent-red  { color: var(--color-red) !important; }
+.accent-blue { color: var(--accent-blue) !important; }
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 1400px) {
   .backlog-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .backlog-alert {
-    grid-column: span 2;
-  }
-
-  .backlog-issue-row {
-    grid-template-columns: minmax(220px, 1fr) 120px 128px 132px 84px;
-  }
-
-  .backlog-assignee {
-    grid-column: 1 / -1;
-    grid-template-columns: auto auto;
-    justify-content: end;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
+  .backlog-layout {
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+
+  .backlog-issue-row {
+    grid-template-columns: minmax(220px, 1fr) 110px 120px 128px auto;
+  }
+}
+
+@media (max-width: 1060px) {
   .backlog-layout {
     grid-template-columns: 1fr;
   }
@@ -413,26 +597,26 @@
   .backlog-sidebar {
     position: static;
   }
+
+  .backlog-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
-@media (max-width: 760px) {
-  .backlog-bucket-tabs,
+@media (max-width: 800px) {
   .backlog-stats {
-    width: 100%;
-    grid-template-columns: 1fr;
-    overflow-x: auto;
-  }
-
-  .backlog-alert {
-    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .backlog-issue-row {
     grid-template-columns: 1fr;
   }
 
-  .backlog-issue-meta,
-  .backlog-assignee {
+  .backlog-issue-actions {
     justify-items: start;
+  }
+
+  .backlog-metrics {
+    flex-wrap: wrap;
   }
 }

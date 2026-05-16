@@ -1,12 +1,8 @@
-import { useState, useCallback } from 'react';
-
-const DEMO_USER = {
-  email: 'demo@demo.com',
-  name: 'Demo User',
-  avatar: 'https://api.dicebear.com/7.x/notionists-neutral/png?seed=DemoUser',
-};
+import { useState, useCallback, useEffect } from 'react';
+import { apiFetch } from '../api/client.js';
 
 const STORAGE_KEY = 'jokel-auth';
+const TOKEN_KEY = 'jokel-token';
 
 function getStoredUser() {
   try {
@@ -19,20 +15,55 @@ function getStoredUser() {
 
 export function useAuth() {
   const [user, setUser] = useState(getStoredUser);
+  const [loading, setLoading] = useState(() => !!localStorage.getItem(TOKEN_KEY));
 
-  const login = useCallback((email, password) => {
-    if (email === 'demo@demo.com' && password === 'Demo123') {
-      setUser(DEMO_USER);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEMO_USER));
+  // On mount, validate token
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    apiFetch('/auth/me')
+      .then((data) => {
+        setUser(data.user);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
+      })
+      .catch(() => {
+        setUser(null);
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(STORAGE_KEY);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const login = useCallback(async (email, password) => {
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      setUser(data.user);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
+      localStorage.setItem(TOKEN_KEY, data.token);
       return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
     }
-    return { success: false, error: 'Invalid email or password' };
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   }, []);
 
-  return { user, isLoggedIn: !!user, login, logout };
+  const updateProfile = useCallback(async (updates) => {
+    const data = await apiFetch('/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+    setUser(data.user);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
+    return data.user;
+  }, []);
+
+  return { user, isLoggedIn: !!user, loading, login, logout, updateProfile };
 }

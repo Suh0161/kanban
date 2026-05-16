@@ -1,0 +1,67 @@
+.mywork-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mywork-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 28px 0;
+  flex-shrink: 0;
+}
+
+.mywork-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.mywork-tab:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.mywork-tab.active {
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+  border-color: var(--border-subtle);
+  font-weight: 600;
+}
+
+.mywork-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-red);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* The inner workspace-view sections handle their own scroll & padding */
+.mywork-view > .workspace-view {
+  flex: 1;
+  min-height: 0;
+}
+
+.mywork-inner-page {
+  width: 100%;
+  display: grid;
+  gap: 20px;
+}

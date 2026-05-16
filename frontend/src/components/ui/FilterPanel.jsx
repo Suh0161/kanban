@@ -7,26 +7,37 @@ export default function FilterPanel({
   isOpen, onToggle,
   filterPriorities, onTogglePriority,
   filterTags, onToggleTag,
-  allTags, activeFilterCount
+  allTags, activeFilterCount,
+  buttonClassName = 'btn btn-outline'
 }) {
   const panelRef = useRef(null);
   useClickOutside(panelRef, () => { if (isOpen) onToggle(false); });
 
   return (
-    <div style={{ position: 'relative' }} ref={panelRef}>
+    <div className="filter-popover" ref={panelRef}>
       <button
-        className={`btn btn-outline ${activeFilterCount > 0 ? 'btn-active' : ''}`}
+        type="button"
+        className={`${buttonClassName} ${activeFilterCount > 0 ? 'is-active' : ''}`}
         onClick={() => onToggle(!isOpen)}
+        aria-expanded={isOpen}
       >
-        <Filter size={14} /> Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
+        <Filter size={14} />
+        <span>Filter</span>
+        {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
       </button>
       {isOpen && (
         <div className="filter-panel">
+          <div className="filter-panel-header">
+            <div>
+              <strong>Board filters</strong>
+              <span>{activeFilterCount > 0 ? `${activeFilterCount} active` : 'No active filters'}</span>
+            </div>
+          </div>
           <div className="filter-section">
             <h4>Priority</h4>
             <div className="filter-options">
               {PRIORITIES.map(p => (
-                <label key={p} className="filter-option">
+                <label key={p} className="filter-option filter-pill">
                   <input
                     type="checkbox"
                     checked={filterPriorities.includes(p)}
@@ -41,9 +52,9 @@ export default function FilterPanel({
           {allTags.length > 0 && (
             <div className="filter-section">
               <h4>Tags</h4>
-              <div className="filter-options">
+              <div className="filter-options filter-options-tags">
                 {allTags.map(tag => (
-                  <label key={tag} className="filter-option">
+                  <label key={tag} className="filter-option filter-chip">
                     <input
                       type="checkbox"
                       checked={filterTags.includes(tag)}
@@ -56,8 +67,15 @@ export default function FilterPanel({
             </div>
           )}
           <div className="filter-actions">
-            <button className="btn btn-outline btn-sm" onClick={() => { onTogglePriority(null, true); onToggleTag(null, true); }}>Clear</button>
-            <button className="btn btn-primary btn-sm" onClick={() => onToggle(false)}>Done</button>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => { onTogglePriority(null, true); onToggleTag(null, true); }}
+              disabled={activeFilterCount === 0}
+            >
+              Clear
+            </button>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => onToggle(false)}>Done</button>
           </div>
         </div>
       )}

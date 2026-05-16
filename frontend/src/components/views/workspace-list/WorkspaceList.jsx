@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, Plus, X, ArrowRight, Users, Bell, Search, Sparkles } from 'lucide-react';
+import { Layers, Plus, X, ArrowRight, Users, Search, Sparkles } from 'lucide-react';
 import { useWorkspaces } from '../../../hooks/useWorkspaces.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { UserDropdown } from '../../ui';
@@ -27,10 +27,10 @@ export default function WorkspaceList() {
     w.name.toLowerCase().includes(query.toLowerCase())
   );
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    const newWs = addWorkspace(newName.trim());
+    const newWs = await addWorkspace(newName.trim());
     navigate(`/workspace/${newWs.id}`);
   };
 
@@ -58,9 +58,6 @@ export default function WorkspaceList() {
         </div>
 
         <div className="wl-nav-actions">
-          <button className="wl-nav-btn">
-            <Bell size={16} />
-          </button>
           <UserDropdown user={user} onLogout={() => navigate('/')} />
         </div>
       </nav>
@@ -96,14 +93,16 @@ export default function WorkspaceList() {
                 <div className="wl-card-avatar">
                   {initials(ws.name)}
                 </div>
-                <div className="wl-card-menu">⋯</div>
               </div>
 
               <div className="wl-card-body">
                 <h3 className="wl-card-name">{ws.name}</h3>
+                {ws.description && (
+                  <p className="wl-card-desc">{ws.description}</p>
+                )}
                 <div className="wl-card-meta">
                   <Users size={13} />
-                  <span>{ws.members || 1} member{ws.members !== 1 ? 's' : ''}</span>
+                  <span>{ws.members ?? 1} member{(ws.members ?? 1) !== 1 ? 's' : ''}</span>
                 </div>
               </div>
 

@@ -89,6 +89,7 @@
   top: calc(100% + 4px);
   left: 0;
   width: 100%;
+  min-width: 120px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);

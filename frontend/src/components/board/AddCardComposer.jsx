@@ -59,8 +59,8 @@ export default function AddCardComposer({
         />
       </div>
       <div className="composer-actions">
-        <button className="btn btn-primary" onClick={() => onSubmit(columnId)}>Add card</button>
-        <button className="btn-icon-small" onClick={onClose}><X size={16} /></button>
+        <button className="btn btn-primary btn-sm" onClick={() => onSubmit(columnId)}>Add card</button>
+        <button className="btn-icon-small" onClick={onClose}><X size={14} /></button>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 .attachments-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
   margin-bottom: 12px;
 }
 .attachment-thumb {
@@ -10,7 +10,7 @@
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   background-color: var(--bg-hover);
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 1;
   cursor: zoom-in;
   transition: border-color 0.15s;
 }
@@ -62,14 +62,14 @@
 .attachment-dropzone {
   border: 2px dashed var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: 12px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 8px;
   color: var(--text-tertiary);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
   transition: all 0.15s;
 }

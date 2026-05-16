@@ -1,46 +1,124 @@
+.filter-popover {
+  position: relative;
+}
+
 .filter-panel {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   right: 0;
   background-color: var(--bg-card);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-dropdown);
   z-index: 100;
-  width: 240px;
-  padding: 16px;
+  width: 292px;
+  padding: 0;
+  overflow: hidden;
   animation: slideDown 0.15s ease-out;
 }
-.filter-section { margin-bottom: 16px; }
+
+.filter-panel-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.filter-panel-header div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filter-panel-header strong {
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.filter-panel-header span {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.filter-section {
+  padding: 12px 14px 0;
+  margin-bottom: 12px;
+}
+
 .filter-section:last-of-type { margin-bottom: 0; }
 .filter-section h4 {
   font-size: 0.75rem;
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   font-weight: 600;
 }
 .filter-options {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
+
+.filter-options-tags {
+  max-height: 112px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
 .filter-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
   font-size: 0.8rem;
   color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
 }
+
+.filter-option:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.filter-option:has(input[type="checkbox"]:checked) {
+  border-color: color-mix(in srgb, var(--accent-blue) 22%, var(--border-subtle));
+  background-color: color-mix(in srgb, var(--accent-blue) 10%, var(--bg-hover));
+  color: var(--text-primary);
+}
+
 .filter-option input[type="checkbox"] {
-  accent-color: var(--accent-blue);
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
+  margin: 0;
+  appearance: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  background-color: var(--bg-app);
   cursor: pointer;
 }
+
+.filter-option input[type="checkbox"]:checked {
+  border-color: var(--accent-blue);
+  background-color: var(--accent-blue);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-blue) 22%, transparent);
+}
+
+.filter-pill {
+  flex: 1 1 calc(50% - 6px);
+}
+
+.filter-chip {
+  min-height: 28px;
+  padding: 0 9px;
+  background-color: color-mix(in srgb, var(--bg-hover) 46%, transparent);
+}
+
 .filter-option .dot {
   width: 8px;
   height: 8px;
@@ -55,7 +133,8 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 16px;
-  padding-top: 12px;
+  margin-top: 12px;
+  padding: 10px 14px;
   border-top: 1px solid var(--border-subtle);
+  background-color: color-mix(in srgb, var(--bg-hover) 42%, transparent);
 }

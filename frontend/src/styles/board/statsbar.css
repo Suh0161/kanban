@@ -1,0 +1,35 @@
+.board-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow-x: auto;
+}
+.board-stats-bar .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.board-stats-bar .stat-value {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.board-stats-bar .stat-hot {
+  color: var(--color-red);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.board-stats-bar .stat-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border-strong);
+}

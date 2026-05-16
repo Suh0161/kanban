@@ -4,7 +4,11 @@ import { AnalyticsBarPanel, AnalyticsHealth, AnalyticsRiskList, AnalyticsStats }
 import { isOverdue } from '../../../utils/helpers.js';
 import './css/analytics.css';
 
-const ranges = ['7 days', '30 days', 'Quarter'];
+const ranges = [
+  { label: '7 days', days: 7 },
+  { label: '30 days', days: 30 },
+  { label: 'All time', days: null },
+];
 const priorities = ['Critical', 'High', 'Medium', 'Low'];
 
 function percent(part, whole) {
@@ -21,8 +25,14 @@ function riskScore(task) {
 }
 
 export default function AnalyticsView({ tasks, onSelectTask }) {
-  const [range, setRange] = useState('7 days');
-  const activeTasks = useMemo(() => tasks.filter(task => task.columnTitle !== 'Done'), [tasks]);
+  const [rangeDays, setRangeDays] = useState(7);
+  const activeTasks = useMemo(() => {
+    const open = tasks.filter(task => task.columnTitle !== 'Done');
+    if (!rangeDays) return open;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - rangeDays);
+    return open.filter(task => !task.created_at || new Date(task.created_at) >= cutoff);
+  }, [tasks, rangeDays]);
   const urgent = activeTasks.filter(task => task.priority === 'Critical' || task.priority === 'High');
   const overdue = activeTasks.filter(task => isOverdue(task.dueDate));
   const unassigned = activeTasks.filter(task => !task.assigneeImg);
@@ -56,9 +66,9 @@ export default function AnalyticsView({ tasks, onSelectTask }) {
             <h1>Analytics</h1>
           </div>
           <div className="workspace-segmented" aria-label="Analytics range">
-            {ranges.map(option => (
-              <button key={option} type="button" className={range === option ? 'active' : ''} onClick={() => setRange(option)}>
-                {option}
+            {ranges.map(({ label, days }) => (
+              <button key={label} type="button" className={rangeDays === days ? 'active' : ''} onClick={() => setRangeDays(days)}>
+                {label}
               </button>
             ))}
           </div>
@@ -66,7 +76,7 @@ export default function AnalyticsView({ tasks, onSelectTask }) {
 
         <AnalyticsStats
           items={[
-            { label: 'Active issues', value: activeTasks.length, meta: `${range} board window`, icon: ShieldAlert },
+            { label: 'Active issues', value: activeTasks.length, meta: rangeDays ? `Last ${rangeDays} days` : 'All time', icon: ShieldAlert },
             { label: 'Urgent', value: urgent.length, meta: 'Critical and high', icon: AlertTriangle },
             { label: 'Overdue', value: overdue.length, meta: 'Past due date', icon: Clock3 },
             { label: 'Unassigned', value: unassigned.length, meta: 'Needs owner', icon: UsersRound },

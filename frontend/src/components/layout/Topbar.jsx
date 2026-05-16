@@ -1,4 +1,4 @@
-import { Search, X, Plus, ChevronRight, Lock } from 'lucide-react';
+import { Search, X, Plus, ChevronRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import FilterPanel from '../ui/FilterPanel.jsx';
 
@@ -11,29 +11,29 @@ export default function Topbar({
   filterPriorities, onTogglePriority,
   filterTags, onToggleTag,
   allTags, activeFilterCount,
-  onNewIssue
+  onNewIssue,
+  isSearching,
+  onlineUsers
 }) {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <div className="breadcrumbs">
+        <div className="breadcrumbs" data-onboarding="workspace-switch">
           <Link to="/workspace" className="breadcrumb-link">Workspaces</Link>
-          <ChevronRight size={14} />
-          <span>{workspaceName}</span>
+          <ChevronRight size={14} className="breadcrumb-sep" />
+          <span className="breadcrumb-current">{workspaceName}</span>
           {!isBoardView && (
             <>
-              <ChevronRight size={14} />
-              <span>{activeViewTitle}</span>
+              <ChevronRight size={14} className="breadcrumb-sep" />
+              <span className="breadcrumb-current">{activeViewTitle}</span>
             </>
           )}
         </div>
-        <div className="divider"></div>
-        <button className="btn btn-icon-small"><Lock size={14} /></button>
       </div>
       <div className="topbar-right">
         {isBoardView && (
-          <>
-            <div className="search-bar">
+          <div className="topbar-board-tools" data-onboarding="topbar-board-tools">
+            <div className="topbar-search">
               <Search size={14} className="text-tertiary" />
               <input
                 type="text"
@@ -41,8 +41,19 @@ export default function Topbar({
                 value={searchQuery}
                 onChange={e => onSearchChange(e.target.value)}
               />
-              {searchQuery && (
-                <button className="btn-icon-small" onClick={() => onSearchChange('')} style={{ padding: 0 }}>
+              {!searchQuery && !isSearching && (
+                <kbd className="topbar-search-kbd">Ctrl+K</kbd>
+              )}
+              {isSearching && (
+                <Loader2 size={14} className="topbar-search-spinner" />
+              )}
+              {searchQuery && !isSearching && (
+                <button
+                  type="button"
+                  className="topbar-search-clear"
+                  onClick={() => onSearchChange('')}
+                  aria-label="Clear search"
+                >
                   <X size={14} />
                 </button>
               )}
@@ -57,11 +68,29 @@ export default function Topbar({
               onToggleTag={onToggleTag}
               allTags={allTags}
               activeFilterCount={activeFilterCount}
+              buttonClassName="topbar-filter-button"
             />
-          </>
+          </div>
         )}
 
-        <button className="btn btn-primary" onClick={onNewIssue}>
+        {onlineUsers && onlineUsers.length > 0 && (
+          <div className="topbar-presence">
+            {onlineUsers.slice(0, 3).map(user => (
+              <img
+                key={user.userId}
+                src={user.avatar || `https://api.dicebear.com/7.x/notionists-neutral/png?seed=${encodeURIComponent(user.name || user.userId)}`}
+                alt={user.name || user.userId}
+                className="topbar-presence-avatar"
+                title={user.name || user.userId}
+              />
+            ))}
+            {onlineUsers.length > 3 && (
+              <span className="topbar-presence-count">+{onlineUsers.length - 3}</span>
+            )}
+          </div>
+        )}
+
+        <button type="button" className="btn btn-primary" data-onboarding="new-issue" onClick={onNewIssue}>
           <Plus size={14} /> New Issue
         </button>
       </div>

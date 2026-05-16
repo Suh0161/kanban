@@ -1,22 +1,10 @@
 import { useMemo, useState } from 'react';
-import { CalendarDays, CheckCircle2, Clock3, Flame, ListFilter, MessageSquare } from 'lucide-react';
+import { CheckCircle2, Clock3, Flame, ListFilter } from 'lucide-react';
 import { MyTaskRow, MyTasksFocus, MyTasksSidebar, MyTasksStats } from './components/index.js';
 import { isOverdue } from '../../../utils/helpers.js';
 import './css/mytasks.css';
 
-const queueLabels = {
-  open: 'Open',
-  urgent: 'Urgent',
-  watching: 'Watching',
-  done: 'Done'
-};
-
-const priorityRank = {
-  Critical: 0,
-  High: 1,
-  Medium: 2,
-  Low: 3
-};
+const priorityRank = { Critical: 0, High: 1, Medium: 2, Low: 3 };
 
 function sortPersonalQueue(a, b) {
   const priorityDiff = (priorityRank[a.priority] ?? 4) - (priorityRank[b.priority] ?? 4);
@@ -27,53 +15,64 @@ function sortPersonalQueue(a, b) {
   return a.code.localeCompare(b.code);
 }
 
-export default function MyTasksView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask }) {
+export default function MyTasksView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask, user }) {
   const [queue, setQueue] = useState('open');
-  const assigned = useMemo(
-    () => tasks.filter(task => task.assigneeImg && task.columnTitle !== 'Done').sort(sortPersonalQueue),
+
+  // Tasks assigned to the current user (by id if available, fallback to any assigned)
+  const assigned = useMemo(() => {
+    const open = tasks.filter(t => t.columnTitle !== 'Done');
+    if (user?.id) {
+      const mine = open.filter(t => t.assigneeId === user.id);
+      // Fallback: if nothing matches by id, show all assigned (demo mode)
+      return (mine.length > 0 ? mine : open.filter(t => t.assigneeImg)).sort(sortPersonalQueue);
+    }
+    return open.filter(t => t.assigneeImg).sort(sortPersonalQueue);
+  }, [tasks, user]);
+
+  const urgent = useMemo(
+    () => assigned.filter(t => t.priority === 'Critical' || t.priority === 'High'),
+    [assigned]
+  );
+  const overdueList = useMemo(
+    () => assigned.filter(t => isOverdue(t.dueDate)),
+    [assigned]
+  );
+  const done = useMemo(
+    () => tasks.filter(t => t.columnTitle === 'Done').sort(sortPersonalQueue),
     [tasks]
   );
-  const watching = useMemo(
-    () => tasks.filter(task => task.metrics.comments >= 4 && task.columnTitle !== 'Done').sort(sortPersonalQueue),
-    [tasks]
-  );
-  const done = tasks.filter(task => task.columnTitle === 'Done').sort(sortPersonalQueue);
-  const urgent = assigned.filter(task => task.priority === 'Critical' || task.priority === 'High');
-  const overdue = assigned.filter(task => isOverdue(task.dueDate));
-  const discussionVolume = assigned.reduce((sum, task) => sum + task.metrics.comments, 0);
-  const doneColumnId = columnOrder.find(columnId => columns[columnId]?.title.toLowerCase() === 'done');
+
+  const doneColumnId = columnOrder.find(id => columns[id]?.title.toLowerCase() === 'done');
+
+  const stats = [
+    { key: 'open',    label: 'Assigned',  value: assigned.length,    icon: ListFilter,   accent: null },
+    { key: 'urgent',  label: 'Urgent',    value: urgent.length,      icon: Flame,        accent: 'orange' },
+    { key: 'overdue', label: 'Overdue',   value: overdueList.length, icon: Clock3,       accent: 'red' },
+    { key: 'done',    label: 'Done',      value: done.length,        icon: CheckCircle2, accent: 'blue' },
+  ];
+
+  const queueLabels = {
+    open: 'Open',
+    urgent: 'Urgent',
+    overdue: 'Overdue',
+    done: 'Done',
+  };
 
   const visibleTasks = {
     open: assigned,
     urgent,
-    watching,
-    done
-  }[queue];
+    overdue: overdueList,
+    done,
+  }[queue] ?? assigned;
 
   return (
     <section className="workspace-view my-tasks-view">
-      <div className="workspace-page">
-        <div className="workspace-page-header">
-          <div>
-            <span className="workspace-kicker">Personal queue</span>
-            <h1>My Tasks</h1>
-          </div>
-          <div className="workspace-segmented mytasks-tabs" aria-label="Task view">
-            {Object.entries(queueLabels).map(([key, label]) => (
-              <button key={key} type="button" className={queue === key ? 'active' : ''} onClick={() => setQueue(key)}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="workspace-page mywork-inner-page">
 
         <MyTasksStats
-          items={[
-            { label: 'Assigned', value: assigned.length, icon: ListFilter },
-            { label: 'Urgent', value: urgent.length, icon: Flame },
-            { label: 'Overdue', value: overdue.length, icon: Clock3 },
-            { label: 'Discussions', value: discussionVolume, icon: MessageSquare }
-          ]}
+          items={stats}
+          activeQueue={queue}
+          onQueueClick={setQueue}
         />
 
         <div className="mytasks-layout">
@@ -81,9 +80,15 @@ export default function MyTasksView({ tasks, columns, columnOrder, onSelectTask,
             <div className="workspace-panel-header">
               <div>
                 <h2>{queueLabels[queue]} work</h2>
-                <span>{queue === 'done' ? 'Completed cards from this workspace' : 'Sorted by urgency, date, and board state'}</span>
+                <span>
+                  {queue === 'done'
+                    ? 'Completed cards from this workspace'
+                    : queue === 'overdue'
+                      ? 'Past due date — needs attention'
+                      : 'Sorted by urgency, date, and board state'}
+                </span>
               </div>
-              <span>{visibleTasks.length} shown</span>
+              <span className="mytasks-count">{visibleTasks.length} shown</span>
             </div>
             <div className="mytasks-list">
               {visibleTasks.map(task => (
@@ -101,7 +106,13 @@ export default function MyTasksView({ tasks, columns, columnOrder, onSelectTask,
               {visibleTasks.length === 0 && (
                 <div className="workspace-empty-state">
                   <strong>No tasks here</strong>
-                  <span>{queue === 'done' ? 'Completed cards will show once work moves to Done.' : 'This queue is clear for now.'}</span>
+                  <span>
+                    {queue === 'done'
+                      ? 'Completed cards will appear once work moves to Done.'
+                      : queue === 'overdue'
+                        ? 'Nothing overdue — great work.'
+                        : 'This queue is clear for now.'}
+                  </span>
                 </div>
               )}
             </div>
@@ -110,19 +121,13 @@ export default function MyTasksView({ tasks, columns, columnOrder, onSelectTask,
           <MyTasksSidebar
             assigned={assigned}
             urgent={urgent}
-            overdue={overdue}
-            watching={watching}
+            overdue={overdueList}
+            done={done}
             onSelectTask={onSelectTask}
           />
         </div>
 
-        <MyTasksFocus
-          items={[
-            { time: '09:30', title: 'Review intake and exploit reports', meta: 'Inbox and Triage', icon: CalendarDays },
-            { time: '12:00', title: 'Patch decision window', meta: 'Critical incidents', icon: Flame },
-            { time: '16:15', title: 'Community follow-up', meta: 'Player safety response', icon: CheckCircle2 }
-          ]}
-        />
+        <MyTasksFocus assigned={assigned} onSelectTask={onSelectTask} />
       </div>
     </section>
   );

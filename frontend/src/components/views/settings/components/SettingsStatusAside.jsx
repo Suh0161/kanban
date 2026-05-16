@@ -1,32 +1,32 @@
-import { Activity, Bell, CheckCircle2, KeyRound, ShieldCheck } from 'lucide-react';
+import { Activity, CheckCircle2, ShieldCheck } from 'lucide-react';
 
-export default function SettingsStatusAside({ visibility, emailDigests, hasChanges }) {
+export default function SettingsStatusAside({ hasChanges }) {
   return (
-    <aside className="workspace-panel workspace-settings-aside">
-      <div className="workspace-panel-header compact">
-        <h2>Workspace status</h2>
-        <ShieldCheck size={16} />
+    <aside className="settings-sidebar-card">
+      <div className="settings-sidebar-header">
+        <ShieldCheck size={18} />
+        <h2 className="settings-sidebar-title">Workspace status</h2>
       </div>
-      <div className="workspace-settings-status">
-        <div className="compact">
-          <CheckCircle2 size={16} />
-          <span>Configuration</span>
-          <strong>Healthy</strong>
+      <div className="settings-status-list">
+        <div className="settings-status-item">
+          <div className="settings-status-icon healthy">
+            <CheckCircle2 size={16} />
+          </div>
+          <div className="settings-status-content">
+            <span className="settings-status-label">Configuration</span>
+            <span className="settings-status-value">Healthy</span>
+          </div>
         </div>
-        <div className="compact">
-          <KeyRound size={16} />
-          <span>Access policy</span>
-          <strong>{visibility}</strong>
-        </div>
-        <div className="compact">
-          <Bell size={16} />
-          <span>Notifications</span>
-          <strong>{emailDigests ? 'Enabled' : 'Limited'}</strong>
-        </div>
-        <div className="settings-activity">
-          <Activity size={16} />
-          <span>Recent admin activity</span>
-          <strong>{hasChanges ? 'Draft changes pending' : 'Settings are up to date'}</strong>
+        <div className="settings-status-item">
+          <div className="settings-status-icon">
+            <Activity size={16} />
+          </div>
+          <div className="settings-status-content">
+            <span className="settings-status-label">Unsaved changes</span>
+            <span className="settings-status-value" style={{ color: hasChanges ? 'var(--color-orange)' : 'var(--text-secondary)' }}>
+              {hasChanges ? 'Draft changes pending' : 'All saved'}
+            </span>
+          </div>
         </div>
       </div>
     </aside>

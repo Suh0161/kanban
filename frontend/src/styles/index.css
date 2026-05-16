@@ -10,9 +10,28 @@
 @import './board/card.css';
 @import './board/composer.css';
 @import './board/menu.css';
+@import './board/contextmenu.css';
 @import './board/filter.css';
 @import './modals/modal.css';
 @import './modals/lightbox.css';
 @import './modals/attachments.css';
 @import './modals/comments.css';
 @import './modals/forms.css';
+@import './board/statsbar.css';
+
+.app-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-app);
+}
+
+.app-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}

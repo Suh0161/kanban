@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webhooks · Jokel API</title>
+  <meta name="description" content="Real-time event notifications with HMAC-SHA256 signatures." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect x='2' y='2' width='10' height='10' rx='2' fill='%23ffffff'/%3E%3Crect x='15' y='2' width='11' height='10' rx='2' fill='%23ffffff' opacity='0.6'/%3E%3Crect x='2' y='15' width='10' height='11' rx='2' fill='%23ffffff' opacity='0.4'/%3E%3Crect x='15' y='15' width='11' height='11' rx='2' fill='%23ffffff' opacity='0.2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/api/docs/assets/style.css" />
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <a href="/api/docs" class="brand">
+      <svg viewBox="0 0 28 28" fill="none">
+        <rect x="2" y="2" width="10" height="10" rx="2" fill="#ffffff"/>
+        <rect x="15" y="2" width="11" height="10" rx="2" fill="#ffffff" opacity="0.6"/>
+        <rect x="2" y="15" width="10" height="11" rx="2" fill="#ffffff" opacity="0.4"/>
+        <rect x="15" y="15" width="11" height="11" rx="2" fill="#ffffff" opacity="0.2"/>
+      </svg>
+      Jokel API
+    </a>
+    <nav class="nav-tabs" aria-label="Primary">
+      <a href="/api/docs" class="nav-tab">Overview</a>
+      <a href="/api/docs/guides/quickstart" class="nav-tab active">Guides</a>
+      <a href="/api/docs/reference" class="nav-tab">API Reference</a>
+    </nav>
+  </div>
+  <div class="header-right">
+  </div>
+</header>
+
+<div class="page-with-sidebar">
+
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Guides</div>
+
+      <a href="/api/docs/guides/quickstart" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Quickstart
+      </a>
+      <a href="/api/docs/guides/authentication" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Authentication
+      </a>
+      <a href="/api/docs/guides/webhooks" class="sidebar-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2"/><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06"/><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8"/></svg>
+        Webhooks
+      </a>
+      <a href="#wh-events" class="sidebar-sublink active" data-target="wh-events">Available events</a>
+      <a href="#wh-create" class="sidebar-sublink" data-target="wh-create">Create a webhook</a>
+      <a href="#wh-payload" class="sidebar-sublink" data-target="wh-payload">Payload format</a>
+      <a href="#wh-verify" class="sidebar-sublink" data-target="wh-verify">Signature verification</a>
+      <a href="#wh-test" class="sidebar-sublink" data-target="wh-test">Testing</a>
+      <a href="#wh-manage" class="sidebar-sublink" data-target="wh-manage">Manage webhooks</a>
+      <a href="#wh-retry" class="sidebar-sublink" data-target="wh-retry">Retry policy</a>
+    </div>
+  </aside>
+
+  <article class="article">
+    <div class="kicker">Guides</div>
+    <h1 class="page-title">Webhooks</h1>
+    <p class="page-lede">Webhooks turn Jokel into a push-based system. Instead of polling our API every minute to find out what changed, you give us a URL and we'll send a signed HTTP POST every time something interesting happens — a task moves, a comment lands, an attachment uploads. It's how you wire Jokel into Slack, Discord, GitHub Actions, or your own infrastructure with near-zero latency.</p>
+
+    <h2 id="wh-events">Available events</h2>
+    <p>You can subscribe to any combination of these events. Most integrations start by listening for a couple and expand from there:</p>
+    <ul>
+      <li><code>task.created</code> — a new task lands on a board</li>
+      <li><code>task.updated</code> — a task's title, priority, assignee, tags, due date, or description changed</li>
+      <li><code>task.moved</code> — a task switched columns (this is the big one for status-tracking integrations)</li>
+      <li><code>task.archived</code> — a task got archived but is still recoverable</li>
+      <li><code>task.restored</code> — a previously archived task came back</li>
+      <li><code>task.deleted</code> — a task was permanently removed and can't be recovered</li>
+      <li><code>task.commented</code> — someone added a comment to a task</li>
+    </ul>
+
+    <h2 id="wh-create">Create a webhook</h2>
+    <p>The friendly path is <strong>Settings → Webhooks</strong> in the Jokel app, where you can paste a URL, pick events from a checklist, and save. If you'd rather automate it (one-click setup for self-hosted users, for example), you can do the same thing through the API:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-post">POST</span><span>/workspaces/{id}/webhooks</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST http://localhost:3001/api/v1/workspaces/trust-and-safety/webhooks <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_abc123def456"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-d</span> <span class="tk-str">'{"url":"https://example.com/webhook","events":"task.created,task.updated","active":true}'</span></code></pre>
+    </div>
+    <p>The response includes a <code>secret</code> field. This is what you'll use to verify that incoming webhook payloads actually came from Jokel and not some random attacker on the internet who guessed your URL.</p>
+
+    <div class="callout callout-warn">
+      <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="callout-body"><strong>The signing secret is shown once — write it down.</strong>Once you close that response we throw the raw value away. If you lose it the only path forward is deleting the webhook and creating a new one. Stash it in your secrets manager the moment it lands.</div>
+    </div>
+
+    <h2 id="wh-payload">Payload format</h2>
+    <p>When something happens, we send a JSON POST to the URL you registered. The body always includes a top-level <code>event</code> string, the workspace it came from, an ISO timestamp, the webhook ID for debugging, and a <code>data</code> object with the relevant entity:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-post">POST</span><span>your-endpoint</span></div>
+        <span class="code-lang">json</span>
+      </div>
+      <pre><code><span class="tk-pun">{</span>
+  <span class="tk-key">"event"</span><span class="tk-pun">:</span> <span class="tk-str">"task.created"</span><span class="tk-pun">,</span>
+  <span class="tk-key">"workspaceId"</span><span class="tk-pun">:</span> <span class="tk-str">"trust-and-safety"</span><span class="tk-pun">,</span>
+  <span class="tk-key">"timestamp"</span><span class="tk-pun">:</span> <span class="tk-str">"2026-05-16T10:30:00.000Z"</span><span class="tk-pun">,</span>
+  <span class="tk-key">"webhookId"</span><span class="tk-pun">:</span> <span class="tk-str">"wh_abc123"</span><span class="tk-pun">,</span>
+  <span class="tk-key">"data"</span><span class="tk-pun">: {</span>
+    <span class="tk-key">"task"</span><span class="tk-pun">: {</span>
+      <span class="tk-key">"id"</span><span class="tk-pun">:</span> <span class="tk-str">"task-1"</span><span class="tk-pun">,</span>
+      <span class="tk-key">"title"</span><span class="tk-pun">:</span> <span class="tk-str">"Fix login bug"</span><span class="tk-pun">,</span>
+      <span class="tk-key">"priority"</span><span class="tk-pun">:</span> <span class="tk-str">"High"</span><span class="tk-pun">,</span>
+      <span class="tk-key">"columnId"</span><span class="tk-pun">:</span> <span class="tk-str">"col-1"</span><span class="tk-pun">,</span>
+      <span class="tk-key">"assigneeId"</span><span class="tk-pun">:</span> <span class="tk-str">"user-1"</span><span class="tk-pun">,</span>
+      <span class="tk-key">"tags"</span><span class="tk-pun">: [</span><span class="tk-str">"bug"</span><span class="tk-pun">,</span> <span class="tk-str">"auth"</span><span class="tk-pun">],</span>
+      <span class="tk-key">"created_at"</span><span class="tk-pun">:</span> <span class="tk-str">"2026-05-16T10:30:00.000Z"</span>
+    <span class="tk-pun">}</span>
+  <span class="tk-pun">}</span>
+<span class="tk-pun">}</span></code></pre>
+    </div>
+
+    <h3>HTTP headers</h3>
+    <p>Every webhook request also carries these headers, which together let you verify, route, and deduplicate:</p>
+    <ul>
+      <li><code>X-Jokel-Event</code> — the event type, e.g. <code>task.created</code>. Useful for routing the request to the right handler without parsing the body first.</li>
+      <li><code>X-Jokel-Signature</code> — an HMAC-SHA256 hex digest of the request body, computed with your secret. This is what you check to confirm the payload is genuine.</li>
+      <li><code>X-Jokel-Delivery</code> — a unique ID per delivery attempt. Stays the same across retries of the same event, so you can deduplicate.</li>
+      <li><code>Content-Type: application/json</code> — always.</li>
+    </ul>
+
+    <h2 id="wh-verify">Signature verification</h2>
+    <p>This is the part you can't skip. Without verification, anyone who guesses or scrapes your webhook URL can send fake payloads and trick your integration into doing things. Verification takes about ten lines of code and shuts that off completely.</p>
+    <p>The recipe is the same in every language: take the raw request body, HMAC-SHA256 it with your webhook secret, and compare the result to the <code>X-Jokel-Signature</code> header using a constant-time comparison (so an attacker can't time-attack your check):</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span>Verification</span></div>
+        <span class="code-lang">node.js</span>
+      </div>
+      <pre><code><span class="tk-kw">const</span> crypto <span class="tk-pun">=</span> <span class="tk-cmd">require</span><span class="tk-pun">(</span><span class="tk-str">'crypto'</span><span class="tk-pun">);</span>
+
+<span class="tk-kw">function</span> <span class="tk-key">verifySignature</span><span class="tk-pun">(</span>payload<span class="tk-pun">,</span> signature<span class="tk-pun">,</span> secret<span class="tk-pun">) {</span>
+  <span class="tk-kw">const</span> expected <span class="tk-pun">=</span> crypto
+    .createHmac<span class="tk-pun">(</span><span class="tk-str">'sha256'</span><span class="tk-pun">,</span> secret<span class="tk-pun">)</span>
+    .update<span class="tk-pun">(</span>payload<span class="tk-pun">)</span>
+    .digest<span class="tk-pun">(</span><span class="tk-str">'hex'</span><span class="tk-pun">);</span>
+  <span class="tk-kw">return</span> crypto.timingSafeEqual<span class="tk-pun">(</span>
+    Buffer.from<span class="tk-pun">(</span>signature<span class="tk-pun">),</span>
+    Buffer.from<span class="tk-pun">(</span>expected<span class="tk-pun">)</span>
+  <span class="tk-pun">);</span>
+<span class="tk-pun">}</span>
+
+app.post<span class="tk-pun">(</span><span class="tk-str">'/webhook'</span><span class="tk-pun">, (</span>req<span class="tk-pun">,</span> res<span class="tk-pun">) =&gt; {</span>
+  <span class="tk-kw">const</span> signature <span class="tk-pun">=</span> req.headers<span class="tk-pun">[</span><span class="tk-str">'x-jokel-signature'</span><span class="tk-pun">];</span>
+  <span class="tk-kw">const</span> raw <span class="tk-pun">=</span> JSON.stringify<span class="tk-pun">(</span>req.body<span class="tk-pun">);</span>
+
+  <span class="tk-kw">if</span> <span class="tk-pun">(!</span><span class="tk-cmd">verifySignature</span><span class="tk-pun">(</span>raw<span class="tk-pun">,</span> signature<span class="tk-pun">,</span> WEBHOOK_SECRET<span class="tk-pun">)) {</span>
+    <span class="tk-kw">return</span> res.status<span class="tk-pun">(</span><span class="tk-num">401</span><span class="tk-pun">).</span>json<span class="tk-pun">({</span> <span class="tk-key">error</span><span class="tk-pun">:</span> <span class="tk-str">'Invalid signature'</span> <span class="tk-pun">});</span>
+  <span class="tk-pun">}</span>
+
+  res.status<span class="tk-pun">(</span><span class="tk-num">200</span><span class="tk-pun">).</span>json<span class="tk-pun">({</span> <span class="tk-key">received</span><span class="tk-pun">:</span> <span class="tk-kw">true</span> <span class="tk-pun">});</span>
+<span class="tk-pun">});</span></code></pre>
+    </div>
+
+    <p>Heads up: <code>JSON.stringify(req.body)</code> only works if your framework hasn't reformatted the body. If you're using Express with <code>express.json()</code>, switch to <code>express.raw({ type: 'application/json' })</code> for your webhook route specifically and pass <code>req.body</code> (a Buffer) directly to the HMAC. Same idea applies in Flask, Rails, ASP.NET — read the raw bytes, not the parsed object.</p>
+
+    <div class="callout callout-info">
+      <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div class="callout-body"><strong>Always verify before you do anything.</strong>If the signature check fails, return 401 and stop — don't log the body, don't enqueue the event, don't ping anyone. An unverified payload is hostile by default.</div>
+    </div>
+
+    <h2 id="wh-test">Testing</h2>
+    <p>Before you trust a webhook in production, send a test ping. This fires a synthetic <code>ping</code> event at your endpoint with a real signature, so you can verify your handler accepts it without waiting for someone to actually move a task in the app:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-post">POST</span><span>/workspaces/{wid}/webhooks/{whid}/test</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST http://localhost:3001/api/v1/workspaces/trust-and-safety/webhooks/wh_abc123/test <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_abc123def456"</span></code></pre>
+    </div>
+    <p>If the call returns <code>200</code> on our side and your endpoint logs receipt of a <code>ping</code> event, you're set. If you don't see anything land, the most common culprits are: signature verification failing on the test, a firewall blocking inbound from Jokel, or your endpoint requiring auth that the webhook can't satisfy. Local development tools like <a href="https://ngrok.com">ngrok</a> or <a href="https://www.cloudflare.com/products/tunnel/">Cloudflare Tunnel</a> are the easiest way to test from your laptop.</p>
+
+    <h2 id="wh-manage">Managing webhooks</h2>
+    <p>Listing webhooks shows everything attached to a workspace, which is handy when you're cleaning up old test endpoints or auditing what's subscribed to your data:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-get">GET</span><span>/workspaces/{id}/webhooks</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/workspaces/trust-and-safety/webhooks <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_abc123def456"</span></code></pre>
+    </div>
+
+    <p>If you need to pause a webhook temporarily (deploying a new version of your handler, debugging an issue) you don't have to delete and recreate it. Set <code>active</code> to <code>false</code> with <code>PATCH</code> and Jokel will stop sending events to that URL until you flip it back:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-patch">PATCH</span><span>/workspaces/{wid}/webhooks/{whid}</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH http://localhost:3001/api/v1/workspaces/trust-and-safety/webhooks/wh_abc123 <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_abc123def456"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-d</span> <span class="tk-str">'{"active":false}'</span></code></pre>
+    </div>
+    <p>Pausing also keeps the secret stable, so you don't have to redistribute new credentials when you bring it back online.</p>
+
+    <h2 id="wh-retry">Retry policy</h2>
+    <p>Networks fail, services restart, deploys happen. When your endpoint returns anything other than a 2xx status — or doesn't respond at all — Jokel retries the delivery up to <strong>3 times</strong> with exponential backoff at 5 seconds, 30 seconds, and 5 minutes. If all three retries fail, the event gets dropped and we move on.</p>
+    <p>The <code>X-Jokel-Delivery</code> header stays the same across all retry attempts for a given event. If you're processing webhooks asynchronously (writing them to a queue, for example), use that ID as your idempotency key so a successful delivery on retry #2 doesn't re-trigger the side effects you already ran on retry #1.</p>
+    <p>For high-stakes integrations (billing, audit trails) we recommend pulling state via the API in a periodic reconciliation job rather than relying on webhook delivery alone. Webhooks are best-effort; the API is authoritative.</p>
+
+    <div class="article-footer">
+      <a class="article-footer-link prev" href="/api/docs/guides/authentication">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        Authentication
+      </a>
+      <a class="article-footer-link next" href="/api/docs/reference">
+        API Reference
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+  </article>
+
+</div>
+
+<script src="/api/docs/assets/docs.js"></script>
+</body>
+</html>

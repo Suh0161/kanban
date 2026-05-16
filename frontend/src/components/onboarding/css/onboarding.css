@@ -1,0 +1,197 @@
+.onboarding-root {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+.onboarding-root.is-blocking {
+  pointer-events: auto;
+}
+
+.onboarding-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: transparent;
+}
+
+.onboarding-spotlight {
+  position: fixed;
+  pointer-events: none;
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 24%, transparent);
+  box-shadow:
+    0 0 0 9999px color-mix(in srgb, var(--bg-app) 74%, transparent),
+    0 14px 34px color-mix(in srgb, var(--bg-app) 72%, transparent);
+  transition: top 0.18s ease, left 0.18s ease, width 0.18s ease, height 0.18s ease, opacity 0.15s ease;
+}
+
+.onboarding-spotlight.is-visible {
+  opacity: 1;
+}
+
+.onboarding-tooltip {
+  position: fixed;
+  z-index: 3001;
+  width: min(372px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-dropdown);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  pointer-events: auto;
+}
+
+.onboarding-tooltip-topline {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.onboarding-tooltip-topline span {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.onboarding-close-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onboarding-close-btn:hover {
+  border-color: var(--border-subtle);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.onboarding-progress {
+  display: grid;
+  grid-template-columns: repeat(var(--onboarding-step-count, 8), minmax(0, 1fr));
+  gap: 4px;
+  margin: 8px 0 14px;
+}
+
+.onboarding-progress span {
+  height: 3px;
+  border-radius: var(--radius-full);
+  background-color: var(--border-strong);
+}
+
+.onboarding-progress span.active {
+  background-color: var(--accent-blue);
+}
+
+.onboarding-tooltip-title {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.onboarding-tooltip-body {
+  margin: 0 0 16px;
+  color: var(--text-secondary);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.onboarding-tooltip-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.onboarding-tooltip-actions > div {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.onboarding-link-btn,
+.onboarding-ghost-btn,
+.onboarding-primary-btn {
+  min-height: 30px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.onboarding-link-btn {
+  padding: 0 8px;
+  border: 0;
+  background-color: transparent;
+  color: var(--text-tertiary);
+}
+
+.onboarding-link-btn:hover {
+  color: var(--text-primary);
+}
+
+.onboarding-ghost-btn {
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  background-color: transparent;
+  color: var(--text-secondary);
+}
+
+.onboarding-ghost-btn:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.onboarding-primary-btn {
+  padding: 0 12px;
+  border: 1px solid var(--accent-color);
+  background-color: var(--accent-color);
+  color: var(--bg-app);
+  font-weight: 600;
+}
+
+.onboarding-primary-btn:hover {
+  background-color: var(--accent-color-hover);
+}
+
+@media (max-width: 640px) {
+  .onboarding-tooltip {
+    left: 16px !important;
+    right: 16px;
+    bottom: 16px;
+    top: auto !important;
+    width: auto;
+  }
+
+  .onboarding-tooltip-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .onboarding-tooltip-actions > div,
+  .onboarding-primary-btn,
+  .onboarding-ghost-btn,
+  .onboarding-link-btn {
+    width: 100%;
+  }
+}

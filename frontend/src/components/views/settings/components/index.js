@@ -1,4 +1,9 @@
 export { default as SettingsNav } from './SettingsNav.jsx';
 export { default as SettingsSectionActions } from './SettingsSectionActions.jsx';
 export { default as SettingsStatusAside } from './SettingsStatusAside.jsx';
+export { default as SettingsActivityLog } from './SettingsActivityLog';
+export { default as SettingsApiKeys } from './SettingsApiKeys';
+export { default as SettingsWebhooks } from './SettingsWebhooks';
+export { default as SettingsMembers } from './SettingsMembers.jsx';
+export { default as SettingsDangerZone } from './SettingsDangerZone.jsx';
 export { default as WorkspaceSwitch } from './WorkspaceSwitch.jsx';

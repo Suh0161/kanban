@@ -69,7 +69,7 @@ export default function Select({ value, onChange, options, className = '' }) {
             position: 'absolute',
             top: coords.top,
             left: coords.left,
-            width: coords.width,
+            width: Math.max(coords.width, 120),
             zIndex: 99999
           }}
         >

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { LogOut, User, Settings } from 'lucide-react';
+import ProfileModal from '../views/profile/ProfileModal.jsx';
 
-export default function UserDropdown({ user, onLogout, placement = 'bottom' }) {
+export default function UserDropdown({ user, onLogout, onOpenSettings, placement = 'bottom' }) {
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
@@ -12,8 +14,8 @@ export default function UserDropdown({ user, onLogout, placement = 'bottom' }) {
     if (open && triggerRef.current && menuRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const menuRect = menuRef.current.getBoundingClientRect();
-      const menuWidth = 220;
-      const menuHeight = menuRect.height || 180;
+      const menuWidth = 240;
+      const menuHeight = menuRect.height || 200;
       const gap = 8;
 
       let top, left;
@@ -43,9 +45,7 @@ export default function UserDropdown({ user, onLogout, placement = 'bottom' }) {
     function handleClick(e) {
       const inTrigger = triggerRef.current?.contains(e.target);
       const inMenu = menuRef.current?.contains(e.target);
-      if (!inTrigger && !inMenu) {
-        setOpen(false);
-      }
+      if (!inTrigger && !inMenu) setOpen(false);
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -56,18 +56,25 @@ export default function UserDropdown({ user, onLogout, placement = 'bottom' }) {
     onLogout();
   };
 
+  const handleProfile = () => {
+    setOpen(false);
+    setProfileOpen(true);
+  };
+
+  const handleSettings = () => {
+    setOpen(false);
+    onOpenSettings?.();
+  };
+
   if (!user) return null;
 
   const menu = (
     <div
       ref={menuRef}
       className="user-dropdown-menu"
-      style={{
-        position: 'fixed',
-        zIndex: 9999,
-        ...menuStyle,
-      }}
+      style={{ position: 'fixed', zIndex: 9999, width: 240, ...menuStyle }}
     >
+      {/* User identity */}
       <div className="user-dropdown-header">
         <img src={user.avatar} alt={user.name} className="user-dropdown-header-avatar" />
         <div className="user-dropdown-info">
@@ -75,14 +82,21 @@ export default function UserDropdown({ user, onLogout, placement = 'bottom' }) {
           <span className="user-dropdown-email">{user.email}</span>
         </div>
       </div>
+
       <div className="user-dropdown-divider" />
-      <button type="button" className="user-dropdown-item" onClick={() => setOpen(false)}>
+
+      <button type="button" className="user-dropdown-item" onClick={handleProfile}>
         <User size={14} /> Profile
       </button>
-      <button type="button" className="user-dropdown-item" onClick={() => setOpen(false)}>
-        <Settings size={14} /> Settings
-      </button>
+
+      {onOpenSettings && (
+        <button type="button" className="user-dropdown-item" onClick={handleSettings}>
+          <Settings size={14} /> Workspace settings
+        </button>
+      )}
+
       <div className="user-dropdown-divider" />
+
       <button type="button" className="user-dropdown-item user-dropdown-logout" onClick={handleLogout}>
         <LogOut size={14} /> Log out
       </button>
@@ -90,18 +104,24 @@ export default function UserDropdown({ user, onLogout, placement = 'bottom' }) {
   );
 
   return (
-    <div className="user-dropdown" ref={triggerRef}>
-      <button
-        type="button"
-        className="user-dropdown-trigger"
-        onClick={() => setOpen(v => !v)}
-        aria-haspopup="true"
-        aria-expanded={open}
-      >
-        <img src={user.avatar} alt={user.name} className="user-dropdown-avatar" />
-      </button>
+    <>
+      <div className="user-dropdown" ref={triggerRef}>
+        <button
+          type="button"
+          className="user-dropdown-trigger"
+          onClick={() => setOpen(v => !v)}
+          aria-haspopup="true"
+          aria-expanded={open}
+          title={user.name}
+        >
+          <img src={user.avatar} alt={user.name} className="user-dropdown-avatar" />
+        </button>
+        {open && createPortal(menu, document.body)}
+      </div>
 
-      {open && createPortal(menu, document.body)}
-    </div>
+      {profileOpen && (
+        <ProfileModal onClose={() => setProfileOpen(false)} />
+      )}
+    </>
   );
 }

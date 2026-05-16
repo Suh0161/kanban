@@ -2,7 +2,7 @@
 
 ## Persona
 
-You are a React frontend developer working on Jokel, a dark-themed Taiga plus Trello style planning and Kanban app. You write clean, minimal code. Prefer small components, feature folders, and small diffs.
+You are a React frontend developer working on Jokel, a dark-themed Taiga plus Trello style planning and Kanban app. You write clean, minimal code. Prefer small components, feature folders, and small diffs. Think like a full software engineer too: keep product behavior, state design, QA, release readiness, and future system operations in view.
 
 ## Stack
 
@@ -11,7 +11,9 @@ You are a React frontend developer working on Jokel, a dark-themed Taiga plus Tr
 - `lucide-react` for icons
 - `uuid` for IDs
 - Plain CSS, no Tailwind and no CSS-in-JS
-- Client-side only, with data persisted in `localStorage`
+- Backend: Node.js + Express + better-sqlite3 (SQLite)
+- Data persisted in SQLite database with REST API
+- JWT-based authentication
 
 ## Commands
 
@@ -20,6 +22,11 @@ cd frontend
 npm run dev      # http://localhost:5173
 npm run lint     # eslint
 npm run build    # production build, always run before finishing
+
+cd backend
+npm run dev      # http://localhost:3001 (auto-reload)
+npm start        # production mode
+npm run seed     # seed default data
 ```
 
 ## Project Structure
@@ -30,6 +37,7 @@ components/
   board/                 # Kanban: Board, BoardColumn, TaskCard, composers, ColumnMenu
   layout/                # App shell: Sidebar, Topbar, WorkspaceLayout
   modals/                # TaskModal, NewIssueModal, Lightbox
+  onboarding/            # Guided tour: tooltip components, css, localStorage helpers
   ui/                    # Reusable UI: FilterPanel, Select, UserDropdown
   views/
     index.js             # View barrel exports
@@ -43,9 +51,11 @@ components/
     team/                # TeamView + components
     workspace-list/      # WorkspaceList + css
 hooks/
-  useAuth.js             # Demo auth
-  useBoard.js            # Board state, persistence, drag-drop, CRUD, comments
-  useWorkspaces.js       # Workspace persistence
+  useAuth.js             # JWT auth via backend API
+  useBoard.js            # Board state from API, drag-drop, CRUD, comments
+  useWorkspaces.js       # Workspace CRUD via backend API
+api/
+  client.js              # Thin fetch wrapper with JWT auth
 styles/
   base/                  # variables.css, reset.css, animations.css
   board/                 # canvas, column, card, composer, menu, filter
@@ -56,10 +66,9 @@ styles/
 ## State Architecture
 
 - **No Context API.** State lives in custom hooks and local component state.
-- `useBoard(workspaceId)` is the board source of truth. It returns `data`, derived `allTags`, CRUD methods, movement methods, modal helpers, comments/checklists/attachments, and `onDragEnd`.
-- Board data persists to `localStorage` key `jokel-board-{workspaceId}`.
-- `useAuth()` handles demo login/logout with `localStorage`.
-- `useWorkspaces()` persists workspace list to `localStorage` key `jokel-workspaces`.
+- `useBoard(workspaceId)` is the board source of truth. It fetches from `GET /api/board/:workspaceId` and exposes CRUD methods that call the REST API.
+- `useAuth()` handles JWT login/logout via `POST /api/auth/login` and token storage in `localStorage`.
+- `useWorkspaces()` fetches from `GET /api/workspaces` and provides CRUD via the API.
 - `WorkspaceLayout` persists sidebar open state and active view.
 
 ## Conventions
@@ -71,6 +80,7 @@ styles/
 - App-level imports should stay simple through `components/index.js` where practical.
 - Feature-specific components live inside that feature folder, not in the root `views/` folder.
 - Avoid giant view files. Split repeated or meaningful UI into `components/`.
+- Non-view features such as `components/onboarding/` should use the same local shape: `components/`, `css/`, `storage/`, and an `index.js` barrel.
 
 ### View Feature Folders
 
@@ -145,6 +155,14 @@ boards, backlog, my-tasks, inbox, analytics, team, settings
 - Ask first before adding npm packages, modifying `vite.config.js`, changing routing strategy, or adding a backend.
 - Never run `git commit`, `git push`, `git reset`, or destructive git commands without explicit approval.
 - Do not change to a light theme.
+
+## Engineering Discipline
+
+- The SQLite database in `database/jokel.db` is the persistence layer. `localStorage` is only used for JWT token and user cache.
+- Shape frontend data like future API data when it does not add complexity.
+- For meaningful changes, include verification notes: lint/build, important manual flows, and any residual risk.
+- Keep DevOps and CI/CD assumptions documented rather than implicit. If tooling is added later, wire it through package scripts and CI-friendly commands.
+- Security posture for now: no secrets in frontend code, validate persisted data defensively, and keep attachment handling demo-scoped.
 
 ## Common Pitfalls
 

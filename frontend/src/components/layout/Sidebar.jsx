@@ -1,9 +1,7 @@
 import {
   Layers,
   LayoutDashboard,
-  CheckSquare,
-  Inbox,
-  BarChart2,
+  Briefcase,
   Users,
   Settings,
   ListTodo,
@@ -14,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import { UserDropdown } from '../ui';
 
-export default function Sidebar({ isOpen, activeView, onSelectView, onToggle }) {
+export default function Sidebar({ isOpen, activeView, onSelectView, onToggle, onOpenSettings }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -23,13 +21,11 @@ export default function Sidebar({ isOpen, activeView, onSelectView, onToggle }) 
     navigate('/');
   };
   const navItems = [
-    { id: 'boards', label: 'Boards', icon: LayoutDashboard },
-    { id: 'backlog', label: 'Backlog', icon: ListTodo },
-    { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare },
-    { id: 'inbox', label: 'Inbox', icon: Inbox, badge: 3 },
-    { id: 'analytics', label: 'Analytics', icon: BarChart2 },
-    { id: 'team', label: 'Team', icon: Users },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'boards', label: 'Boards', icon: LayoutDashboard, onboarding: 'nav-boards' },
+    { id: 'backlog', label: 'Backlog', icon: ListTodo, onboarding: 'nav-backlog' },
+    { id: 'my-work', label: 'My Work', icon: Briefcase, onboarding: 'nav-my-work' },
+    { id: 'team', label: 'Team', icon: Users, onboarding: 'nav-team' },
+    { id: 'settings', label: 'Settings', icon: Settings, onboarding: 'sidebar-settings' }
   ];
 
   const ToggleIcon = isOpen ? PanelLeftClose : PanelLeftOpen;
@@ -44,6 +40,7 @@ export default function Sidebar({ isOpen, activeView, onSelectView, onToggle }) 
         <button
           type="button"
           className="sidebar-toggle"
+          data-onboarding="sidebar-collapse"
           onClick={onToggle}
           aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
@@ -51,12 +48,13 @@ export default function Sidebar({ isOpen, activeView, onSelectView, onToggle }) 
           <ToggleIcon size={16} />
         </button>
       </div>
-      <nav className="sidebar-nav">
-        {navItems.map(({ id, label, icon: Icon, badge }) => (
+      <nav className="sidebar-nav" data-onboarding="sidebar-nav">
+        {navItems.map(({ id, label, icon: Icon, onboarding }) => (
           <button
             key={id}
             type="button"
             className={`nav-item ${activeView === id ? 'active' : ''}`}
+            data-onboarding={onboarding}
             onClick={() => onSelectView(id)}
             title={!isOpen ? label : undefined}
             aria-label={label}
@@ -64,7 +62,6 @@ export default function Sidebar({ isOpen, activeView, onSelectView, onToggle }) 
           >
             <Icon size={16} />
             <span className="nav-label">{label}</span>
-            {badge && <span className="badge">{badge}</span>}
           </button>
         ))}
       </nav>
@@ -72,7 +69,7 @@ export default function Sidebar({ isOpen, activeView, onSelectView, onToggle }) 
         <div className="user-profile">
           {user ? (
             <>
-              <UserDropdown user={user} onLogout={handleLogout} placement="top" />
+              <UserDropdown user={user} onLogout={handleLogout} placement="top" onOpenSettings={onOpenSettings} />
               <div className="user-info">
                 <span className="user-name">{user.name}</span>
               </div>

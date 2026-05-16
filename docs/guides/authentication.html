@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Authentication · Jokel API</title>
+  <meta name="description" content="JWT bearer tokens and API key authentication for the Jokel REST API." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect x='2' y='2' width='10' height='10' rx='2' fill='%23ffffff'/%3E%3Crect x='15' y='2' width='11' height='10' rx='2' fill='%23ffffff' opacity='0.6'/%3E%3Crect x='2' y='15' width='10' height='11' rx='2' fill='%23ffffff' opacity='0.4'/%3E%3Crect x='15' y='15' width='11' height='11' rx='2' fill='%23ffffff' opacity='0.2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/api/docs/assets/style.css" />
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <a href="/api/docs" class="brand">
+      <svg viewBox="0 0 28 28" fill="none">
+        <rect x="2" y="2" width="10" height="10" rx="2" fill="#ffffff"/>
+        <rect x="15" y="2" width="11" height="10" rx="2" fill="#ffffff" opacity="0.6"/>
+        <rect x="2" y="15" width="10" height="11" rx="2" fill="#ffffff" opacity="0.4"/>
+        <rect x="15" y="15" width="11" height="11" rx="2" fill="#ffffff" opacity="0.2"/>
+      </svg>
+      Jokel API
+    </a>
+    <nav class="nav-tabs" aria-label="Primary">
+      <a href="/api/docs" class="nav-tab">Overview</a>
+      <a href="/api/docs/guides/quickstart" class="nav-tab active">Guides</a>
+      <a href="/api/docs/reference" class="nav-tab">API Reference</a>
+    </nav>
+  </div>
+  <div class="header-right">
+  </div>
+</header>
+
+<div class="page-with-sidebar">
+
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Guides</div>
+
+      <a href="/api/docs/guides/quickstart" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Quickstart
+      </a>
+      <a href="/api/docs/guides/authentication" class="sidebar-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Authentication
+      </a>
+      <a href="#auth-jwt" class="sidebar-sublink active" data-target="auth-jwt">JWT bearer tokens</a>
+      <a href="#auth-keys" class="sidebar-sublink" data-target="auth-keys">API keys</a>
+      <a href="#auth-query" class="sidebar-sublink" data-target="auth-query">Query parameter</a>
+      <a href="#auth-manage" class="sidebar-sublink" data-target="auth-manage">Manage keys</a>
+      <a href="#auth-errors" class="sidebar-sublink" data-target="auth-errors">Error responses</a>
+
+      <a href="/api/docs/guides/webhooks" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2"/><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06"/><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8"/></svg>
+        Webhooks
+      </a>
+    </div>
+  </aside>
+
+  <article class="article">
+    <div class="kicker">Guides</div>
+    <h1 class="page-title">Authentication</h1>
+    <p class="page-lede">Jokel gives you two ways to authenticate: JWT bearer tokens for human users in a browser, and API keys for everything else — bots, CI pipelines, integrations, scripts. Both methods unlock the same endpoints, so the choice is really about how the credential is created and rotated.</p>
+
+    <h2 id="auth-jwt">JWT bearer tokens</h2>
+    <p>JWTs are what the Jokel web app uses behind the scenes. When a user signs in, the backend hands back a signed token that the frontend tucks into <code>localStorage</code> and replays on every API call. They're great for short-lived sessions tied to a specific human, and they automatically expire — which is exactly what you want for browser code.</p>
+
+    <h3>Obtain a token</h3>
+    <p>Log in with the user's email and password. The response includes both the user record and a fresh JWT:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-post">POST</span><span>/auth/login</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST http://localhost:3001/api/v1/auth/login <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-d</span> <span class="tk-str">'{"email":"user@example.com","password":"your-password"}'</span></code></pre>
+    </div>
+    <p>Tokens stay valid for <strong>seven days</strong>. After that they're rejected with a <code>401</code> and you'll need to log in again. The web app handles this automatically by redirecting back to the login page on any 401 response.</p>
+
+    <h3>Use the token</h3>
+    <p>Send it in the <code>Authorization</code> header on every authenticated request, prefixed with <code>Bearer </code>:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-get">GET</span><span>/auth/me</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/auth/me <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."</span></code></pre>
+    </div>
+
+    <div class="callout callout-info">
+      <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div class="callout-body"><strong>Use JWTs for human sessions, not for bots.</strong>JWTs expire and have to be refreshed. If you're building a bot or a long-running integration, jump down to API keys — they're built for that use case and don't need rotation.</div>
+    </div>
+
+    <h2 id="auth-keys">API keys</h2>
+    <p>API keys are the right choice for anything that isn't a person sitting at a browser. CI pipelines, monitoring scripts, Slack bots, deploy hooks — any code that needs to talk to Jokel without a human in the loop. They don't expire by default (you can set an expiry if you want), and each key carries a scope that limits what it can do.</p>
+
+    <h3>Generate a key</h3>
+    <p>Open <strong>Settings → API Keys</strong> in the Jokel app and click <strong>Generate API Key</strong>. Give it a name that tells future-you what it's for ("github-actions", "datadog-bot", "weekly-report-script") and pick a scope:</p>
+    <ul>
+      <li><strong>Read &amp; Write</strong> — full access to every endpoint. Use for tools that create or modify tasks.</li>
+      <li><strong>Read Only</strong> — restricted to <code>GET</code> requests. Perfect for dashboards, exporters, and analytics jobs that should never accidentally write.</li>
+    </ul>
+    <p>The raw key value is shown <strong>once</strong> at creation time and never again. Copy it immediately into your secrets manager. Every key starts with <code>jokel_</code> so it's easy to spot in logs and config files.</p>
+
+    <h3>Use a key</h3>
+    <p>Send it in the <code>X-API-Key</code> header — that's the recommended way for almost every situation:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-get">GET</span><span>/board/{workspaceId}</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_abc123def456"</span></code></pre>
+    </div>
+
+    <h2 id="auth-query">Query parameter fallback</h2>
+    <p>A few environments make custom headers awkward — server-sent event clients, certain webhook test tools, embed iframes. For those cases you can pass the key as a query parameter instead:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-get">GET</span><span>/board/{workspaceId}?api_key=…</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-str">"http://localhost:3001/api/v1/board/trust-and-safety?api_key=jokel_abc123def456"</span></code></pre>
+    </div>
+
+    <div class="callout callout-warn">
+      <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="callout-body"><strong>Stick with the header when you can.</strong>Query parameters end up in server access logs, reverse proxy logs, browser history, and shared screenshots. The <code>X-API-Key</code> header keeps your credential out of those places. Treat the query-param form as an escape hatch, not a default.</div>
+    </div>
+
+    <h2 id="auth-manage">Managing API keys</h2>
+    <p>You can list, create, and revoke keys through the same API the dashboard uses. Listing your keys is helpful when you're auditing what's out there or building a self-service rotation tool:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-get">GET</span><span>/workspaces/{id}/api-keys</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/workspaces/trust-and-safety/api-keys <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_abc123def456"</span></code></pre>
+    </div>
+    <p>Note that the response only ever returns the key prefix and metadata — the raw key value isn't stored anywhere we could give back. If a key leaks, revoke it with <code>DELETE</code> and create a new one. Revocations take effect immediately.</p>
+
+    <h2 id="auth-errors">Error responses</h2>
+    <p>When authentication fails — missing header, expired token, revoked key, malformed credentials — the API returns <code>401 Unauthorized</code> with a structured body:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method" style="background:var(--red-soft);color:var(--red);border:1px solid rgba(255,69,58,0.25)">401</span><span>Unauthorized</span></div>
+        <span class="code-lang">json</span>
+      </div>
+      <pre><code><span class="tk-pun">{</span>
+  <span class="tk-key">"error"</span><span class="tk-pun">:</span> <span class="tk-str">"Invalid or missing API key"</span><span class="tk-pun">,</span>
+  <span class="tk-key">"code"</span><span class="tk-pun">:</span> <span class="tk-str">"UNAUTHORIZED"</span>
+<span class="tk-pun">}</span></code></pre>
+    </div>
+    <p>Always check for <code>401</code> specifically and trigger a re-auth flow rather than retrying with the same credential. Hammering on a bad key won't make it good and will eventually trip the rate limiter.</p>
+
+    <div class="article-footer">
+      <a class="article-footer-link prev" href="/api/docs/guides/quickstart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        Quickstart
+      </a>
+      <a class="article-footer-link next" href="/api/docs/guides/webhooks">
+        Webhooks
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+  </article>
+
+</div>
+
+<script src="/api/docs/assets/docs.js"></script>
+</body>
+</html>

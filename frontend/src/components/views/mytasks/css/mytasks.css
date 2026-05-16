@@ -1,16 +1,34 @@
-.mytasks-tabs {
-  flex-wrap: nowrap;
-}
+/* ─── Stats cards (extends shared workspace-stat) ───────────────────────── */
 
 .mytasks-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 12px;
 }
 
+.mytasks-stat {
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.12s, background-color 0.12s;
+}
+
+.mytasks-stat:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-hover);
+}
+
+.mytasks-stat.is-active {
+  border-color: var(--border-strong);
+  background-color: var(--bg-hover);
+}
+
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+
 .mytasks-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 24vw);
+  grid-template-columns: minmax(0, 1fr) 272px;
   gap: 18px;
   align-items: start;
 }
@@ -19,25 +37,32 @@
   position: sticky;
   top: 0;
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
+
+.mytasks-count {
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+}
+
+/* ─── Task list ──────────────────────────────────────────────────────────── */
 
 .mytasks-list {
   display: grid;
-  gap: 4px;
-  padding: 8px;
+  gap: 2px;
+  padding: 6px;
 }
 
 .mytask-row {
   position: relative;
-  min-height: 112px;
-  padding: 14px 12px 14px 18px;
+  padding: 12px 12px 12px 18px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) 132px 140px 100px 118px;
+  grid-template-columns: minmax(260px, 1fr) 130px 136px minmax(160px, auto);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  transition: background-color 0.1s, border-color 0.1s;
 }
 
 .mytask-row:hover {
@@ -45,8 +70,50 @@
   background-color: var(--bg-hover);
 }
 
-.mytask-main {
-  min-width: 0;
+.mytask-row.is-overdue {
+  background-color: color-mix(in srgb, var(--color-red) 4%, transparent);
+}
+
+.mytask-row.is-overdue:hover {
+  background-color: color-mix(in srgb, var(--color-red) 7%, var(--bg-hover));
+  border-color: color-mix(in srgb, var(--color-red) 30%, var(--border-subtle));
+}
+
+.mytask-main { min-width: 0; }
+
+.mytask-meta-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.mytask-code {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.mytask-col {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+}
+
+.mytask-col::before {
+  content: '·';
+  margin-right: 6px;
+  opacity: 0.5;
+}
+
+.mytask-tag {
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-hover);
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+  border: 1px solid var(--border-subtle);
 }
 
 .mytask-title {
@@ -58,97 +125,193 @@
   cursor: pointer;
   display: block;
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 650;
+  font-size: 0.875rem;
+  font-weight: 600;
   text-align: left;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.mytask-title:hover {
-  color: var(--accent-color);
+.mytask-title:hover { color: var(--accent-color); }
+
+.mytask-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
 }
+
+.mytask-priority {
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.mytask-priority.priority-critical { color: var(--color-red); border-color: color-mix(in srgb, var(--color-red) 30%, var(--border-subtle)); }
+.mytask-priority.priority-high     { color: var(--color-orange); border-color: color-mix(in srgb, var(--color-orange) 30%, var(--border-subtle)); }
+.mytask-priority.priority-medium   { color: var(--color-yellow); border-color: color-mix(in srgb, var(--color-yellow) 30%, var(--border-subtle)); }
+.mytask-priority.priority-low      { color: var(--accent-blue); border-color: color-mix(in srgb, var(--accent-blue) 30%, var(--border-subtle)); }
 
 .mytask-chip.danger {
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
   color: var(--color-red);
+  background-color: color-mix(in srgb, var(--color-red) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-red) 25%, var(--border-subtle));
 }
 
-.mytask-field {
-  display: grid;
-  gap: 6px;
-}
-
-.mytask-field > span {
+.mytask-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   color: var(--text-tertiary);
   font-size: 0.7rem;
 }
 
+/* ─── Fields ─────────────────────────────────────────────────────────────── */
+
+.mytask-field {
+  display: grid;
+  gap: 5px;
+}
+
+.mytask-field > span {
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+}
+
 .mytask-select .custom-select-trigger,
-.mytask-field input {
-  min-height: 32px;
+.mytask-field input[type="date"] {
+  min-height: 30px;
   width: 100%;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background-color: var(--bg-card);
   color: var(--text-primary);
   font: inherit;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
 }
 
-.mytask-field input {
-  padding: 0 9px;
-}
+.mytask-field input[type="date"] { padding: 0 8px; }
 
 .mytask-select .custom-select-trigger:hover,
-.mytask-field input:hover,
-.mytask-field input:focus {
+.mytask-field input[type="date"]:hover,
+.mytask-field input[type="date"]:focus {
   border-color: var(--border-strong);
   background-color: var(--bg-hover);
   outline: none;
 }
 
-.mytask-signals,
+.mytask-field input[type="date"].overdue-input {
+  border-color: color-mix(in srgb, var(--color-red) 40%, var(--border-subtle));
+  color: var(--color-red);
+}
+
+/* ─── Actions column ─────────────────────────────────────────────────────── */
+
 .mytask-actions {
   display: grid;
+  gap: 6px;
   justify-items: end;
-  gap: 7px;
 }
 
-.mytask-actions .avatar,
-.mytask-actions .workspace-avatar-empty {
-  width: 28px;
-  height: 28px;
+.mytask-avatar {
+  width: 26px;
+  height: 26px;
 }
 
-.mytasks-focus-list,
-.mytasks-review-list,
-.mytasks-due-list {
+.mytask-due-label {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.mytask-due-label.overdue {
+  color: var(--color-red);
+  font-weight: 600;
+}
+
+.mytask-action-btns {
+  display: flex;
+  gap: 6px;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────── */
+
+.mytasks-focus-list {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   padding: 8px;
 }
 
-.mytasks-focus-list div,
+.mytasks-focus-row {
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-hover);
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.1s, border-color 0.1s;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.mytasks-focus-row:hover {
+  background-color: var(--bg-card-hover);
+  border-color: var(--border-subtle);
+}
+
+.mytasks-focus-row.is-active {
+  border-color: color-mix(in srgb, var(--accent-blue) 35%, var(--border-subtle));
+  background-color: color-mix(in srgb, var(--accent-blue) 8%, var(--bg-hover));
+}
+
+.mytasks-focus-row svg { color: var(--text-tertiary); }
+
+.mytasks-focus-row span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.mytasks-focus-row strong {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.mytasks-review-list,
+.mytasks-due-list {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+}
+
 .mytasks-review-list button,
 .mytasks-due-list button {
-  min-height: 54px;
-  padding: 11px 12px;
+  min-height: 56px;
+  padding: 10px 12px;
   border: 0;
   border-radius: var(--radius-md);
   background-color: var(--bg-hover);
   color: var(--text-primary);
   display: grid;
-  align-items: center;
-  gap: 6px 10px;
-  text-align: left;
-}
-
-.mytasks-focus-list div {
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-}
-
-.mytasks-review-list button,
-.mytasks-due-list button {
-  cursor: pointer;
   grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  font: inherit;
 }
 
 .mytasks-review-list button:hover,
@@ -156,102 +319,124 @@
   background-color: var(--bg-card-hover);
 }
 
-.mytasks-focus-list svg {
+.mytasks-review-code {
   color: var(--text-tertiary);
+  font-size: 0.7rem;
+  font-family: monospace;
 }
 
-.mytasks-focus-list span,
-.mytasks-review-list span,
+.mytasks-review-list strong,
+.mytasks-due-list strong {
+  grid-column: 1 / -1;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .mytasks-review-list em,
 .mytasks-due-list span {
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-style: normal;
 }
 
-.mytasks-focus-list strong,
-.mytasks-review-list strong,
-.mytasks-due-list strong {
-  color: var(--text-primary);
-  font-size: 0.84rem;
+.mytasks-review-list em.overdue {
+  color: var(--color-red);
 }
 
-.mytasks-review-list strong {
-  grid-column: 1 / -1;
-}
+/* ─── Focus plan ─────────────────────────────────────────────────────────── */
 
-.mytasks-focus-plan {
-  min-width: 0;
-}
+.mytasks-focus-plan { min-width: 0; }
 
 .mytasks-timeline {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 8px;
   padding: 8px;
 }
 
-.mytasks-timeline div {
-  min-height: 76px;
-  padding: 12px;
+.mytasks-timeline-card {
+  min-height: 80px;
+  padding: 12px 14px;
   border-radius: var(--radius-md);
   background-color: var(--bg-hover);
+  border: 1px solid transparent;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  gap: 4px 9px;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s, border-color 0.1s;
+  font: inherit;
+  color: inherit;
 }
 
-.mytasks-timeline svg {
+.mytasks-timeline-card:hover {
+  background-color: var(--bg-card-hover);
+  border-color: var(--border-subtle);
+}
+
+.mytasks-timeline-card.is-overdue {
+  background-color: color-mix(in srgb, var(--color-red) 6%, var(--bg-hover));
+  border-color: color-mix(in srgb, var(--color-red) 20%, var(--border-subtle));
+}
+
+.mytasks-timeline-date {
   color: var(--text-tertiary);
+  font-size: 0.72rem;
 }
 
-.mytasks-timeline span,
-.mytasks-timeline em {
+.mytasks-timeline-date.overdue {
+  color: var(--color-red);
+  font-weight: 600;
+}
+
+.mytasks-timeline-card strong {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  line-height: 1.3;
+}
+
+.mytasks-timeline-card em {
   color: var(--text-secondary);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-style: normal;
 }
 
-.mytasks-timeline strong,
-.mytasks-timeline em {
-  grid-column: 2;
-}
-
-.mytasks-timeline strong {
-  color: var(--text-primary);
-  font-size: 0.86rem;
-}
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 1200px) {
-  .mytasks-layout,
-  .mytasks-stats {
-    grid-template-columns: 1fr 1fr;
+  .mytasks-layout {
+    grid-template-columns: 1fr;
   }
 
   .mytasks-sidebar {
     position: static;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .mytasks-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .mytask-row {
-    grid-template-columns: minmax(220px, 1fr) 130px 132px 100px;
-  }
-
-  .mytask-actions {
-    grid-column: 1 / -1;
-    grid-template-columns: auto auto auto;
-    justify-content: end;
+    grid-template-columns: minmax(220px, 1fr) 120px 128px auto;
   }
 }
 
 @media (max-width: 760px) {
-  .mytasks-layout,
   .mytasks-stats,
-  .mytasks-timeline,
   .mytask-row {
     grid-template-columns: 1fr;
   }
 
-  .mytask-signals,
+  .mytasks-sidebar {
+    grid-template-columns: 1fr;
+  }
+
   .mytask-actions {
     justify-items: start;
   }

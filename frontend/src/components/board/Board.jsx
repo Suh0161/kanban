@@ -1,6 +1,28 @@
+import { useState, useCallback } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import BoardColumn from './BoardColumn.jsx';
 import AddColumnComposer from './AddColumnComposer.jsx';
+
+const STORAGE_KEY = (workspaceId) => `jokel-collapsed-cols-${workspaceId}`;
+
+function loadCollapsed(workspaceId) {
+  if (!workspaceId) return new Set();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY(workspaceId));
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCollapsed(workspaceId, set) {
+  if (!workspaceId) return;
+  try {
+    localStorage.setItem(STORAGE_KEY(workspaceId), JSON.stringify([...set]));
+  } catch {
+    // ignore storage failures
+  }
+}
 
 export default function Board({
   data, columnOrder,
@@ -17,10 +39,38 @@ export default function Board({
   onAddTask,
   onSelectTask,
   onQuickEdit,
+  onChangePriority,
+  onMoveTask,
+  onDeleteTask,
+  columns,
   addingColumn, onOpenAddColumn, onCloseAddColumn,
-  newColumnTitle, onNewColumnTitleChange, onAddColumn
+  newColumnTitle, onNewColumnTitleChange, onAddColumn,
+  labels = [],
+  workspaceId,
 }) {
   const isFiltered = !!searchQuery || activeFilterCount > 0;
+
+  const [collapsedState, setCollapsedState] = useState(() => ({
+    workspaceId,
+    set: loadCollapsed(workspaceId),
+  }));
+
+  // Re-load when the workspace switches. Pattern recommended for derived state:
+  // detect the input change in render, not in an effect.
+  if (collapsedState.workspaceId !== workspaceId) {
+    setCollapsedState({ workspaceId, set: loadCollapsed(workspaceId) });
+  }
+  const collapsed = collapsedState.set;
+
+  const toggleCollapse = useCallback((columnId) => {
+    setCollapsedState((prev) => {
+      const next = new Set(prev.set);
+      if (next.has(columnId)) next.delete(columnId);
+      else next.add(columnId);
+      saveCollapsed(prev.workspaceId, next);
+      return { workspaceId: prev.workspaceId, set: next };
+    });
+  }, []);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -28,6 +78,7 @@ export default function Board({
         {(provided) => (
           <div
             className="board-canvas"
+            data-onboarding="board-canvas"
             ref={provided.innerRef}
             {...provided.droppableProps}
           >
@@ -45,6 +96,8 @@ export default function Board({
                   visibleTasks={visibleTasks}
                   allTasks={allTasks}
                   isFiltered={isFiltered}
+                  isCollapsed={collapsed.has(column.id)}
+                  onToggleCollapse={toggleCollapse}
                   menuOpenCol={menuOpenCol}
                   onToggleMenu={onToggleMenu}
                   editingCol={editingCol}
@@ -66,6 +119,12 @@ export default function Board({
                   onAddTask={onAddTask}
                   onSelectTask={onSelectTask}
                   onQuickEdit={onQuickEdit}
+                  onChangePriority={onChangePriority}
+                  onMoveTask={onMoveTask}
+                  onDeleteTask={onDeleteTask}
+                  columns={columns}
+                  columnOrder={columnOrder}
+                  labels={labels}
                 />
               );
             })}

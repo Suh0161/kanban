@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quickstart · Jokel API</title>
+  <meta name="description" content="Make your first Jokel API request in under a minute." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect x='2' y='2' width='10' height='10' rx='2' fill='%23ffffff'/%3E%3Crect x='15' y='2' width='11' height='10' rx='2' fill='%23ffffff' opacity='0.6'/%3E%3Crect x='2' y='15' width='10' height='11' rx='2' fill='%23ffffff' opacity='0.4'/%3E%3Crect x='15' y='15' width='11' height='11' rx='2' fill='%23ffffff' opacity='0.2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/api/docs/assets/style.css" />
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <a href="/api/docs" class="brand">
+      <svg viewBox="0 0 28 28" fill="none">
+        <rect x="2" y="2" width="10" height="10" rx="2" fill="#ffffff"/>
+        <rect x="15" y="2" width="11" height="10" rx="2" fill="#ffffff" opacity="0.6"/>
+        <rect x="2" y="15" width="10" height="11" rx="2" fill="#ffffff" opacity="0.4"/>
+        <rect x="15" y="15" width="11" height="11" rx="2" fill="#ffffff" opacity="0.2"/>
+      </svg>
+      Jokel API
+    </a>
+    <nav class="nav-tabs" aria-label="Primary">
+      <a href="/api/docs" class="nav-tab">Overview</a>
+      <a href="/api/docs/guides/quickstart" class="nav-tab active">Guides</a>
+      <a href="/api/docs/reference" class="nav-tab">API Reference</a>
+    </nav>
+  </div>
+  <div class="header-right">
+  </div>
+</header>
+
+<div class="page-with-sidebar">
+
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Guides</div>
+
+      <a href="/api/docs/guides/quickstart" class="sidebar-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Quickstart
+      </a>
+      <a href="#qs-key" class="sidebar-sublink active" data-target="qs-key">Generate an API key</a>
+      <a href="#qs-request" class="sidebar-sublink" data-target="qs-request">Make your first request</a>
+      <a href="#qs-create" class="sidebar-sublink" data-target="qs-create">Create a task</a>
+      <a href="#qs-move" class="sidebar-sublink" data-target="qs-move">Move a task</a>
+      <a href="#qs-next" class="sidebar-sublink" data-target="qs-next">Next steps</a>
+
+      <a href="/api/docs/guides/authentication" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Authentication
+      </a>
+      <a href="/api/docs/guides/webhooks" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2"/><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06"/><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8"/></svg>
+        Webhooks
+      </a>
+    </div>
+  </aside>
+
+  <article class="article">
+    <div class="kicker">Guides</div>
+    <h1 class="page-title">Quickstart</h1>
+    <p class="page-lede">Pull your board, create a task, move it across the workflow — all in under a minute. By the end of this guide you'll have a working API key and a feel for how Jokel's REST surface fits together.</p>
+
+    <h2 id="qs-key">1. Generate an API key</h2>
+    <p>Open the Jokel app and head to <strong>Settings → API Keys</strong>. Hit <strong>Generate API Key</strong>, give it a memorable name (something like <code>local-dev</code> or <code>my-first-bot</code>), and pick the <strong>Read &amp; Write</strong> scope so you can both fetch and modify data.</p>
+    <p>Copy the key the moment it appears. We only show the raw value once — after you close the dialog it's gone for good and you'll need to make a new one.</p>
+
+    <div class="callout callout-warn">
+      <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="callout-body"><strong>Treat your API key like a password.</strong>Keys with the <code>jokel_</code> prefix grant full access to whatever scope you set. Keep them out of version control, commit history, and client-side bundles. Environment variables or a secrets manager are the right home for them.</div>
+    </div>
+
+    <h2 id="qs-request">2. Make your first request</h2>
+    <p>The fastest way to get a feel for the API is to fetch your full board state. One <code>GET</code>, one header, and you'll see every column and task in your workspace come back as JSON.</p>
+    <p>Replace <code>trust-and-safety</code> with your own workspace ID (you can find it in the URL when you're viewing a board) and paste in the key you just generated:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-get">GET</span><span>/board/{workspaceId}</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_your_key_here"</span></code></pre>
+    </div>
+
+    <p>You'll get back the whole board in one shot: every task, every column, the column ordering, and metadata like priorities, assignees, due dates, tags, comments, attachments, and checklists. Most integrations start here — pull once, then issue smaller writes.</p>
+
+    <h2 id="qs-create">3. Create a task</h2>
+    <p>Tasks always live inside a column, so the first thing you need is a <code>columnId</code> from that board response. Pick any column you like (typically the leftmost "To do" or "Backlog") and post a new task to it:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-post">POST</span><span>/tasks</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST http://localhost:3001/api/v1/tasks <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_your_key_here"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-d</span> <span class="tk-str">'{"columnId":"col-1","title":"Fix login bug","priority":"High","tags":["bug"]}'</span></code></pre>
+    </div>
+
+    <p>Only <code>columnId</code> and <code>title</code> are required. Everything else — priority, tags, description, due date, assignee — is optional and can be filled in later. The response gives you the new task's full record, including its generated <code>id</code> and short <code>code</code>, which you'll use for follow-up calls.</p>
+
+    <h2 id="qs-move">4. Move a task</h2>
+    <p>This is where Jokel earns its keep. Moving a task between columns is how you reflect progress through your workflow — "In progress", "Review", "Done" — and it's one of the most common API calls you'll make.</p>
+    <p>Use the task <code>id</code> from the previous step, and pick a different column for <code>targetColumnId</code>:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-head-left"><span class="method method-patch">PATCH</span><span>/tasks/{taskId}/move</span></div>
+        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+      </div>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH http://localhost:3001/api/v1/tasks/task-1/move <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_your_key_here"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-d</span> <span class="tk-str">'{"targetColumnId":"col-2"}'</span></code></pre>
+    </div>
+
+    <p>Behind the scenes Jokel records this as a <code>task.moved</code> activity event and fires the matching webhook to anyone subscribed. If you have a Slack bot, a Discord notifier, or a CI pipeline tied into Jokel, this single call is what wakes them up.</p>
+
+    <h2 id="qs-next">Next steps</h2>
+    <p>That's the whole loop. From here you can keep building in two directions:</p>
+    <ul>
+      <li><strong>Build out the integration.</strong> Read the <a href="/api/docs/guides/authentication">Authentication guide</a> to compare JWT bearer tokens (good for browser clients) with API keys (better for bots and CI), or browse the full <a href="/api/docs/reference">API reference</a> for every endpoint with parameters, schemas, and examples.</li>
+      <li><strong>Make it real-time.</strong> Polling works, but webhooks are nicer. The <a href="/api/docs/guides/webhooks">Webhooks guide</a> shows how to subscribe to events, verify the signature on incoming payloads, and handle retries when your endpoint blips.</li>
+    </ul>
+    <p>If you get stuck, the API reference is the source of truth — every operation listed there is generated directly from the running backend, so it can't go stale.</p>
+
+    <div class="article-footer">
+      <a class="article-footer-link next" href="/api/docs/guides/authentication">
+        Authentication
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+  </article>
+
+</div>
+
+<script src="/api/docs/assets/docs.js"></script>
+</body>
+</html>

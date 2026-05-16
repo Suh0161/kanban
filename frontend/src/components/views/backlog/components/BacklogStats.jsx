@@ -1,28 +1,38 @@
-import { CalendarClock, ClipboardList, Flame, ListChecks, Milestone } from 'lucide-react';
+import { CalendarClock, CheckCircle2, ClipboardList, Flame, ListChecks, Milestone, TriangleAlert } from 'lucide-react';
 
-export default function BacklogStats({ total, ready, grooming, unscheduled, highUrgency, sprintDraft }) {
-  const stats = [
-    { label: 'Open issues', value: total, icon: ClipboardList },
-    { label: 'Ready for sprint', value: ready, icon: ListChecks },
-    { label: 'Sprint draft', value: sprintDraft, icon: Milestone },
-    { label: 'Needs grooming', value: grooming, icon: Flame },
-    { label: 'Unscheduled', value: unscheduled, icon: CalendarClock }
-  ];
+const stats = [
+  { key: 'total',       bucket: 'all',         label: 'Open issues',    icon: ClipboardList,  accent: null },
+  { key: 'ready',       bucket: 'ready',        label: 'Ready',          icon: CheckCircle2,   accent: 'blue' },
+  { key: 'sprintDraft', bucket: 'sprint',       label: 'Sprint draft',   icon: Milestone,      accent: 'purple' },
+  { key: 'grooming',    bucket: 'grooming',     label: 'Needs grooming', icon: Flame,          accent: 'orange' },
+  { key: 'overdue',     bucket: 'overdue',      label: 'Overdue',        icon: TriangleAlert,  accent: 'red' },
+  { key: 'unscheduled', bucket: 'unscheduled',  label: 'Unscheduled',    icon: CalendarClock,  accent: null },
+  { key: 'highUrgency', bucket: 'urgent',        label: 'High urgency',   icon: ListChecks,     accent: 'orange' },
+];
+
+export default function BacklogStats({ total, ready, grooming, unscheduled, overdue, highUrgency, sprintDraft, onBucketClick, activeBucket }) {
+  const values = { total, ready, grooming, unscheduled, overdue, highUrgency, sprintDraft };
 
   return (
     <div className="backlog-stats">
-      {stats.map(({ label, value, icon: Icon }) => (
-        <div className="workspace-stat backlog-stat" key={label}>
-          <Icon size={17} />
-          <span>{label}</span>
-          <strong>{value}</strong>
-        </div>
-      ))}
-      <div className="backlog-alert">
-        <Flame size={16} />
-        <span>High urgency</span>
-        <strong>{highUrgency}</strong>
-      </div>
+      {stats.map(({ key, bucket, label, icon: Icon, accent }) => {
+        const val = values[key];
+        const isActive = bucket && activeBucket === bucket;
+        const isClickable = !!bucket;
+        return (
+          <button
+            key={key}
+            type="button"
+            className={`backlog-stat-card ${accent ? `accent-${accent}` : ''} ${isActive ? 'is-active' : ''} ${isClickable ? 'is-clickable' : ''}`}
+            onClick={isClickable ? () => onBucketClick(bucket) : undefined}
+            disabled={!isClickable}
+          >
+            <Icon size={16} className="backlog-stat-icon" />
+            <span className="backlog-stat-label">{label}</span>
+            <strong className="backlog-stat-value">{val}</strong>
+          </button>
+        );
+      })}
     </div>
   );
 }
