@@ -3,8 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 
-import { PORT, FRONTEND_URLS, IS_DEV, IS_PROD } from './config.js';
+import { PORT, FRONTEND_URLS, IS_DEV, IS_PROD, JWT_SECRET } from './config.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { requestLogger } from './middleware/logger.js';
 import { auditMiddleware } from './middleware/audit.js';
@@ -99,13 +100,64 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting
+// Resolve the JWT (if present) BEFORE the rate limiter so authenticated
+// requests share a per-user bucket instead of a per-IP one. Without this,
+// two teammates on the same NAT collide, and a single user with two tabs
+// still feels the limit even though they're not abusing anything. We do
+// not enforce auth here — invalid/missing tokens just leave req.userId
+// unset and fall back to IP keying.
+app.use((req, _res, next) => {
+  if (req.userId) return next();
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const decoded = jwt.verify(authHeader.slice(7), JWT_SECRET);
+      if (decoded?.userId) req.userId = decoded.userId;
+    } catch { /* invalid token — leave anonymous, real auth runs later */ }
+  }
+  next();
+});
+
+// Endpoints the SPA polls in the background and that are cheap to serve.
+// We don't burn rate-limit budget on these — they read indices, not data
+// pages. If one of them genuinely melts down, add a dedicated bucket.
+const POLL_PATHS = new Set([
+  '/api/health',
+  '/api/v1/health',
+  '/api/v1/auth/me',
+  '/api/v1/auth/oauth/providers',
+]);
+function isPollingRequest(req) {
+  if (POLL_PATHS.has(req.path)) return true;
+  // Presence is the SPA's heartbeat. Skip GET/POST on heartbeat + GET on
+  // /presence. These are tiny, authenticated, and called every ~45s/tab.
+  if (req.path.startsWith('/api/v1/workspaces/') &&
+      (req.path.endsWith('/presence') || req.path.endsWith('/presence/heartbeat'))) {
+    return true;
+  }
+  return false;
+}
+
+// Rate limiting. The general bucket protects the API against runaway
+// scripts but has to leave headroom for normal browser sessions, which
+// fan out into 30-50 reads per page on a busy dashboard. Authenticated
+// users get their own per-user bucket; anonymous traffic falls back to
+// IP. Polling endpoints (presence, /auth/me, health) are skipped.
+function userOrIpKey(req) {
+  return req.userId ? `u:${req.userId}` : `ip:${req.ip}`;
+}
+
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: IS_DEV ? 1000 : 100,
+  // 1500/15min ≈ 100 req/min per identity. A normal session reads 200-400
+  // total over 15 minutes; a chatty tab with the activity log open reads
+  // closer to 600. This leaves real headroom without throwing the door
+  // open.
+  max: IS_DEV ? 5000 : 1500,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
+  keyGenerator: userOrIpKey,
+  skip: isPollingRequest,
   message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMITED' },
 }));
 
@@ -113,6 +165,8 @@ app.use(rateLimit({
 // route triggers a third-party redirect (not a credential check), and
 // /auth/me / /auth/oauth/providers are read-only, so we don't burn them
 // through this bucket — they fall back to the general limit above.
+// Login/register key by IP on purpose: the user has no identity yet, and
+// brute-force protection is the whole point.
 const authBruteForceLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: IS_DEV ? 100 : 30,
@@ -124,13 +178,14 @@ const authBruteForceLimit = rateLimit({
 app.use('/api/v1/auth/login', authBruteForceLimit);
 app.use('/api/v1/auth/register', authBruteForceLimit);
 
-// Stricter rate limit for write-heavy attachment uploads (per IP)
+// Stricter rate limit for write-heavy attachment uploads (per user when
+// authenticated, falling back to IP otherwise).
 app.use('/api/v1/tasks/:taskId/attachments', rateLimit({
   windowMs: 60 * 1000,
   max: IS_DEV ? 60 : 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
+  keyGenerator: userOrIpKey,
   message: { error: 'Too many uploads, slow down.', code: 'RATE_LIMITED' },
 }));
 
@@ -141,7 +196,7 @@ app.use('/api/v1/auth/avatar', rateLimit({
   max: IS_DEV ? 30 : 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
+  keyGenerator: userOrIpKey,
   message: { error: 'Too many avatar uploads, slow down.', code: 'RATE_LIMITED' },
 }));
 
@@ -151,7 +206,7 @@ app.use(['/api/v1/workspaces/:workspaceId/logo', '/api/v1/workspaces/:workspaceI
   max: IS_DEV ? 30 : 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
+  keyGenerator: userOrIpKey,
   message: { error: 'Too many uploads, slow down.', code: 'RATE_LIMITED' },
 }));
 

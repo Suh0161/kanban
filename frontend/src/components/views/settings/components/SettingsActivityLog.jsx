@@ -51,7 +51,9 @@ export default function SettingsActivityLog({ workspaceId }) {
   useEffect(() => {
     mountedRef.current = true;
     const timer = setTimeout(() => { fetchActivity(); }, 0);
-    const interval = setInterval(fetchActivity, 30000);
+    // 60s is plenty for an activity log. The 30s rhythm meant a single
+    // open Settings tab burned 30 reqs / 15min just sitting there.
+    const interval = setInterval(fetchActivity, 60000);
     return () => {
       mountedRef.current = false;
       clearTimeout(timer);

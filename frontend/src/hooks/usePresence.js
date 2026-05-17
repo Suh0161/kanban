@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiPost, apiGet } from '../api/client.js';
 
-const HEARTBEAT_INTERVAL = 30000;
+const HEARTBEAT_INTERVAL = 45000;
 
 export default function usePresence(workspaceId) {
   const [onlineUsers, setOnlineUsers] = useState([]);
