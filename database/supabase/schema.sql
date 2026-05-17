@@ -21,6 +21,7 @@
 -- Required extensions
 create extension if not exists "uuid-ossp";
 create extension if not exists pgcrypto;
+create extension if not exists citext;
 
 -- ─── Profiles ───────────────────────────────────────────────────────────────
 create table if not exists public.profiles (
@@ -299,10 +300,12 @@ create policy wm_manager_write on public.workspace_members
 
 -- ─── Generic: any row scoped to a workspace_id column ──────────────────────
 -- columns / activity_log / api_keys / webhooks
-do $$ begin
-  for tbl in select unnest(array[
-    'columns','activity_log','api_keys','webhooks'
-  ]) loop
+do $$
+declare
+  tbl text;
+begin
+  foreach tbl in array array['columns','activity_log','api_keys','webhooks']
+  loop
     execute format('drop policy if exists %I_member_read on public.%I', tbl, tbl);
     execute format('create policy %I_member_read on public.%I for select using (public.is_workspace_member(workspace_id))', tbl, tbl);
     execute format('drop policy if exists %I_edit_write on public.%I', tbl, tbl);
