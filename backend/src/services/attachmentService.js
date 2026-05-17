@@ -63,12 +63,15 @@ export async function createAttachmentFromUpload(db, {
  * Fetch attachment metadata + a readable stream for the bytes.
  * Returns null if the row exists but the bytes are missing
  * (caller decides how to surface that — usually 404).
+ *
+ * Async because the Supabase storage backend is HTTP-bound; the local
+ * backend resolves synchronously and `await` is a no-op there.
  */
-export function readAttachment(db, attachmentId) {
+export async function readAttachment(db, attachmentId) {
   const row = db.prepare('SELECT * FROM attachments WHERE id = ?').get(attachmentId);
   if (!row) return null;
   if (!row.storage_key) return { row, file: null };
-  const file = storage.get(row.storage_key);
+  const file = await storage.get(row.storage_key);
   return { row, file };
 }
 
@@ -76,13 +79,15 @@ export function getAttachmentRow(db, attachmentId) {
   return db.prepare('SELECT * FROM attachments WHERE id = ?').get(attachmentId);
 }
 
-export function deleteAttachment(db, attachmentId) {
+export async function deleteAttachment(db, attachmentId) {
   const row = db.prepare('SELECT * FROM attachments WHERE id = ?').get(attachmentId);
   if (!row) throw new AppError('Attachment not found', 404, 'NOT_FOUND');
 
   db.prepare('DELETE FROM attachments WHERE id = ?').run(attachmentId);
 
   if (row.storage_key) {
-    storage.remove(row.storage_key);
+    // Best-effort cleanup; orphan bytes are tolerable, a failed network
+    // round-trip shouldn't block the row delete.
+    try { await storage.remove(row.storage_key); } catch { /* ignore */ }
   }
 }

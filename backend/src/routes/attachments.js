@@ -158,7 +158,7 @@ defineRoute(
       404: { description: 'Attachment not found' },
     },
   },
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const { id } = req.params;
 
@@ -177,7 +177,7 @@ defineRoute(
         throw new AppError('Authentication required', 401, 'UNAUTHORIZED');
       }
 
-      const result = readAttachment(db, id);
+      const result = await readAttachment(db, id);
       if (!result) throw new AppError('Attachment not found', 404, 'NOT_FOUND');
 
       const { row, file } = result;
@@ -214,7 +214,7 @@ defineRoute(
     middleware: [requireAuth],
     responses: { 200: jsonContent(z.object({ success: z.boolean() }), 'Deleted') },
   },
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const { id: attachmentId } = req.params;
       const row = getAttachmentRow(db, attachmentId);
@@ -223,7 +223,7 @@ defineRoute(
       const workspaceId = getTaskWorkspaceId(db, row.task_id);
       assertCanEdit(db, req.userId, workspaceId);
 
-      deleteAttachment(db, attachmentId);
+      await deleteAttachment(db, attachmentId);
 
       logActivity(db, {
         userId: req.userId,

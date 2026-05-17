@@ -44,10 +44,12 @@ export async function saveAvatarFromUpload(db, userId, { tempPath, mimeType }) {
 
   // Remove any previous file for this user. We don't enumerate the bucket;
   // we just look at the URL we stored last time and unlink that storage key.
+  // `storage.remove` may be async (Supabase) or sync (local) — await is safe
+  // for both, and a failure here is non-fatal (orphan bytes are tolerable).
   const prev = db.prepare('SELECT avatar FROM users WHERE id = ?').get(userId);
   if (prev?.avatar && prev.avatar.startsWith('/api/v1/avatars/')) {
     const prevKey = prev.avatar.replace('/api/v1/', '');
-    storage.remove(prevKey);
+    try { await storage.remove(prevKey); } catch { /* ignore */ }
   }
 
   const key = `avatars/${userId}/${uuidv4()}${ext}`;
@@ -69,11 +71,16 @@ export async function saveAvatarFromUpload(db, userId, { tempPath, mimeType }) {
  * Stream an avatar by `userId` + `filename`. Public — avatars don't carry
  * sensitive content and they're served from <img> tags that can't send
  * Authorization headers. Same model as Slack/GitHub user-content URLs.
+ *
+ * Returns `null` for invalid keys or missing files; otherwise returns the
+ * `{ stream, size }` shape both storage backends produce. The function is
+ * async because the Supabase backend is HTTP-bound; the local backend
+ * resolves synchronously and `await` is a no-op.
  */
-export function readAvatar(userId, filename) {
+export async function readAvatar(userId, filename) {
   if (!SAFE_AVATAR_USER_ID.test(userId) || !SAFE_AVATAR_FILENAME.test(filename)) {
     return null;
   }
   const key = `avatars/${userId}/${filename}`;
-  return storage.get(key);
+  return await storage.get(key);
 }

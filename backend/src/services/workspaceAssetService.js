@@ -54,13 +54,15 @@ export async function saveWorkspaceAsset(db, kind, workspaceId, { tempPath, mime
   if (!ext) throw new AppError('Unsupported image type', 400, 'VALIDATION_ERROR');
 
   // Drop the previous file for this kind, if it lived in our storage.
+  // `storage.remove` may be async (Supabase) or sync (local) — await is
+  // safe for both, and a failure here is non-fatal.
   const prev = db
     .prepare(`SELECT ${cfg.column} AS value FROM workspaces WHERE id = ?`)
     .get(workspaceId);
   const prevUrl = prev?.value;
   if (prevUrl && typeof prevUrl === 'string' && prevUrl.startsWith(`/api/v1/${cfg.publicPath}/`)) {
     const prevKey = `${cfg.prefix}/${prevUrl.replace(`/api/v1/${cfg.publicPath}/`, '')}`;
-    storage.remove(prevKey);
+    try { await storage.remove(prevKey); } catch { /* ignore */ }
   }
 
   const key = `${cfg.prefix}/${workspaceId}/${uuidv4()}${ext}`;
@@ -80,14 +82,16 @@ export async function saveWorkspaceAsset(db, kind, workspaceId, { tempPath, mime
 
 /**
  * Stream a stored asset by workspace + filename. Public — workspace
- * branding is intended to render in `<img>` tags from any origin.
+ * branding is intended to render in `<img>` tags from any origin. Async
+ * because the Supabase storage backend is HTTP-bound; the local backend
+ * resolves synchronously and `await` is a no-op there.
  */
-export function readWorkspaceAsset(kind, workspaceId, filename) {
+export async function readWorkspaceAsset(kind, workspaceId, filename) {
   const cfg = KINDS[kind];
   if (!cfg) return null;
   if (!SAFE_WORKSPACE_ID.test(workspaceId) || !SAFE_ASSET_FILENAME.test(filename)) {
     return null;
   }
   const key = `${cfg.prefix}/${workspaceId}/${filename}`;
-  return storage.get(key);
+  return await storage.get(key);
 }

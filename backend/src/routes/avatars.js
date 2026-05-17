@@ -123,10 +123,10 @@ defineRoute(
       404: { description: 'Avatar not found' },
     },
   },
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const { userId, filename } = req.params;
-      const file = readAvatar(userId, filename);
+      const file = await readAvatar(userId, filename);
       if (!file) throw new AppError('Avatar not found', 404, 'NOT_FOUND');
 
       // Pick a content type from the extension. Storage doesn't track it.

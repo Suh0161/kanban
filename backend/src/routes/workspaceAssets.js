@@ -129,7 +129,7 @@ defineRoute(
     },
   },
   (req, res, next) => {
-    streamAsset(req, res, next, 'logo');
+    streamAsset(req, res, next, 'logo').catch(next);
   }
 );
 
@@ -191,15 +191,16 @@ defineRoute(
     },
   },
   (req, res, next) => {
-    streamAsset(req, res, next, 'background');
+    streamAsset(req, res, next, 'background').catch(next);
   }
 );
 
-// Shared streamer for both kinds.
-function streamAsset(req, res, next, kind) {
+// Shared streamer for both kinds. Async so it works with both the
+// synchronous local-disk backend and the async Supabase backend.
+async function streamAsset(req, res, next, kind) {
   try {
     const { workspaceId, filename } = req.params;
-    const file = readWorkspaceAsset(kind, workspaceId, filename);
+    const file = await readWorkspaceAsset(kind, workspaceId, filename);
     if (!file) throw new AppError('Not found', 404, 'NOT_FOUND');
 
     const ext = filename.toLowerCase().split('.').pop();

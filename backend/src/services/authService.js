@@ -138,9 +138,11 @@ export function updateUser(db, userId, updates) {
   }
 
   if (updates.avatar !== undefined) {
-    // Accept either http(s) URLs (e.g. dicebear) or data URLs of common image
-    // mime types. Reject anything else early so we don't store JS, SVG, or
-    // arbitrary text.
+    // Accept three forms:
+    //   1. http(s) URL (e.g. dicebear preset)
+    //   2. data URL of common image mime types
+    //   3. internal API path served by our own avatar route
+    // Anything else is rejected so we can't store JS, SVG, or arbitrary text.
     const value = updates.avatar;
     if (value !== null && value !== '') {
       if (typeof value !== 'string') {
@@ -148,7 +150,8 @@ export function updateUser(db, userId, updates) {
       }
       const isHttps = /^https?:\/\//i.test(value);
       const isImageDataUrl = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/i.test(value);
-      if (!isHttps && !isImageDataUrl) {
+      const isInternalAvatar = /^\/api\/v1\/avatars\/[0-9a-f-]{36}\/[\w.-]+$/i.test(value);
+      if (!isHttps && !isImageDataUrl && !isInternalAvatar) {
         throw new AppError('Avatar must be an https URL or an image data URL', 400, 'VALIDATION_ERROR');
       }
       if (value.length > 2 * 1024 * 1024) {
