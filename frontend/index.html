@@ -4,28 +4,72 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0a0a0a" />
+    <meta name="color-scheme" content="dark" />
 
-    <title>Elevate</title>
-    <meta name="description" content="A dark-themed Kanban and planning workspace." />
+    <!-- ── SEO ────────────────────────────────────────────────────────── -->
+    <!-- Title: 56 chars. Stays under the 60-char ceiling Google truncates at. -->
+    <title>Elevate · Kanban and planning workspace for teams</title>
 
-    <!-- Favicon + platform shortcut icons. The SVG works on all modern
-         browsers and scales without rasterizing. -->
+    <!-- Description: 159 chars. Concrete features (Kanban, backlog, REST
+         API, webhooks) help search engines match real intent. -->
+    <meta
+      name="description"
+      content="A planning workspace for engineering teams. Kanban boards, sprint backlog, personal queues, role-based access, and a REST API with signed webhooks."
+    />
+    <meta
+      name="keywords"
+      content="kanban board, project management, sprint planning, backlog, task tracker, team collaboration, REST API, webhooks, OAuth, self-hosted, open API"
+    />
+    <meta name="author" content="Elevate" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://kanban-gules-tau.vercel.app/" />
+
+    <!-- ── Favicon + shortcut icons ──────────────────────────────────── -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <link rel="mask-icon" href="/favicon.svg" color="#582af5" />
 
-    <!-- Open Graph / link previews. Safe defaults; no remote URL is
-         baked in so a deployed instance can override at the proxy layer
-         if it wants richer cards. -->
+    <!-- ── Open Graph (Facebook, LinkedIn, Slack, Discord previews) ──── -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Elevate" />
-    <meta property="og:description" content="A dark-themed Kanban and planning workspace." />
+    <meta property="og:site_name" content="Elevate" />
+    <meta property="og:url" content="https://kanban-gules-tau.vercel.app/" />
+    <meta
+      property="og:title"
+      content="Elevate · Kanban and planning workspace for teams"
+    />
+    <meta
+      property="og:description"
+      content="A planning workspace for engineering teams. Kanban boards, sprint backlog, personal queues, role-based access, and a REST API with signed webhooks."
+    />
     <meta property="og:image" content="/favicon.svg" />
+    <meta property="og:image:alt" content="Elevate logo" />
+    <meta property="og:locale" content="en_US" />
 
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Elevate" />
-    <meta name="twitter:description" content="A dark-themed Kanban and planning workspace." />
+    <!-- ── Twitter / X cards ─────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Elevate · Kanban and planning workspace for teams"
+    />
+    <meta
+      name="twitter:description"
+      content="A planning workspace for engineering teams. Kanban boards, sprint backlog, personal queues, role-based access, and a REST API with signed webhooks."
+    />
     <meta name="twitter:image" content="/favicon.svg" />
+    <meta name="twitter:image:alt" content="Elevate logo" />
+
+    <!-- ── JSON-LD: helps search engines render a richer result card ─── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Elevate",
+        "description": "A planning workspace for engineering teams. Kanban boards, sprint backlog, personal queues, role-based access, and a REST API with signed webhooks.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
