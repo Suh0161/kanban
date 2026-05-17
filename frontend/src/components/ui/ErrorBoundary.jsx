@@ -1,5 +1,15 @@
 import { Component } from 'react';
+import { ServerErrorPage } from '../views/error';
 
+/**
+ * Top-level safety net. When a render throws, we mount the styled 500
+ * page instead of letting React unmount the tree — same look as a real
+ * server-side 500. Resetting `hasError` lets the caller pass an
+ * `onRetry` to re-mount the children.
+ *
+ * For inline fetch failures use `ErrorState` from `views/error` rather
+ * than wrapping every request in a boundary.
+ */
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -14,42 +24,28 @@ export default class ErrorBoundary extends Component {
     console.error('[ErrorBoundary]', error, errorInfo);
   }
 
+  reset = () => {
+    this.setState({ hasError: false, error: null });
+    this.props.onRetry?.();
+  };
+
   render() {
     if (this.state.hasError) {
+      const err = this.state.error;
+      // Stack only in dev — production should never leak it.
+      const details =
+        import.meta.env.DEV && err?.stack ? err.stack : null;
+
       return (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '200px',
-          padding: '32px',
-          color: 'var(--text-secondary)',
-          fontFamily: 'var(--font-sans)',
-        }}>
-          <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Something went wrong</h3>
-          <p style={{ marginBottom: '16px', fontSize: '14px' }}>
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </p>
-          <button
-            onClick={() => {
-              this.setState({ hasError: false, error: null });
-              this.props.onRetry?.();
-            }}
-            style={{
-              padding: '8px 16px',
-              background: 'var(--accent-blue)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontFamily: 'var(--font-sans)',
-            }}
-          >
-            Try again
-          </button>
-        </div>
+        <ServerErrorPage
+          message={err?.message || undefined}
+          details={details}
+          requestId={err?.requestId}
+          primary={{
+            label: 'Try again',
+            onClick: this.reset,
+          }}
+        />
       );
     }
 

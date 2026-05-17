@@ -22,6 +22,18 @@
   color: var(--text-primary);
   font-weight: 600;
 }
+.breadcrumb-workspace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.breadcrumb-workspace-logo {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--bg-card);
+}
 .breadcrumb-link {
   color: var(--text-tertiary);
   text-decoration: none;

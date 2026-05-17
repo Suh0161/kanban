@@ -7,7 +7,7 @@ import { tmpdir } from 'os';
 import { AppError } from '../middleware/error.js';
 import { requireAuth } from '../middleware/auth.js';
 import db from '../db.js';
-import { assertWorkspaceMember } from '../services/workspaceService.js';
+import { assertWorkspaceMember, assertCanEdit } from '../services/workspaceService.js';
 import { getTaskWorkspaceId } from '../services/taskService.js';
 import {
   createAttachmentFromUpload,
@@ -43,7 +43,7 @@ const upload = multer({
       const ext = file.originalname.includes('.')
         ? '.' + file.originalname.split('.').pop()
         : '';
-      cb(null, `jokel-upload-${uuidv4()}${ext}`);
+      cb(null, `Elevate-upload-${uuidv4()}${ext}`);
     },
   }),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -98,7 +98,7 @@ defineRoute(
       if (!file) throw new AppError('File is required', 400, 'VALIDATION_ERROR');
 
       const workspaceId = getTaskWorkspaceId(db, taskId);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
 
       // Magic-byte sniff before we let it into storage.
       if (!isValidImageFile(file.path)) {
@@ -221,7 +221,7 @@ defineRoute(
       if (!row) throw new AppError('Attachment not found', 404, 'NOT_FOUND');
 
       const workspaceId = getTaskWorkspaceId(db, row.task_id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
 
       deleteAttachment(db, attachmentId);
 

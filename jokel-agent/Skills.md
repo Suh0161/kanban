@@ -1,4 +1,4 @@
-# Jokel Deep Skill
+# Elevate Deep Skill
 
 Use this when `AGENTS.md` is not enough: complex feature work, debugging, architectural decisions, or refactors across view folders, hooks, and styles.
 
@@ -12,10 +12,10 @@ Use this when `AGENTS.md` is not enough: complex feature work, debugging, archit
 
 ## Product Model
 
-Jokel is a dark Taiga plus Trello style app:
+Elevate is a dark-themed Kanban and planning app:
 
-- Trello-like board movement and card details
-- Taiga-like backlog planning, grooming, sprint draft, and workspace administration
+- A board for moving cards through workflow columns
+- A backlog for grooming, sprint draft, and workspace administration
 - Operational views for My Tasks and Inbox
 - Backend API with SQLite persistence via better-sqlite3
 
@@ -27,7 +27,7 @@ Use this guide as a total software engineering playbook, not only a frontend not
 
 - Start from the workflow: board movement, backlog planning, intake, personal queue, analytics, team ownership, and settings.
 - Prefer user-facing behavior over decorative UI. Every new surface should answer what the user can now do faster, safer, or more clearly.
-- Keep demo data believable. Names, statuses, priorities, and counts should support the Taiga plus Trello concept.
+- Keep demo data believable. Names, statuses, priorities, and counts should make sense for a planning app.
 - Make empty, loading, filtered, and error states feel intentional.
 
 ### Frontend Engineering
@@ -89,7 +89,7 @@ Use this guide as a total software engineering playbook, not only a frontend not
 ### Release Readiness
 
 - Before finishing a meaningful change, confirm:
-  - The user workflow still works end to end.
+  - The user workflow still works.
   - `localStorage` data remains compatible.
   - UI fits at desktop and narrow widths.
   - Lint and build pass.
@@ -140,7 +140,7 @@ isLoggedIn
 loading
 ```
 
-Authenticates via `POST /api/auth/login`, stores the JWT token in `localStorage` key `jokel-token`, and caches the user object in `jokel-auth`. On mount, validates the token with `GET /api/auth/me`. The `jokel-welcome` session flag controls the workspace welcome toast.
+Authenticates via `POST /api/auth/login`, stores the JWT token in `localStorage` key `Elevate-token`, and caches the user object in `Elevate-auth`. On mount, validates the token with `GET /api/auth/me`. The `Elevate-welcome` session flag controls the workspace welcome toast.
 
 ### `useWorkspaces.js`
 

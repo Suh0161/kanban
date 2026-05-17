@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import db from '../db.js';
+import { IS_PROD } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
-import { assertWorkspaceMember } from '../services/workspaceService.js';
+import { assertWorkspaceMember, assertCanManageWorkspace } from '../services/workspaceService.js';
+import { dispatchSingleWebhook } from '../services/webhookService.js';
 import { defineRoute, withDefaultMiddleware } from '../openapi/route.js';
 import { Webhook, errorResponse, jsonContent } from '../openapi/schemas.js';
 
@@ -16,15 +18,62 @@ const WebhookPathParams = z.object({
   id: z.string(),
 });
 
+const webhookUrl = z
+  .string()
+  .url()
+  .max(500)
+  .refine(
+    (val) => {
+      try {
+        const u = new URL(val);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+        if (IS_PROD && u.protocol !== 'https:') return false;
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: 'Webhook URL must be HTTPS' }
+  );
+
+const KNOWN_EVENT_SLUGS = new Set([
+  'task.created', 'task.updated', 'task.moved', 'task.deleted',
+  'task.archived', 'task.restored',
+  'column.created', 'column.deleted', 'column.archived', 'column.restored',
+  'comment.added',
+  'checklist.created', 'checklist.deleted',
+]);
+
+/**
+ * Parse a comma-separated `events` string into a clean, validated list.
+ * Drops blanks and unknown slugs so a typo can't slip into storage and
+ * silently disable a webhook.
+ */
+function parseEvents(raw) {
+  if (typeof raw !== 'string') return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => KNOWN_EVENT_SLUGS.has(s));
+}
+
+const eventsField = z
+  .string()
+  .max(500)
+  .refine(
+    (val) => parseEvents(val).length > 0,
+    { message: 'events must contain at least one known slug' }
+  );
+
 const CreateWebhookBody = z.object({
-  url: z.string().url().max(500),
-  events: z.string().optional(),
+  url: webhookUrl,
+  events: eventsField.optional(),
   active: z.boolean().optional(),
 });
 
 const UpdateWebhookBody = z.object({
-  url: z.string().url().max(500).optional(),
-  events: z.string().optional(),
+  url: webhookUrl.optional(),
+  events: eventsField.optional(),
   active: z.boolean().optional(),
 });
 
@@ -46,12 +95,13 @@ defineRoute(
   (req, res, next) => {
     try {
       assertWorkspaceMember(db, req.userId, req.params.workspaceId);
-      const webhooks = db.prepare(`
+      const rows = db.prepare(`
         SELECT id, url, events, active, created_at, updated_at
         FROM webhooks
         WHERE workspace_id = ?
         ORDER BY created_at DESC
       `).all(req.params.workspaceId);
+      const webhooks = rows.map((w) => ({ ...w, active: !!w.active }));
       res.json({ webhooks });
     } catch (err) {
       next(err);
@@ -73,11 +123,12 @@ defineRoute(
   },
   (req, res, next) => {
     try {
-      assertWorkspaceMember(db, req.userId, req.params.workspaceId);
+      assertCanManageWorkspace(db, req.userId, req.params.workspaceId);
       const id = uuidv4();
       const secret = crypto.randomBytes(24).toString('hex');
-      const events = req.body.events || 'task.created,task.updated,task.moved,task.deleted';
-      const active = req.body.active !== false ? 1 : 0;
+      const events = parseEvents(req.body.events).join(',') ||
+        'task.created,task.updated,task.moved,task.deleted';
+      const active = req.body.active === false ? 0 : 1;
 
       db.prepare(`
         INSERT INTO webhooks (id, workspace_id, url, events, secret, active)
@@ -114,7 +165,7 @@ defineRoute(
   },
   (req, res, next) => {
     try {
-      assertWorkspaceMember(db, req.userId, req.params.workspaceId);
+      assertCanManageWorkspace(db, req.userId, req.params.workspaceId);
       const webhook = db.prepare('SELECT * FROM webhooks WHERE id = ? AND workspace_id = ?')
         .get(req.params.id, req.params.workspaceId);
       if (!webhook) {
@@ -122,7 +173,12 @@ defineRoute(
       }
       const updates = {};
       if (req.body.url !== undefined) updates.url = req.body.url;
-      if (req.body.events !== undefined) updates.events = req.body.events;
+      if (req.body.events !== undefined) {
+        updates.events = parseEvents(req.body.events).join(',');
+        if (!updates.events) {
+          return res.status(400).json({ error: 'events must contain at least one known slug', code: 'VALIDATION_ERROR' });
+        }
+      }
       if (req.body.active !== undefined) updates.active = req.body.active ? 1 : 0;
       updates.updated_at = new Date().toISOString();
 
@@ -152,7 +208,7 @@ defineRoute(
   },
   (req, res, next) => {
     try {
-      assertWorkspaceMember(db, req.userId, req.params.workspaceId);
+      assertCanManageWorkspace(db, req.userId, req.params.workspaceId);
       const result = db.prepare('DELETE FROM webhooks WHERE id = ? AND workspace_id = ?')
         .run(req.params.id, req.params.workspaceId);
       if (result.changes === 0) {
@@ -178,29 +234,27 @@ defineRoute(
       404: errorResponse('Webhook not found'),
     },
   },
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
-      assertWorkspaceMember(db, req.userId, req.params.workspaceId);
+      assertCanManageWorkspace(db, req.userId, req.params.workspaceId);
       const webhook = db.prepare('SELECT * FROM webhooks WHERE id = ? AND workspace_id = ?')
         .get(req.params.id, req.params.workspaceId);
       if (!webhook) {
         return res.status(404).json({ error: 'Webhook not found', code: 'NOT_FOUND' });
       }
-      const payload = JSON.stringify({
+      const result = await dispatchSingleWebhook({
+        url: webhook.url,
+        secret: webhook.secret,
         event: 'ping',
-        workspace_id: req.params.workspaceId,
-        timestamp: new Date().toISOString(),
-      });
-      const signature = crypto.createHmac('sha256', webhook.secret).update(payload).digest('hex');
-      fetch(webhook.url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Jokel-Event': 'ping',
-          'X-Jokel-Signature': signature,
+        payload: {
+          event: 'ping',
+          workspace_id: req.params.workspaceId,
+          timestamp: new Date().toISOString(),
         },
-        body: payload,
-      }).catch(() => {});
+      });
+      if (!result.ok) {
+        return res.status(400).json({ error: `Refused: ${result.reason}`, code: 'WEBHOOK_BLOCKED' });
+      }
       res.json({ ok: true, message: 'Test ping sent' });
     } catch (err) {
       next(err);

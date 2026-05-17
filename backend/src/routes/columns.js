@@ -4,7 +4,7 @@ import { AppError } from '../middleware/error.js';
 import { sanitizeString } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/auth.js';
 import db from '../db.js';
-import { assertWorkspaceMember } from '../services/workspaceService.js';
+import { assertCanEdit } from '../services/workspaceService.js';
 import { logActivity } from '../services/activityService.js';
 import { dispatchWebhook } from '../services/webhookService.js';
 import {
@@ -55,7 +55,7 @@ defineRoute(
     try {
       const { workspaceId } = req.body;
       const title = sanitizeString(req.body.title, 200);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const column = createColumn(db, { workspaceId, title });
 
       logActivity(db, {
@@ -90,7 +90,7 @@ defineRoute(
       const { id } = req.params;
       const title = sanitizeString(req.body.title, 200);
       const workspaceId = getColumnWorkspaceId(db, id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const updated = renameColumn(db, id, title);
       logActivity(db, {
         userId: req.userId,
@@ -121,7 +121,7 @@ defineRoute(
     try {
       const { id } = req.params;
       const workspaceId = getColumnWorkspaceId(db, id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const colToDelete = db.prepare('SELECT title FROM columns WHERE id = ?').get(id);
       deleteColumn(db, id);
       logActivity(db, {
@@ -152,7 +152,7 @@ defineRoute(
   (req, res, next) => {
     try {
       const { columnOrder, workspaceId } = req.body;
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       for (const columnId of columnOrder) {
         const colWorkspaceId = getColumnWorkspaceId(db, columnId);
         if (colWorkspaceId !== workspaceId) {
@@ -181,7 +181,7 @@ defineRoute(
     try {
       const { id } = req.params;
       const workspaceId = getColumnWorkspaceId(db, id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const colToArchive = db.prepare('SELECT title FROM columns WHERE id = ?').get(id);
       archiveColumn(db, id);
       logActivity(db, {
@@ -213,7 +213,7 @@ defineRoute(
     try {
       const { id } = req.params;
       const workspaceId = getColumnWorkspaceId(db, id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const colToRestore = db.prepare('SELECT title FROM columns WHERE id = ?').get(id);
       restoreColumn(db, id);
       logActivity(db, {

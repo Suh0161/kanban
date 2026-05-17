@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quickstart · Jokel API</title>
-  <meta name="description" content="Make your first Jokel API request in under a minute." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect x='2' y='2' width='10' height='10' rx='2' fill='%23ffffff'/%3E%3Crect x='15' y='2' width='11' height='10' rx='2' fill='%23ffffff' opacity='0.6'/%3E%3Crect x='2' y='15' width='10' height='11' rx='2' fill='%23ffffff' opacity='0.4'/%3E%3Crect x='15' y='15' width='11' height='11' rx='2' fill='%23ffffff' opacity='0.2'/%3E%3C/svg%3E" />
+  <title>Quickstart · Elevate API</title>
+  <meta name="description" content="Make your first Elevate API request in under a minute." />
+  <link rel="icon" type="image/svg+xml" href="/api/docs/assets/elevate.svg" />
+  <link rel="apple-touch-icon" href="/api/docs/assets/elevate.svg" />
+  <meta name="theme-color" content="#0a0a0a" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -16,13 +18,8 @@
 <header class="header">
   <div class="header-left">
     <a href="/api/docs" class="brand">
-      <svg viewBox="0 0 28 28" fill="none">
-        <rect x="2" y="2" width="10" height="10" rx="2" fill="#ffffff"/>
-        <rect x="15" y="2" width="11" height="10" rx="2" fill="#ffffff" opacity="0.6"/>
-        <rect x="2" y="15" width="10" height="11" rx="2" fill="#ffffff" opacity="0.4"/>
-        <rect x="15" y="15" width="11" height="11" rx="2" fill="#ffffff" opacity="0.2"/>
-      </svg>
-      Jokel API
+      <img src="/api/docs/assets/elevate.svg" alt="" width="22" height="22" />
+      Elevate API
     </a>
     <nav class="nav-tabs" aria-label="Primary">
       <a href="/api/docs" class="nav-tab">Overview</a>
@@ -64,15 +61,15 @@
   <article class="article">
     <div class="kicker">Guides</div>
     <h1 class="page-title">Quickstart</h1>
-    <p class="page-lede">Pull your board, create a task, move it across the workflow — all in under a minute. By the end of this guide you'll have a working API key and a feel for how Jokel's REST surface fits together.</p>
+    <p class="page-lede">Pull your board, create a task, move it across the workflow — all in under a minute. By the end of this guide you'll have a working API key and a feel for how Elevate's REST surface fits together.</p>
 
     <h2 id="qs-key">1. Generate an API key</h2>
-    <p>Open the Jokel app and head to <strong>Settings → API Keys</strong>. Hit <strong>Generate API Key</strong>, give it a memorable name (something like <code>local-dev</code> or <code>my-first-bot</code>), and pick the <strong>Read &amp; Write</strong> scope so you can both fetch and modify data.</p>
+    <p>Open the Elevate app and head to <strong>Settings → API Keys</strong>. Hit <strong>Generate API Key</strong>, give it a memorable name (something like <code>local-dev</code> or <code>my-first-bot</code>), and pick the <strong>Read &amp; Write</strong> scope so you can both fetch and modify data.</p>
     <p>Copy the key the moment it appears. We only show the raw value once — after you close the dialog it's gone for good and you'll need to make a new one.</p>
 
     <div class="callout callout-warn">
       <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <div class="callout-body"><strong>Treat your API key like a password.</strong>Keys with the <code>jokel_</code> prefix grant full access to whatever scope you set. Keep them out of version control, commit history, and client-side bundles. Environment variables or a secrets manager are the right home for them.</div>
+      <div class="callout-body"><strong>Treat your API key like a password.</strong>Keys with the <code>Elevate_</code> prefix grant full access to whatever scope you set. Keep them out of version control, commit history, and client-side bundles. Environment variables or a secrets manager are the right home for them.</div>
     </div>
 
     <h2 id="qs-request">2. Make your first request</h2>
@@ -85,7 +82,7 @@
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
       <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
-  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_your_key_here"</span></code></pre>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span></code></pre>
     </div>
 
     <p>You'll get back the whole board in one shot: every task, every column, the column ordering, and metadata like priorities, assignees, due dates, tags, comments, attachments, and checklists. Most integrations start here — pull once, then issue smaller writes.</p>
@@ -99,7 +96,7 @@
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
       <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST http://localhost:3001/api/v1/tasks <span class="tk-pun">\</span>
-  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_your_key_here"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"columnId":"col-1","title":"Fix login bug","priority":"High","tags":["bug"]}'</span></code></pre>
     </div>
@@ -107,7 +104,7 @@
     <p>Only <code>columnId</code> and <code>title</code> are required. Everything else — priority, tags, description, due date, assignee — is optional and can be filled in later. The response gives you the new task's full record, including its generated <code>id</code> and short <code>code</code>, which you'll use for follow-up calls.</p>
 
     <h2 id="qs-move">4. Move a task</h2>
-    <p>This is where Jokel earns its keep. Moving a task between columns is how you reflect progress through your workflow — "In progress", "Review", "Done" — and it's one of the most common API calls you'll make.</p>
+    <p>This is where Elevate earns its keep. Moving a task between columns is how you reflect progress through your workflow — "In progress", "Review", "Done" — and it's one of the most common API calls you'll make.</p>
     <p>Use the task <code>id</code> from the previous step, and pick a different column for <code>targetColumnId</code>:</p>
 
     <div class="code">
@@ -116,12 +113,12 @@
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
       <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH http://localhost:3001/api/v1/tasks/task-1/move <span class="tk-pun">\</span>
-  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_your_key_here"</span> <span class="tk-pun">\</span>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"targetColumnId":"col-2"}'</span></code></pre>
     </div>
 
-    <p>Behind the scenes Jokel records this as a <code>task.moved</code> activity event and fires the matching webhook to anyone subscribed. If you have a Slack bot, a Discord notifier, or a CI pipeline tied into Jokel, this single call is what wakes them up.</p>
+    <p>Behind the scenes Elevate records this as a <code>task.moved</code> activity event and fires the matching webhook to anyone subscribed. If you have a Slack bot, a Discord notifier, or a CI pipeline tied into Elevate, this single call is what wakes them up.</p>
 
     <h2 id="qs-next">Next steps</h2>
     <p>That's the whole loop. From here you can keep building in two directions:</p>

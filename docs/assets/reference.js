@@ -1,5 +1,5 @@
 /* ============================================================
-   Jokel API Reference — custom OpenAPI renderer
+   Elevate API Reference — custom OpenAPI renderer
    No external deps. Reads /api/spec, builds a sidebar + per-op
    cards using the same look as the rest of the docs.
    ============================================================ */
@@ -383,31 +383,516 @@
       )
     );
 
-    // Example response (first 2xx with body)
-    const resp200 = op.responses && (op.responses['200'] || op.responses['201'] || op.responses['default']);
-    if (resp200) {
-      const r = resolveRef(resp200);
-      const json = r.content && r.content['application/json'];
-      if (json && json.schema) {
-        const example = json.example !== undefined ? json.example : buildExample(json.schema);
-        right.append(
-          el(
-            'div',
-            { class: 'op-example' },
-            renderCodeBlock(
-              JSON.stringify(example, null, 2),
-              'json',
-              highlightJson(example),
-              'Response ' + (Object.keys(op.responses).find((c) => /^2/.test(c)) || '200')
-            )
-          )
-        );
-      }
-    }
+    // Try It panel — actually hits the live API
+    right.append(buildTryItPanel(method, path, op, baseUrl, params));
 
     body.append(left, right);
     card.append(body);
     return card;
+  }
+
+  // ---------- Try It panel ----------
+  // Persists the bearer token in localStorage so the same value carries
+  // across operations (most users will paste it once and try multiple
+  // endpoints). Stored under a docs-specific key so it can't collide
+  // with the app's own auth state.
+  const TOKEN_KEY = 'elevate-docs-token';
+  const getStoredToken = () => {
+    try { return localStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; }
+  };
+  const setStoredToken = (v) => {
+    try {
+      if (v) localStorage.setItem(TOKEN_KEY, v);
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch { /* private mode */ }
+  };
+
+  function buildTryItPanel(method, path, op, baseUrl, params) {
+    const panel = el('div', { class: 'tryit' });
+
+    // ---- Auth scheme detection (used by both URL builder and send) ----
+    const security = op.security || spec.security || [];
+    const schemes = (spec.components && spec.components.securitySchemes) || {};
+    const usedScheme = security[0] && Object.keys(security[0])[0];
+    const secDef = schemes[usedScheme];
+    const isPublic = op.security && op.security.length === 0;
+
+    // ---- Param sets ----
+    const pathParams = params.filter((p) => p.in === 'path');
+    const queryParams = params.filter((p) => p.in === 'query');
+    const headerParams = params.filter((p) => p.in === 'header');
+
+    // ---- Auth row ----
+    const authField = el('input', {
+      type: 'password',
+      class: 'tryit-kv-value',
+      placeholder: secDef && secDef.type === 'http' ? 'Bearer token' : (secDef && secDef.name) || 'Token',
+      value: getStoredToken(),
+      autocomplete: 'off',
+    });
+    authField.addEventListener('input', (e) => setStoredToken(e.target.value));
+
+    // ---- Param inputs ----
+    const pathInputs = {};
+    pathParams.forEach((p) => {
+      pathInputs[p.name] = el('input', {
+        type: 'text',
+        class: 'tryit-kv-value',
+        placeholder: formatType(p.schema || {}),
+      });
+    });
+    const queryInputs = {};
+    queryParams.forEach((p) => {
+      queryInputs[p.name] = el('input', {
+        type: 'text',
+        class: 'tryit-kv-value',
+        placeholder: formatType(p.schema || {}),
+      });
+    });
+    const headerInputs = {};
+    headerParams.forEach((p) => {
+      headerInputs[p.name] = el('input', {
+        type: 'text',
+        class: 'tryit-kv-value',
+        placeholder: '<value>',
+      });
+    });
+
+    // ---- Body editor ----
+    const reqBody = op.requestBody && resolveRef(op.requestBody);
+    let bodyEditor = null;
+    let bodyKind = null;
+    let bodySection = null;
+    if (reqBody && reqBody.content) {
+      const json = reqBody.content['application/json'];
+      if (json && json.schema) {
+        bodyKind = 'json';
+        const example = json.example !== undefined ? json.example : buildExample(json.schema);
+        bodyEditor = el('textarea', {
+          class: 'tryit-textarea',
+          rows: '8',
+          spellcheck: 'false',
+        }, JSON.stringify(example, null, 2));
+        bodySection = bodyEditor;
+      } else if (reqBody.content['multipart/form-data']) {
+        bodyKind = 'multipart';
+        bodySection = el('p', { class: 'tryit-help' },
+          'File uploads need a real form picker. Use the curl example above or build the multipart request from your client.');
+      }
+    }
+
+    // ---- Top bar: method + URL + Send ----
+    const urlInput = el('input', {
+      type: 'text',
+      class: 'tryit-url-input',
+      spellcheck: 'false',
+      autocomplete: 'off',
+    });
+    let urlEditedManually = false;
+    urlInput.addEventListener('input', () => { urlEditedManually = true; });
+
+    const buildUrl = () => {
+      let url = baseUrl + path;
+      Object.entries(pathInputs).forEach(([name, input]) => {
+        const v = input.value.trim();
+        if (v) url = url.replace(`{${name}}`, encodeURIComponent(v));
+      });
+      const qs = Object.entries(queryInputs)
+        .map(([name, input]) => [name, input.value.trim()])
+        .filter(([, v]) => v.length)
+        .map(([name, v]) => `${encodeURIComponent(name)}=${encodeURIComponent(v)}`)
+        .join('&');
+      if (qs) url += '?' + qs;
+      return url;
+    };
+
+    const syncUrl = () => {
+      if (urlEditedManually) return;
+      urlInput.value = buildUrl();
+    };
+    syncUrl();
+
+    [...Object.values(pathInputs), ...Object.values(queryInputs)].forEach((input) =>
+      input.addEventListener('input', syncUrl)
+    );
+
+    const sendBtn = el(
+      'button',
+      { type: 'button', class: 'tryit-send' },
+      'Send'
+    );
+
+    const responseHost = el('div', { class: 'tryit-response' });
+    renderResponseEmpty(responseHost);
+
+    sendBtn.addEventListener('click', () =>
+      sendRequest({
+        method,
+        urlOverride: urlEditedManually ? urlInput.value.trim() : buildUrl(),
+        pathInputs,
+        headerInputs,
+        authField,
+        secDef,
+        bodyEditor,
+        bodyKind,
+        sendBtn,
+        responseHost,
+      })
+    );
+
+    panel.append(
+      el(
+        'div',
+        { class: 'tryit-bar' },
+        el('span', { class: `tryit-method method method-${method}` }, method),
+        urlInput,
+        sendBtn
+      )
+    );
+
+    // ---- Sections (collapsible) ----
+    const sections = el('div', { class: 'tryit-sections' });
+
+    if (!isPublic && secDef) {
+      sections.append(
+        renderTryItSection({
+          title: 'Authentication',
+          required: true,
+          count: authField.value ? 1 : 0,
+          rows: [renderKvRow({ key: secDef.type === 'http' ? 'Bearer Token' : secDef.name, valueEl: authField, locked: true })],
+        })
+      );
+      authField.addEventListener('input', () => updateSectionCount(sections, 'Authentication', authField.value ? 1 : 0));
+    }
+
+    if (pathParams.length) {
+      sections.append(
+        renderTryItSection({
+          title: 'Path Variables',
+          required: pathParams.some((p) => p.required),
+          count: pathParams.length,
+          alwaysOpen: true,
+          rows: pathParams.map((p) =>
+            renderKvRow({
+              key: p.name,
+              valueEl: pathInputs[p.name],
+              required: p.required,
+              hint: p.description,
+              locked: true,
+            })
+          ),
+        })
+      );
+    }
+
+    if (queryParams.length) {
+      sections.append(
+        renderTryItSection({
+          title: 'Query Parameters',
+          required: queryParams.some((p) => p.required),
+          count: queryParams.length,
+          rows: queryParams.map((p) =>
+            renderKvRow({
+              key: p.name,
+              valueEl: queryInputs[p.name],
+              required: p.required,
+              hint: p.description,
+              locked: true,
+            })
+          ),
+        })
+      );
+    }
+
+    if (headerParams.length) {
+      sections.append(
+        renderTryItSection({
+          title: 'Headers',
+          count: headerParams.length,
+          rows: headerParams.map((p) =>
+            renderKvRow({
+              key: p.name,
+              valueEl: headerInputs[p.name],
+              required: p.required,
+              hint: p.description,
+              locked: true,
+            })
+          ),
+        })
+      );
+    }
+
+    if (bodySection) {
+      sections.append(
+        renderTryItSection({
+          title: bodyKind === 'json' ? 'Body (JSON)' : 'Body',
+          required: !!(reqBody && reqBody.required),
+          count: 0,
+          alwaysOpen: true,
+          customBody: bodySection,
+        })
+      );
+    }
+
+    panel.append(sections);
+    panel.append(
+      el(
+        'div',
+        { class: 'tryit-response-wrap' },
+        el(
+          'div',
+          { class: 'tryit-response-bar' },
+          el('span', { class: 'tryit-response-title' }, 'Response')
+        ),
+        responseHost
+      )
+    );
+
+    return panel;
+  }
+
+  // Renders a single collapsible section with a header (title, optional
+  // required pill, and a count badge) plus a body of key/value rows or a
+  // custom element (e.g. textarea for the request body).
+  function renderTryItSection({ title, required = false, count = 0, alwaysOpen = false, rows, customBody }) {
+    const det = el('details', { class: 'tryit-section', 'data-section-title': title });
+    if (alwaysOpen || (rows && rows.length) || customBody) det.open = true;
+
+    const summary = el(
+      'summary',
+      { class: 'tryit-section-head' },
+      el('span', { class: 'tryit-section-caret', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>' }),
+      el('span', { class: 'tryit-section-title' }, title),
+      required && el('span', { class: 'tryit-section-required' }, 'Required'),
+      count > 0 && el('span', { class: 'tryit-section-count' }, String(count))
+    );
+    det.append(summary);
+
+    if (customBody) {
+      det.append(el('div', { class: 'tryit-section-body tryit-section-body-custom' }, customBody));
+    } else if (rows && rows.length) {
+      det.append(el('div', { class: 'tryit-section-body' }, ...rows));
+    }
+    return det;
+  }
+
+  function updateSectionCount(root, title, n) {
+    const det = root.querySelector(`.tryit-section[data-section-title="${title}"]`);
+    if (!det) return;
+    const summary = det.querySelector('.tryit-section-head');
+    if (!summary) return;
+    let badge = summary.querySelector('.tryit-section-count');
+    if (n > 0) {
+      if (!badge) {
+        badge = el('span', { class: 'tryit-section-count' }, String(n));
+        summary.append(badge);
+      } else {
+        badge.textContent = String(n);
+      }
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+
+  // A two-column key/value row used inside sections. The key column is
+  // either a label (locked, e.g. an OpenAPI param) or a free input.
+  function renderKvRow({ key, valueEl, required, hint, locked }) {
+    const row = el('div', { class: 'tryit-kv' });
+    const keyCell = locked
+      ? el(
+        'div',
+        { class: 'tryit-kv-key tryit-kv-key-locked' },
+        el('code', {}, key),
+        required && el('span', { class: 'tryit-kv-required', title: 'Required' }, '*')
+      )
+      : el('input', { type: 'text', class: 'tryit-kv-key', placeholder: 'Key', value: key || '' });
+    row.append(keyCell, valueEl);
+    if (hint) row.append(el('div', { class: 'tryit-kv-hint' }, hint));
+    return row;
+  }
+
+  function renderResponseEmpty(host) {
+    host.innerHTML = '';
+    host.classList.add('tryit-response-empty');
+    host.append(
+      el('div', { class: 'tryit-response-placeholder' },
+        el('svg', {
+          viewBox: '0 0 24 24',
+          fill: 'none',
+          stroke: 'currentColor',
+          'stroke-width': '1.5',
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          html: '<path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7Z"/>',
+        }),
+        el('span', {}, 'Click Send to try this request')
+      )
+    );
+  }
+
+  async function sendRequest(ctx) {
+    const {
+      method,
+      urlOverride,
+      pathInputs,
+      headerInputs,
+      authField, secDef,
+      bodyEditor, bodyKind,
+      sendBtn, responseHost,
+    } = ctx;
+
+    // Validate required path params actually have values, otherwise the
+    // URL still contains {literal} braces and the server will 404.
+    for (const [name, input] of Object.entries(pathInputs)) {
+      const v = input.value.trim();
+      if (!v) {
+        showError(responseHost, `Missing path parameter: {${name}}`);
+        return;
+      }
+    }
+
+    let url = urlOverride;
+    if (url.includes('{')) {
+      // The user manually edited the URL but left a placeholder in it.
+      showError(responseHost, 'URL still contains an unresolved {placeholder}.');
+      return;
+    }
+
+    const headers = {};
+    Object.entries(headerInputs).forEach(([name, input]) => {
+      const v = input.value.trim();
+      if (v) headers[name] = v;
+    });
+
+    // Auth
+    const tok = authField && authField.value.trim();
+    if (tok && secDef) {
+      if (secDef.type === 'http' && secDef.scheme === 'bearer') {
+        headers['Authorization'] = 'Bearer ' + tok;
+      } else if (secDef.type === 'apiKey' && secDef.in === 'header') {
+        headers[secDef.name] = tok;
+      } else if (secDef.type === 'apiKey' && secDef.in === 'query') {
+        url += (url.includes('?') ? '&' : '?') + encodeURIComponent(secDef.name) + '=' + encodeURIComponent(tok);
+      }
+    }
+
+    let body = undefined;
+    if (bodyKind === 'json' && bodyEditor) {
+      const text = bodyEditor.value.trim();
+      if (text) {
+        try {
+          // Re-serialize so we know the JSON parses; protects against the
+          // server returning an opaque 400 when the user typed bad JSON.
+          body = JSON.stringify(JSON.parse(text));
+          headers['Content-Type'] = 'application/json';
+        } catch (err) {
+          showError(responseHost, 'Invalid JSON in body: ' + err.message);
+          return;
+        }
+      }
+    }
+
+    sendBtn.disabled = true;
+    sendBtn.classList.add('is-loading');
+    responseHost.classList.remove('tryit-response-empty');
+    responseHost.innerHTML = '<div class="tryit-pending">Sending request…</div>';
+
+    const start = performance.now();
+    try {
+      const res = await fetch(url, {
+        method: method.toUpperCase(),
+        headers,
+        body: body !== undefined ? body : undefined,
+        // Same-origin: the docs are served by the API, so this is fine.
+        credentials: 'omit',
+      });
+      const elapsed = Math.round(performance.now() - start);
+
+      const ct = res.headers.get('content-type') || '';
+      let bodyText = await res.text();
+      let parsedJson = null;
+      if (ct.includes('application/json')) {
+        try { parsedJson = JSON.parse(bodyText); } catch { /* fall through to raw */ }
+      }
+
+      renderResponse(responseHost, {
+        status: res.status,
+        statusText: res.statusText,
+        elapsed,
+        headers: collectHeaders(res),
+        bodyText,
+        parsedJson,
+      });
+    } catch (err) {
+      // Most likely network error or CORS. Surface it; don't pretend it
+      // was a 5xx from the API.
+      showError(responseHost, 'Request failed: ' + (err.message || String(err)));
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.classList.remove('is-loading');
+    }
+  }
+
+  function collectHeaders(res) {
+    const out = [];
+    res.headers.forEach((v, k) => out.push([k, v]));
+    return out;
+  }
+
+  function renderResponse(host, { status, statusText, elapsed, headers, bodyText, parsedJson }) {
+    const cls = status >= 200 && status < 300 ? 'status-ok' : status >= 400 ? 'status-err' : 'status-other';
+    host.classList.remove('tryit-response-empty');
+    host.innerHTML = '';
+    host.append(
+      el(
+        'div',
+        { class: 'tryit-response-head' },
+        el('span', { class: 'status-pill ' + cls }, String(status)),
+        el('span', { class: 'tryit-response-status' }, statusText || ''),
+        el('span', { class: 'tryit-response-meta' }, `${elapsed} ms`)
+      )
+    );
+
+    // Body
+    if (parsedJson !== null) {
+      host.append(renderCodeBlock(JSON.stringify(parsedJson, null, 2), 'json', highlightJson(parsedJson), 'Response body'));
+    } else if (bodyText) {
+      host.append(renderCodeBlock(bodyText, 'text', null, 'Response body'));
+    } else {
+      host.append(el('p', { class: 'tryit-help' }, 'Empty response body.'));
+    }
+
+    // Headers (collapsed by default)
+    if (headers.length) {
+      const det = el('details', { class: 'tryit-headers' });
+      det.append(el('summary', {}, `Response headers (${headers.length})`));
+      det.append(
+        el(
+          'div',
+          { class: 'tryit-headers-list' },
+          ...headers.map(([k, v]) =>
+            el('div', { class: 'tryit-header-row' },
+              el('code', { class: 'tryit-header-key' }, k),
+              el('code', { class: 'tryit-header-val' }, v)
+            )
+          )
+        )
+      );
+      host.append(det);
+    }
+  }
+
+  function showError(host, msg) {
+    host.classList.remove('tryit-response-empty');
+    host.innerHTML = '';
+    host.append(
+      el(
+        'div',
+        { class: 'tryit-error' },
+        el('strong', {}, 'Error'),
+        el('span', {}, msg)
+      )
+    );
   }
 
   function buildCurl(method, path, op, baseUrl, params) {
@@ -441,7 +926,7 @@
       if (s.type === 'http' && s.scheme === 'bearer') {
         lines.push(`  --header 'Authorization: Bearer YOUR_TOKEN' \\`);
       } else if (s.type === 'apiKey' && s.in === 'header') {
-        lines.push(`  --header '${s.name}: jokel_your_key_here' \\`);
+        lines.push(`  --header '${s.name}: Elevate_your_key_here' \\`);
       }
     }
 

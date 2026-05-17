@@ -156,6 +156,10 @@
   transition: background-color 0.1s, border-color 0.1s;
 }
 
+.backlog-issue-row.is-readonly {
+  grid-template-columns: minmax(260px, 1fr) auto;
+}
+
 .backlog-issue-row:hover {
   background-color: var(--bg-hover);
   border-color: var(--border-subtle);
@@ -430,8 +434,7 @@
 
 .backlog-health,
 .backlog-sprint-draft,
-.backlog-workflow,
-.backlog-attention {
+.backlog-workflow {
   display: grid;
   gap: 4px;
   padding: 8px;
@@ -448,7 +451,6 @@
 
 .backlog-health span,
 .backlog-workflow span,
-.backlog-attention span,
 .backlog-sprint-draft span,
 .backlog-sprint-draft em {
   color: var(--text-secondary);
@@ -457,8 +459,7 @@
 }
 
 .backlog-health strong,
-.backlog-workflow strong,
-.backlog-attention strong {
+.backlog-workflow strong {
   color: var(--text-primary);
   font-size: 0.82rem;
 }
@@ -526,48 +527,6 @@
   opacity: 0.45;
 }
 
-/* Attention */
-.backlog-attention-row {
-  min-height: 40px;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  background-color: var(--bg-hover);
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: background-color 0.1s, border-color 0.1s;
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-}
-
-.backlog-attention-row:hover {
-  background-color: var(--bg-card-hover);
-  border-color: var(--border-subtle);
-}
-
-.backlog-attention-row.is-active {
-  border-color: color-mix(in srgb, var(--accent-blue) 35%, var(--border-subtle));
-  background-color: color-mix(in srgb, var(--accent-blue) 8%, var(--bg-hover));
-}
-
-.backlog-attention-row.no-action {
-  cursor: default;
-}
-
-.backlog-attention-row.no-action:hover {
-  background-color: var(--bg-hover);
-  border-color: transparent;
-}
-
-.backlog-attention svg {
-  color: var(--text-tertiary);
-}
-
 .accent-red  { color: var(--color-red) !important; }
 .accent-blue { color: var(--accent-blue) !important; }
 
@@ -586,6 +545,10 @@
 
   .backlog-issue-row {
     grid-template-columns: minmax(220px, 1fr) 110px 120px 128px auto;
+  }
+
+  .backlog-issue-row.is-readonly {
+    grid-template-columns: minmax(220px, 1fr) auto;
   }
 }
 

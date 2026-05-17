@@ -2,7 +2,7 @@ import { CheckCircle2, MessageSquare, Paperclip } from 'lucide-react';
 import Select from '../../../ui/Select.jsx';
 import { formatDate, isOverdue } from '../../../../utils/helpers.js';
 
-export default function MyTaskRow({ task, columns, columnOrder, doneColumnId, onSelectTask, onMoveTask, onUpdateTask }) {
+export default function MyTaskRow({ task, columns, columnOrder, doneColumnId, onSelectTask, onMoveTask, onUpdateTask, canEdit = true }) {
   const columnOptions = columnOrder
     .map(id => columns[id])
     .filter(Boolean)
@@ -11,7 +11,7 @@ export default function MyTaskRow({ task, columns, columnOrder, doneColumnId, on
   const overdue = task.dueDate && isOverdue(task.dueDate);
 
   return (
-    <article className={`mytask-row ${overdue ? 'is-overdue' : ''}`}>
+    <article className={`mytask-row ${overdue ? 'is-overdue' : ''} ${!canEdit ? 'is-readonly' : ''}`}>
       <span className={`workspace-task-accent ${task.priority.toLowerCase()}`} />
 
       {/* Main info */}
@@ -37,27 +37,31 @@ export default function MyTaskRow({ task, columns, columnOrder, doneColumnId, on
       </div>
 
       {/* Status */}
-      <div className="mytask-field">
-        <span>Status</span>
-        <Select
-          value={task.columnId || columnOptions[0]?.value}
-          options={columnOptions}
-          className="mytask-select"
-          onChange={value => onMoveTask(task.id, value)}
-        />
-      </div>
+      {canEdit && (
+        <div className="mytask-field">
+          <span>Status</span>
+          <Select
+            value={task.columnId || columnOptions[0]?.value}
+            options={columnOptions}
+            className="mytask-select"
+            onChange={value => onMoveTask(task.id, value)}
+          />
+        </div>
+      )}
 
       {/* Due date */}
-      <label className="mytask-field">
-        <span>Due date</span>
-        <input
-          type="date"
-          value={task.dueDate || ''}
-          onChange={e => onUpdateTask(task.id, { dueDate: e.target.value || null })}
-          aria-label={`${task.code} due date`}
-          className={overdue ? 'overdue-input' : ''}
-        />
-      </label>
+      {canEdit && (
+        <label className="mytask-field">
+          <span>Due date</span>
+          <input
+            type="date"
+            value={task.dueDate || ''}
+            onChange={e => onUpdateTask(task.id, { dueDate: e.target.value || null })}
+            aria-label={`${task.code} due date`}
+            className={overdue ? 'overdue-input' : ''}
+          />
+        </label>
+      )}
 
       {/* Actions */}
       <div className="mytask-actions">
@@ -72,14 +76,16 @@ export default function MyTaskRow({ task, columns, columnOrder, doneColumnId, on
           <button className="btn btn-outline btn-sm" type="button" onClick={() => onSelectTask(task)}>
             Open
           </button>
-          <button
-            className="btn btn-outline btn-sm"
-            type="button"
-            onClick={() => doneColumnId && onMoveTask(task.id, doneColumnId)}
-            disabled={!doneColumnId || task.columnTitle === 'Done'}
-          >
-            <CheckCircle2 size={12} /> Done
-          </button>
+          {canEdit && (
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              onClick={() => doneColumnId && onMoveTask(task.id, doneColumnId)}
+              disabled={!doneColumnId || task.columnTitle === 'Done'}
+            >
+              <CheckCircle2 size={12} /> Done
+            </button>
+          )}
         </div>
       </div>
     </article>

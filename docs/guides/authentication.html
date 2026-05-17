@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Authentication · Jokel API</title>
-  <meta name="description" content="JWT bearer tokens and API key authentication for the Jokel REST API." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect x='2' y='2' width='10' height='10' rx='2' fill='%23ffffff'/%3E%3Crect x='15' y='2' width='11' height='10' rx='2' fill='%23ffffff' opacity='0.6'/%3E%3Crect x='2' y='15' width='10' height='11' rx='2' fill='%23ffffff' opacity='0.4'/%3E%3Crect x='15' y='15' width='11' height='11' rx='2' fill='%23ffffff' opacity='0.2'/%3E%3C/svg%3E" />
+  <title>Authentication · Elevate API</title>
+  <meta name="description" content="JWT bearer tokens and API key authentication for the Elevate REST API." />
+  <link rel="icon" type="image/svg+xml" href="/api/docs/assets/elevate.svg" />
+  <link rel="apple-touch-icon" href="/api/docs/assets/elevate.svg" />
+  <meta name="theme-color" content="#0a0a0a" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -16,13 +18,8 @@
 <header class="header">
   <div class="header-left">
     <a href="/api/docs" class="brand">
-      <svg viewBox="0 0 28 28" fill="none">
-        <rect x="2" y="2" width="10" height="10" rx="2" fill="#ffffff"/>
-        <rect x="15" y="2" width="11" height="10" rx="2" fill="#ffffff" opacity="0.6"/>
-        <rect x="2" y="15" width="10" height="11" rx="2" fill="#ffffff" opacity="0.4"/>
-        <rect x="15" y="15" width="11" height="11" rx="2" fill="#ffffff" opacity="0.2"/>
-      </svg>
-      Jokel API
+      <img src="/api/docs/assets/elevate.svg" alt="" width="22" height="22" />
+      Elevate API
     </a>
     <nav class="nav-tabs" aria-label="Primary">
       <a href="/api/docs" class="nav-tab">Overview</a>
@@ -64,10 +61,10 @@
   <article class="article">
     <div class="kicker">Guides</div>
     <h1 class="page-title">Authentication</h1>
-    <p class="page-lede">Jokel gives you two ways to authenticate: JWT bearer tokens for human users in a browser, and API keys for everything else — bots, CI pipelines, integrations, scripts. Both methods unlock the same endpoints, so the choice is really about how the credential is created and rotated.</p>
+    <p class="page-lede">Elevate gives you two ways to authenticate: JWT bearer tokens for human users in a browser, and API keys for everything else — bots, CI pipelines, integrations, scripts. Both methods unlock the same endpoints, so the choice is really about how the credential is created and rotated.</p>
 
     <h2 id="auth-jwt">JWT bearer tokens</h2>
-    <p>JWTs are what the Jokel web app uses behind the scenes. When a user signs in, the backend hands back a signed token that the frontend tucks into <code>localStorage</code> and replays on every API call. They're great for short-lived sessions tied to a specific human, and they automatically expire — which is exactly what you want for browser code.</p>
+    <p>JWTs are what the Elevate web app uses behind the scenes. When a user signs in, the backend hands back a signed token that the frontend tucks into <code>localStorage</code> and replays on every API call. They're great for short-lived sessions tied to a specific human, and they automatically expire — which is exactly what you want for browser code.</p>
 
     <h3>Obtain a token</h3>
     <p>Log in with the user's email and password. The response includes both the user record and a fresh JWT:</p>
@@ -99,15 +96,15 @@
     </div>
 
     <h2 id="auth-keys">API keys</h2>
-    <p>API keys are the right choice for anything that isn't a person sitting at a browser. CI pipelines, monitoring scripts, Slack bots, deploy hooks — any code that needs to talk to Jokel without a human in the loop. They don't expire by default (you can set an expiry if you want), and each key carries a scope that limits what it can do.</p>
+    <p>API keys are the right choice for anything that isn't a person sitting at a browser. CI pipelines, monitoring scripts, Slack bots, deploy hooks — any code that needs to talk to Elevate without a human in the loop. They don't expire by default (you can set an expiry if you want), and each key carries a scope that limits what it can do.</p>
 
     <h3>Generate a key</h3>
-    <p>Open <strong>Settings → API Keys</strong> in the Jokel app and click <strong>Generate API Key</strong>. Give it a name that tells future-you what it's for ("github-actions", "datadog-bot", "weekly-report-script") and pick a scope:</p>
+    <p>Open <strong>Settings → API Keys</strong> in the Elevate app and click <strong>Generate API Key</strong>. Give it a name that tells future-you what it's for ("github-actions", "datadog-bot", "weekly-report-script") and pick a scope:</p>
     <ul>
       <li><strong>Read &amp; Write</strong> — full access to every endpoint. Use for tools that create or modify tasks.</li>
       <li><strong>Read Only</strong> — restricted to <code>GET</code> requests. Perfect for dashboards, exporters, and analytics jobs that should never accidentally write.</li>
     </ul>
-    <p>The raw key value is shown <strong>once</strong> at creation time and never again. Copy it immediately into your secrets manager. Every key starts with <code>jokel_</code> so it's easy to spot in logs and config files.</p>
+    <p>The raw key value is shown <strong>once</strong> at creation time and never again. Copy it immediately into your secrets manager. Every key starts with <code>Elevate_</code> so it's easy to spot in logs and config files.</p>
 
     <h3>Use a key</h3>
     <p>Send it in the <code>X-API-Key</code> header — that's the recommended way for almost every situation:</p>
@@ -117,7 +114,7 @@
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
       <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
-  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_abc123def456"</span></code></pre>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span></code></pre>
     </div>
 
     <h2 id="auth-query">Query parameter fallback</h2>
@@ -127,7 +124,7 @@
         <div class="code-head-left"><span class="method method-get">GET</span><span>/board/{workspaceId}?api_key=…</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-str">"http://localhost:3001/api/v1/board/trust-and-safety?api_key=jokel_abc123def456"</span></code></pre>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-str">"http://localhost:3001/api/v1/board/trust-and-safety?api_key=Elevate_abc123def456"</span></code></pre>
     </div>
 
     <div class="callout callout-warn">
@@ -143,7 +140,7 @@
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
       <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/workspaces/trust-and-safety/api-keys <span class="tk-pun">\</span>
-  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: jokel_abc123def456"</span></code></pre>
+  <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span></code></pre>
     </div>
     <p>Note that the response only ever returns the key prefix and metadata — the raw key value isn't stored anywhere we could give back. If a key leaks, revoke it with <code>DELETE</code> and create a new one. Revocations take effect immediately.</p>
 

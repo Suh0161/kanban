@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { apiGetList } from '../../../../api/client.js';
+import { formatRelativeTime, formatAbsoluteTime, parseServerTime } from '../../../../utils/time.js';
+import { ErrorState } from '../../error';
 
 const eventColors = {
   create: 'var(--color-blue)',
@@ -11,20 +13,6 @@ const eventColors = {
   restore: 'var(--color-yellow)',
   comment: 'var(--color-purple)',
 };
-
-function formatRelativeTime(dateStr) {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diff = now - then;
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
-}
 
 function getEventColor(type) {
   const key = (type || '').toLowerCase();
@@ -43,12 +31,16 @@ export default function SettingsActivityLog({ workspaceId }) {
       const data = await apiGetList(`/workspaces/${workspaceId}/activity`, { limit: '30' });
       if (!mountedRef.current) return;
       const list = Array.isArray(data) ? data : (data?.activities || []);
-      list.sort((a, b) => new Date(b.timestamp || b.created_at) - new Date(a.timestamp || a.created_at));
+      list.sort((a, b) => {
+        const ta = parseServerTime(b.timestamp || b.created_at)?.getTime() ?? 0;
+        const tb = parseServerTime(a.timestamp || a.created_at)?.getTime() ?? 0;
+        return ta - tb;
+      });
       setActivities(list);
       setError(null);
     } catch (err) {
       if (!mountedRef.current) return;
-      setError(err.message);
+      setError(err);
     } finally {
       if (mountedRef.current) {
         setLoading(false);
@@ -79,7 +71,12 @@ export default function SettingsActivityLog({ workspaceId }) {
       )}
 
       {error && (
-        <div className="settings-activity-empty" style={{ color: 'var(--color-red)' }}>{error}</div>
+        <ErrorState
+          error={error}
+          title="Couldn't load activity"
+          onRetry={() => fetchActivity()}
+          compact
+        />
       )}
 
       {!loading && !error && activities.length === 0 && (
@@ -103,7 +100,7 @@ export default function SettingsActivityLog({ workspaceId }) {
                 <div className="settings-activity-text">
                   {(a.entity_type || a.entityType || '')}: {a.entity_name || a.entityName || a.name || ''}
                 </div>
-                <div className="settings-activity-time">
+                <div className="settings-activity-time" title={formatAbsoluteTime(a.timestamp || a.created_at)}>
                   {formatRelativeTime(a.timestamp || a.created_at)}
                   {a.user_name || a.userName ? ` \u00b7 ${a.user_name || a.userName}` : ''}
                 </div>

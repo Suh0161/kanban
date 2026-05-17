@@ -82,9 +82,9 @@
 .column-content::-webkit-scrollbar-thumb { background-color: var(--border-strong); border-radius: var(--radius-full); }
 
 /* ============================================================
-   Collapsed column — Taiga-style vertical strip
-   Fixed height so a row of collapsed columns lines up evenly,
-   regardless of how long each individual title is.
+   Collapsed column. Vertical strip with fixed height so a row
+   of collapsed columns lines up evenly regardless of how long
+   each individual title is.
    ============================================================ */
 
 .board-column.is-collapsed {

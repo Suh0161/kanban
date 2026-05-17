@@ -1,188 +1,372 @@
-# Jokel
+# Elevate
 
-Jokel is a dark-themed workspace Kanban app inspired by Taiga planning and Trello board movement. It is a client-side React app with workspace navigation, a live board, backlog planning, personal task queues, inbox triage, analytics, team workload, and workspace settings.
+A dark-themed Kanban and planning app. The frontend is a React 19 SPA, the backend is a Node + Express API on SQLite, and the OpenAPI spec is generated from the same Zod schemas the API validates against. JWT and OAuth (Google, GitHub) for auth, API keys for bots, signed webhooks, and object-storage uploads for avatars, workspace logos, backgrounds, and task attachments.
 
-## Features
+The database is the source of truth. `localStorage` only holds the JWT and a cached copy of the current user.
 
-- **Workspace management** - Create and switch between independent workspaces.
-- **Kanban board** - Drag-and-drop tasks across customizable columns with `@hello-pangea/dnd`.
-- **Backlog planning** - Groom issues, mark sprint draft items, edit priority/status/due dates, and track planning health.
-- **My Tasks** - Personal queues for open, urgent, watching, and done work with inline status and due-date edits.
-- **Inbox triage** - Filter incoming reports, select reports, bulk triage/archive, and route issues into board lists.
-- **Task details** - Editable title, status, priority, assignee, tags, due dates, descriptions, comments, checklists, and image attachments.
-- **Analytics and team views** - Priority mix, board flow, workload, and coverage summaries.
-- **Workspace settings** - General, notifications, and permissions settings with dropdowns, toggles, save/reset state, and status rail.
-- **Collapsible sidebar** - Persistent sidebar state with compact and expanded modes.
-- **Demo auth** - Demo login and guest access.
+---
 
-## Prerequisites
+## Repository layout
 
-- Node.js 18 or higher
-- npm or compatible package manager
+```
+elevate/
+├── frontend/                 # React 19 SPA (Vite)
+├── backend/                  # Express API + OpenAPI generator
+├── database/
+│   ├── schema.sql            # SQLite DDL (single source of truth at runtime)
+│   └── supabase/
+│       └── schema.sql        # Postgres + RLS mirror for Supabase deploys
+├── docs/
+│   ├── index.html            # Static docs portal (served at /api/docs)
+│   ├── reference.html        # Custom OpenAPI renderer (no Scalar/Redoc)
+│   ├── guides/               # Quickstart, Auth, Webhooks
+│   ├── openapi.json          # Generated artifact, committed
+│   ├── README.md
+│   ├── AGENTS.md
+│   └── SECURITY.md           # Threat model + Vercel/Supabase hardening notes
+├── AGENTS.md                 # Workspace-wide rules for AI agents
+├── README.md                 # ← you are here
+└── LICENSE
+```
 
-## Installation
+---
+
+## Stack
+
+| Layer    | Choice                                                      |
+| -------- | ----------------------------------------------------------- |
+| Frontend | React 19, Vite, React Router v7, plain CSS, `@hello-pangea/dnd`, `lucide-react`, `marked` |
+| Backend  | Node.js 20+, Express 4, `better-sqlite3`, Zod 4, Helmet, `express-rate-limit`, Multer |
+| Auth     | JWT (HS256, 7d), bcrypt (cost 12), API keys (SHA-256 hashed), OAuth 2.0 (Google, GitHub) |
+| Storage  | Object storage abstraction (`services/storage/`); local disk today, S3 backend can drop in |
+| Spec     | OpenAPI 3.0 generated from Zod schemas via `defineRoute()` |
+| Deploy   | Vercel (frontend) + any Node host or Supabase Postgres (backend)  |
+
+---
+
+## Quickstart
+
+Two terminals, one per service.
 
 ```bash
-cd frontend
+# 1. Backend
+cd backend
+cp .env.example .env             # then edit .env (set JWT_SECRET, FRONTEND_URL)
 npm install
+npm run seed                     # creates demo workspaces, users, columns, tasks
+npm run dev                      # http://localhost:3001
+
+# 2. Frontend
+cd ../frontend
+npm install
+npm run dev                      # http://localhost:5173
 ```
 
-## Development
+Open <http://localhost:5173>.
 
-```bash
-npm run dev
-```
+### Demo credentials
 
-The development server starts at `http://localhost:5173`.
+| Field    | Value           |
+| -------- | --------------- |
+| Email    | `demo@demo.com` |
+| Password | `Demo123`       |
 
-## Demo Credentials
+You can also click **Continue as guest**, or sign in with Google/GitHub if the OAuth env vars are set (see `backend/.env.example`).
 
-Use the following credentials on the login page, or click **Use demo account** to autofill:
-
-| Field | Value |
-| --- | --- |
-| Email | `demo@demo.com` |
-| Password | `Demo123` |
-
-Guest access is also available via **Continue as guest**.
+---
 
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run build` | Create a production build in `dist/` |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run ESLint across the codebase |
+### Frontend (`cd frontend`)
 
-## Project Structure
+| Command           | What it does                                  |
+| ----------------- | --------------------------------------------- |
+| `npm run dev`     | Vite dev server on `:5173` with HMR           |
+| `npm run lint`    | ESLint                                        |
+| `npm run build`   | Production build into `frontend/dist/`        |
+| `npm run preview` | Preview the production build                  |
 
-```txt
-frontend/src/
-  App.jsx                 # Application router
-  main.jsx                # React entry point
-  constants.js            # Seed data and priority constants
+### Backend (`cd backend`)
 
-  components/
-    board/                # Kanban board, columns, cards, composers, menus
-    layout/               # Sidebar, Topbar, WorkspaceLayout
-    modals/               # TaskModal, NewIssueModal, Lightbox
-    onboarding/           # Guided tour tooltip components, storage, and styles
-    ui/                   # Shared UI primitives: Select, FilterPanel, UserDropdown
-    views/
-      index.js            # Barrel exports for all views
-      analytics/
-        AnalyticsView.jsx
-        components/
-      backlog/
-        BacklogView.jsx
-        components/
-        css/
-      inbox/
-        InboxView.jsx
-        components/
-        css/
-      login/
-        LoginPage.jsx
-        css/
-      mytasks/
-        MyTasksView.jsx
-        components/
-        css/
-      settings/
-        SettingsView.jsx
-        components/
-      shared/
-        ViewTaskRow.jsx
-      team/
-        TeamView.jsx
-        components/
-      workspace-list/
-        WorkspaceList.jsx
-        css/
+| Command                     | What it does                                                  |
+| --------------------------- | ------------------------------------------------------------- |
+| `npm run dev`               | `node --watch src/server.js` on `:3001` (also regenerates `docs/openapi.json` on boot) |
+| `npm start`                 | Production mode                                                |
+| `npm run seed`              | Seeds demo data                                                |
+| `npm run lint`              | ESLint on `src/`                                               |
+| `npm run openapi:generate`  | Rebuilds `docs/openapi.json` from registered routes            |
+| `npm run openapi:check`     | CI guard. Exits non-zero if `docs/openapi.json` is stale       |
+| `npm run build`             | No compile step; runs `prebuild` which regenerates the spec    |
 
-  hooks/
-    useAuth.js            # Demo authentication state
-    useBoard.js           # Board state, CRUD, drag-drop, comments, attachments
-    useWorkspaces.js      # Workspace list persistence
-    useClickOutside.js
-
-  styles/
-    index.css             # Global CSS import file
-    base/                 # Variables, reset, animations
-    board/                # Board canvas, columns, cards, composers, filter
-    layout/               # Sidebar, topbar, buttons, workspace shell
-    modals/               # Modal, lightbox, attachments, comments, forms
-
-  utils/
-    helpers.js
-```
+---
 
 ## Architecture
 
-### Engineering Playbook
+### Frontend
 
-Jokel is currently a client-side product, but the codebase is organized with production engineering habits in mind:
+- **No Context API.** State lives in custom hooks (`useAuth`, `useBoard(workspaceId)`, `useWorkspaces`, `usePresence`, `useOauthProviders`).
+- Routes are split between top-level (login, OAuth callback, legal, error pages) and workspace-scoped (`/workspace/:workspaceId/*` rendered by `WorkspaceLayout`).
+- Workspace nav: `boards`, `backlog`, `my-work`, `team`, `settings`. The active view is persisted per-workspace in `localStorage`.
+- Drag-and-drop runs through `useBoard.onDragEnd`; reorder writes are skipped while filters are active.
+- Permission gate: `myRole` from the workspace API drives `canEdit`. Viewers never see write affordances (composer, status pickers, drag handles, delete).
 
-- **Product engineering** - Views map to real planning workflows: board, backlog, personal queue, intake, analytics, team, and settings.
-- **Frontend engineering** - Feature folders, custom hooks, colocated view CSS, and small reusable UI primitives.
-- **System design** - Board and workspace data are shaped so they can later move from `localStorage` to an API without rewriting every view.
-- **SystemOps and DevOps** - Runtime assumptions, commands, and environment expectations should stay explicit in docs.
-- **CI/CD readiness** - A future pipeline should install dependencies, run lint/tests, build production assets, and publish immutable artifacts.
-- **QA and release discipline** - Verify drag-drop, filters, modals, settings, onboarding, sidebar collapse, and responsive layouts before shipping.
-- **Security posture** - No frontend secrets, defensive persisted-data reads, and demo-scoped attachment storage.
+```
+frontend/src/
+├── App.jsx                       # Top-level router + ErrorBoundary + offline banner
+├── main.jsx                      # React entry
+├── constants.js                  # Priorities + seed data
+│
+├── api/
+│   └── client.js                 # Fetch wrapper, ApiError, signed-URL helper, 401 handler
+│
+├── hooks/
+│   ├── useAuth.js                # JWT flow, shared subscription, normalized user
+│   ├── useBoard.js               # Board state, drag-drop, CRUD, comments, attachments, watchers
+│   ├── useWorkspaces.js          # Workspace list + role propagation
+│   ├── usePresence.js            # Heartbeat-based "who's online"
+│   ├── useOauthProviders.js      # Reads /auth/oauth/providers; hides un-configured buttons
+│   ├── useKeyboardShortcuts.js   # Global shortcuts: ⌘K palette, j/k nav, etc.
+│   └── useClickOutside.js
+│
+├── components/
+│   ├── board/                    # Kanban canvas, columns, cards, composers, QuickStartCard
+│   ├── layout/                   # Sidebar, Topbar, WorkspaceLayout
+│   ├── modals/                   # NewIssueModal, Lightbox
+│   ├── onboarding/               # Guided tour (components/, css/, storage/)
+│   ├── ui/                       # Avatar, Select, FilterPanel, UserDropdown, ErrorBoundary, SearchPalette
+│   └── views/
+│       ├── analytics/            # AnalyticsView + components + css
+│       ├── backlog/              # BacklogView + components + css
+│       ├── error/                # 403 / 404 / 500 / Offline pages + ErrorState + OfflineBanner
+│       ├── inbox/                # InboxView + components + css (folded into MyWork)
+│       ├── legal/                # Privacy, Terms
+│       ├── login/                # LoginPage + OauthCallback + css
+│       ├── mytasks/              # MyTasksView (used by MyWork)
+│       ├── mywork/               # MyWorkView + css (combines tasks + inbox)
+│       ├── profile/              # ProfileModal (edit name / avatar)
+│       ├── settings/             # SettingsView + components + css
+│       ├── shared/               # ViewTaskRow
+│       ├── task-detail/          # TaskDetailView + components + css
+│       ├── team/                 # TeamView + components + css
+│       └── workspace-list/       # WorkspaceList + components + css
+│
+├── styles/
+│   ├── base/                     # variables.css, reset.css, animations.css
+│   ├── board/                    # canvas, column, card, composer, menu, filter
+│   ├── layout/                   # sidebar, topbar, buttons, workspace shell
+│   └── modals/                   # modal, lightbox, attachments, comments, forms
+│
+└── utils/
+    ├── helpers.js
+    └── time.js                   # parseServerTime / formatRelativeTime / formatAbsoluteTime
+```
 
-### State Management
+### Backend
 
-State is managed through custom hooks rather than Context API or external state libraries:
+```
+backend/src/
+├── config.js                     # Env + IS_DEV/IS_PROD + JWT/CORS guards
+├── db.js                         # SQLite handle, schema bootstrap, idempotent migrations
+├── seed.js                       # Demo data
+├── server.js                     # Middleware chain, route mounting, OpenAPI warm
+│
+├── middleware/
+│   ├── apikey.js                 # X-API-Key / ?api_key= auth
+│   ├── audit.js                  # Audit log for 401/403/429
+│   ├── auth.js                   # JWT verification, requireAuth
+│   ├── error.js                  # AppError + global handler
+│   ├── logger.js                 # Request logging
+│   └── validate.js               # sanitizeString / isValidEmail / isValidUUID
+│
+├── openapi/
+│   ├── registry.js               # Single OpenAPIRegistry + buildOpenApiDocument
+│   ├── schemas.js                # Shared domain Zod schemas (User, Task, Workspace, ...)
+│   ├── route.js                  # defineRoute / withPrefix / validate
+│   ├── loadRoutes.js             # Walks routes/ and dynamic-imports each file
+│   ├── generate.js               # CLI: writes docs/openapi.json
+│   └── check.js                  # CI: rebuilds in memory and diffs the committed spec
+│
+├── routes/                       # Auto-discovered via loadRoutes.js
+│   ├── activity.js               # Workspace activity feed
+│   ├── api-keys.js               # API key CRUD (hashed, scoped, expiring)
+│   ├── attachments.js            # File uploads + signed-URL stream
+│   ├── auth.js                   # /auth/register, /auth/login, /auth/me
+│   ├── avatars.js                # User avatar upload (object storage)
+│   ├── board.js                  # GET /board/:workspaceId
+│   ├── checklists.js             # Checklists + items
+│   ├── columns.js                # Kanban columns
+│   ├── comments.js               # Task comments
+│   ├── docs.js                   # Static docs portal + GET /api/spec
+│   ├── oauth.js                  # /auth/oauth/providers + /:provider/start + /callback
+│   ├── presence.js               # Heartbeat + online users (in-memory)
+│   ├── system.js                 # GET /health
+│   ├── tasks.js                  # Tasks + move/batch/archive/restore/purge
+│   ├── watchers.js               # Watch/unwatch a task
+│   ├── webhooks.js               # Webhooks + signing + test ping (with SSRF guard)
+│   ├── workspaceAssets.js        # Workspace logo + background upload
+│   └── workspaces.js             # Workspace CRUD + members + transfer/leave
+│
+└── services/
+    ├── storage/                  # Object storage abstraction
+    │   ├── index.js              # picks backend; today only localDisk
+    │   └── localDisk.js          # put/get/remove/exists on backend/uploads/
+    ├── activityService.js
+    ├── attachmentService.js
+    ├── attachmentToken.js        # HMAC signed URLs (browsers can't send Authorization on <img>)
+    ├── authService.js            # bcrypt + lockout + findOrCreateOAuthUser
+    ├── avatarService.js
+    ├── boardService.js
+    ├── checklistService.js
+    ├── columnService.js
+    ├── commentService.js
+    ├── oauthService.js           # Provider registry + HMAC-signed state for CSRF
+    ├── taskService.js
+    ├── watcherService.js
+    ├── webhookService.js         # SSRF defense, HMAC signing, 5s timeout
+    ├── workspaceAssetService.js
+    └── workspaceService.js       # Role guards + transfer + leave + member CRUD
+```
 
-- **`useBoard(workspaceId)`** - Single source of truth for board data in a workspace. Exposes tasks, columns, drag-drop handlers, CRUD methods, comments, checklists, attachments, task movement, and task updates. Board data persists to `localStorage` key `jokel-board-{workspaceId}`.
-- **`useAuth()`** - Handles demo login/logout with `localStorage` key `jokel-auth`.
-- **`useWorkspaces()`** - Manages the workspace list with `localStorage` key `jokel-workspaces`.
+### Database
 
-### Styling
+| Asset                          | Purpose                                                     |
+| ------------------------------ | ----------------------------------------------------------- |
+| `database/schema.sql`          | SQLite DDL applied at startup. Single source of truth.      |
+| `database/supabase/schema.sql` | Postgres mirror with Row Level Security for Supabase.       |
+| `database/jokel.db`            | Local dev DB. **Never committed** (gitignored).             |
 
-The app uses a single dark theme. Colors live in `styles/base/variables.css` and should be consumed through CSS custom properties.
+Tables: `users`, `oauth_identities`, `workspaces`, `workspace_members`, `columns`, `tasks`, `task_tags`, `task_watchers`, `comments`, `attachments`, `checklists`, `checklist_items`, `activity_log`, `api_keys`, `webhooks`.
 
-Global/shell styles stay in `src/styles/`. View-specific styles live beside the view feature when that view has its own surface, for example `components/views/mytasks/css/mytasks.css`, and are imported by the view. Feature-level UI that is not a workspace view, such as onboarding, keeps its own `components/`, `css/`, and `storage/` folders under that feature.
+Timestamps are ISO-8601 UTC (`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`). The frontend parses them with `utils/time.js`, so timezone offsets stay correct.
 
-### Routing
+---
 
-| Route | Component |
-| --- | --- |
-| `/` | `LoginPage` |
-| `/workspace` | `WorkspaceList` |
-| `/workspace/:workspaceId/*` | `WorkspaceLayout` |
+## Routing
 
-`WorkspaceLayout` owns the app shell and switches the main view with `activeView`: `boards`, `backlog`, `my-tasks`, `inbox`, `analytics`, `team`, and `settings`.
+### Frontend routes (`App.jsx`)
 
-### Data Persistence
+| Path                                  | Component                            |
+| ------------------------------------- | ------------------------------------ |
+| `/`                                   | LoginPage                            |
+| `/oauth/callback`                     | OauthCallback                        |
+| `/privacy`                            | PrivacyPage                          |
+| `/terms`                              | TermsPage                            |
+| `/workspace`                          | WorkspaceList                        |
+| `/workspace/:workspaceId`             | WorkspaceLayout (active view)        |
+| `/workspace/:workspaceId/tasks/:code` | WorkspaceLayout → TaskDetailView     |
+| `/403` `/404` `/500` `/offline`       | Direct error pages                   |
+| `*`                                   | NotFoundPage (catch-all)             |
 
-- Auth state persists through `useAuth()`.
-- Workspace list persists through `useWorkspaces()`.
-- Board data persists per workspace through `useBoard(workspaceId)`.
-- Sidebar open state and active view are persisted by `WorkspaceLayout`.
+`WorkspaceLayout` swaps the main view via `activeView`: `boards`, `backlog`, `my-work`, `team`, `settings`.
 
-## Extending The App
+### Backend routes
 
-### Adding A Workspace View
+```
+GET  /api/health
+*    /api/v1/auth/...               register, login, me, oauth providers/start/callback
+*    /api/v1/workspaces/...         workspaces, members, activity, presence, api-keys, webhooks, assets
+*    /api/v1/board/:workspaceId
+*    /api/v1/columns/...
+*    /api/v1/tasks/...              tasks + comments + attachments + checklists + watchers
+*    /api/v1/checklists/:id/items
+*    /api/v1/checklist-items/:id
+GET  /api/docs                      static docs portal
+GET  /api/spec                      generated OpenAPI 3.0 JSON
+```
 
-1. Create a feature folder under `src/components/views/<feature>/`.
-2. Add `<Feature>View.jsx`.
-3. Add `components/` for view-specific subcomponents when needed.
-4. Add `css/<feature>.css` when the view has dedicated styling, and import it from `<Feature>View.jsx`.
-5. Add `index.js` in the feature folder that exports the view as default.
-6. Export the view from `src/components/views/index.js`.
-7. Add the nav item in `Sidebar.jsx`.
-8. Add the render case in `WorkspaceLayout.jsx`.
+---
 
-### Adding A Component
+## OpenAPI: spec is generated from code
 
-1. If it is feature-specific, place it under that feature's `components/` folder.
-2. If it is app-wide reusable UI, place it under `components/ui/`.
-3. Export through the nearest `index.js`.
-4. Keep class names component-prefixed, lowercase, and hyphenated.
+Every route is registered through `defineRoute()` (see `backend/src/openapi/route.js`), which:
 
-### Theming
+1. Validates the request with a Zod schema (body, params, query)
+2. Adds the route to the OpenAPI registry with the same schema
 
-Edit `src/styles/base/variables.css`. Avoid hardcoded colors in components and stylesheets.
+`docs/openapi.json` is a build artifact, committed to git. CI runs `npm run openapi:check`, which rebuilds the spec in memory and exits non-zero if the committed file is stale.
+
+```js
+defineRoute(router, {
+  method: 'post',
+  path: '/',
+  tag: 'Tasks',
+  summary: 'Create task',
+  body: CreateTaskBody,
+  responses: { 201: { description: 'Created', schema: Task } },
+}, (req, res, next) => {
+  // req.body is already validated
+});
+```
+
+The static docs portal at `/api/docs` is plain HTML/CSS/JS (no Scalar/Redoc/Swagger UI). The reference page fetches `/api/spec` on load and renders cards via `docs/assets/reference.js`.
+
+---
+
+## Auth, permissions, and security
+
+- **JWT bearer** for browsers, **API key** for bots/CI. Both end with `req.userId` populated.
+- **API keys**: SHA-256 hashed at rest, raw key shown once at creation, scoped (`read`/`write`), optional ISO expiry.
+- **Role hierarchy**: `owner > admin > member > viewer`. Enforced by `assertWorkspaceMember`, `assertCanEdit`, `assertCanManageWorkspace`, `assertIsOwner` in `workspaceService.js`. Guarded by SQL CHECK + a partial unique index for one-owner-per-workspace.
+- **Webhooks**: HMAC-SHA256 signed per-webhook secret, SSRF defense (DNS resolve + RFC1918/IMDS rejection, 5s timeout, manual redirect handling).
+- **OAuth**: Authorization Code flow with HMAC-signed state for CSRF. Provider data only seeds the row on first link. Subsequent logins keep the existing row, so user edits to name and avatar survive.
+- **CSP**: locked down via Helmet. No `unsafe-eval`, no external script CDNs.
+- **Rate limit**: 100 / 15 min globally in production, stricter 10 / 15 min on `/auth/*`.
+- **CORS**: explicit allowlist driven by `FRONTEND_URL`.
+
+Full threat model and Vercel/Supabase hardening notes live in [`docs/SECURITY.md`](./docs/SECURITY.md).
+
+---
+
+## File uploads
+
+Three upload surfaces, all flowing through `services/storage/`:
+
+| Surface                  | Route                                                | Cap   | Storage key prefix |
+| ------------------------ | ---------------------------------------------------- | ----- | ------------------ |
+| Task attachments         | `POST /api/v1/tasks/:taskId/attachments`             | 5 MB  | `task-<id>/`       |
+| User avatar              | `POST /api/v1/avatars`                               | 2 MB  | `avatars/<userId>/`|
+| Workspace logo + background | `POST /api/v1/workspaces/:id/assets/{logo,background}` | 2 MB / 5 MB | `logos/`, `backgrounds/` |
+
+All uploads do magic-byte sniffing, store SHA-256 + size + mime metadata in the DB, and serve through authenticated streams. Browsers can't send `Authorization` on `<img src>`, so the API issues short-lived HMAC-signed URLs (`?token=...`), the same approach as S3 presigned URLs. To move to S3, add a new file in `services/storage/` with the same `put/get/remove/exists` methods. No route or schema change needed.
+
+---
+
+## Development workflow
+
+1. Make a change.
+2. Backend: `npm run lint && npm run openapi:check`. Commit `docs/openapi.json` if it changed.
+3. Frontend: `npm run lint && npm run build`.
+4. For non-trivial logic changes, write a small scratch test (e.g. `tmp-test-foo.mjs` at the workspace root), run it, confirm it passes, then **delete it**. The PR diff should only contain production code. See `AGENTS.md` for the full convention.
+5. Smoke the affected flow manually.
+6. Open a PR (never push to `main` without one).
+
+> ⚠️ On Windows, **stop the backend before running `git commit/push`**. SQLite holds a WAL lock on `database/jokel.db` that confuses git's working-tree scan.
+
+---
+
+## Deployment notes
+
+- **Frontend on Vercel.** `frontend/vercel.json` sets HSTS, CSP, and Permissions-Policy headers on every response. Set `VITE_API_URL` to the backend origin.
+- **Backend on any Node host.** Requires `JWT_SECRET` (≥32 chars), `FRONTEND_URL`, and `DB_PATH` (or `DATABASE_URL` for Postgres). Run `npm run prebuild && npm start`.
+- **Postgres / Supabase.** Apply `database/supabase/schema.sql` (tables + RLS policies) and point the backend at `DATABASE_URL`. The current code path is SQLite. Migration notes are in `docs/SECURITY.md`.
+
+---
+
+## Documentation
+
+| File                  | Purpose                                                  |
+| --------------------- | -------------------------------------------------------- |
+| `README.md`           | This file. Architecture overview + onboarding.           |
+| `AGENTS.md`           | Workspace rules for AI agents (frontend persona).        |
+| `frontend/README.md`  | Frontend-specific commands + structure                   |
+| `backend/README.md`   | Backend setup + OpenAPI workflow                         |
+| `backend/AGENTS.md`   | Backend rules for AI agents                              |
+| `docs/README.md`      | Docs portal structure + conventions                      |
+| `docs/AGENTS.md`      | Docs-portal rules for AI agents                          |
+| `docs/SECURITY.md`    | Threat model + Vercel/Supabase deploy hardening          |
+
+---
+
+## License
+
+See [`LICENSE`](./LICENSE).

@@ -1,10 +1,12 @@
 import { Search, X, Plus, ChevronRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import FilterPanel from '../ui/FilterPanel.jsx';
+import Avatar from '../ui/Avatar.jsx';
 
 export default function Topbar({
   activeViewTitle,
   workspaceName,
+  workspaceLogo,
   isBoardView,
   searchQuery, onSearchChange,
   filterOpen, onToggleFilter,
@@ -13,7 +15,8 @@ export default function Topbar({
   allTags, activeFilterCount,
   onNewIssue,
   isSearching,
-  onlineUsers
+  onlineUsers,
+  canEdit = true,
 }) {
   return (
     <header className="topbar">
@@ -21,7 +24,12 @@ export default function Topbar({
         <div className="breadcrumbs" data-onboarding="workspace-switch">
           <Link to="/workspace" className="breadcrumb-link">Workspaces</Link>
           <ChevronRight size={14} className="breadcrumb-sep" />
-          <span className="breadcrumb-current">{workspaceName}</span>
+          <span className="breadcrumb-current breadcrumb-workspace">
+            {workspaceLogo ? (
+              <img src={workspaceLogo} alt="" className="breadcrumb-workspace-logo" />
+            ) : null}
+            {workspaceName}
+          </span>
           {!isBoardView && (
             <>
               <ChevronRight size={14} className="breadcrumb-sep" />
@@ -76,9 +84,10 @@ export default function Topbar({
         {onlineUsers && onlineUsers.length > 0 && (
           <div className="topbar-presence">
             {onlineUsers.slice(0, 3).map(user => (
-              <img
+              <Avatar
                 key={user.userId}
-                src={user.avatar || `https://api.dicebear.com/7.x/notionists-neutral/png?seed=${encodeURIComponent(user.name || user.userId)}`}
+                src={user.avatar}
+                name={user.name || user.userId}
                 alt={user.name || user.userId}
                 className="topbar-presence-avatar"
                 title={user.name || user.userId}
@@ -90,9 +99,11 @@ export default function Topbar({
           </div>
         )}
 
-        <button type="button" className="btn btn-primary" data-onboarding="new-issue" onClick={onNewIssue}>
-          <Plus size={14} /> New Issue
-        </button>
+        {canEdit && (
+          <button type="button" className="btn btn-primary" data-onboarding="new-issue" onClick={onNewIssue}>
+            <Plus size={14} /> New Issue
+          </button>
+        )}
       </div>
     </header>
   );

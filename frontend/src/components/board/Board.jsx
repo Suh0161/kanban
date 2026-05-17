@@ -3,7 +3,7 @@ import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import BoardColumn from './BoardColumn.jsx';
 import AddColumnComposer from './AddColumnComposer.jsx';
 
-const STORAGE_KEY = (workspaceId) => `jokel-collapsed-cols-${workspaceId}`;
+const STORAGE_KEY = (workspaceId) => `Elevate-collapsed-cols-${workspaceId}`;
 
 function loadCollapsed(workspaceId) {
   if (!workspaceId) return new Set();
@@ -47,6 +47,8 @@ export default function Board({
   newColumnTitle, onNewColumnTitleChange, onAddColumn,
   labels = [],
   workspaceId,
+  background = null,
+  canEdit = true,
 }) {
   const isFiltered = !!searchQuery || activeFilterCount > 0;
 
@@ -72,8 +74,27 @@ export default function Board({
     });
   }, []);
 
+  // Resolve the workspace background into an inline style. Image URLs use
+  // background-size: cover; color values render flat. Falling back to
+  // `undefined` lets the CSS variable in `.board-canvas` take over.
+  const isImage = !!background && /^(https?:\/\/|\/api\/v1\/backgrounds\/)/i.test(background);
+  const apiOrigin = (() => {
+    try {
+      const base = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api/v1';
+      return new URL(base).origin;
+    } catch { return ''; }
+  })();
+  const bgUrl = isImage && background.startsWith('/')
+    ? `${apiOrigin}${background}`
+    : background;
+  const canvasStyle = !background
+    ? undefined
+    : isImage
+      ? { background: `var(--bg-canvas) url(${bgUrl}) center / cover no-repeat fixed` }
+      : { background };
+
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+    <DragDropContext onDragEnd={canEdit ? onDragEnd : () => { /* read-only */ }}>
       <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
         {(provided) => (
           <div
@@ -81,6 +102,7 @@ export default function Board({
             data-onboarding="board-canvas"
             ref={provided.innerRef}
             {...provided.droppableProps}
+            style={canvasStyle}
           >
             {columnOrder.map((columnId, index) => {
               const column = data.columns[columnId];
@@ -125,21 +147,24 @@ export default function Board({
                   columns={columns}
                   columnOrder={columnOrder}
                   labels={labels}
+                  canEdit={canEdit}
                 />
               );
             })}
             {provided.placeholder}
 
-            <div className="board-column add-column-wrapper">
-              <AddColumnComposer
-                isOpen={addingColumn}
-                onOpen={onOpenAddColumn}
-                onClose={onCloseAddColumn}
-                title={newColumnTitle}
-                onTitleChange={onNewColumnTitleChange}
-                onSubmit={onAddColumn}
-              />
-            </div>
+            {canEdit && (
+              <div className="board-column add-column-wrapper">
+                <AddColumnComposer
+                  isOpen={addingColumn}
+                  onOpen={onOpenAddColumn}
+                  onClose={onCloseAddColumn}
+                  title={newColumnTitle}
+                  onTitleChange={onNewColumnTitleChange}
+                  onSubmit={onAddColumn}
+                />
+              </div>
+            )}
           </div>
         )}
       </Droppable>

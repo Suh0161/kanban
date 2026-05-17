@@ -34,13 +34,33 @@ export const User = registry.register(
     .openapi('User')
 );
 
+export const WorkspaceRole = z
+  .enum(['owner', 'admin', 'member', 'viewer'])
+  .openapi({ description: 'Role within a workspace', example: 'member' });
+
+export const WorkspaceMember = registry.register(
+  'WorkspaceMember',
+  z
+    .object({
+      id: z.string(),
+      email: Email,
+      name: z.string(),
+      avatar: z.string().url().nullable().optional(),
+      role: WorkspaceRole,
+    })
+    .openapi('WorkspaceMember')
+);
+
 export const Workspace = registry.register(
   'Workspace',
   z
     .object({
       id: z.string(),
       name: z.string(),
+      description: z.string().optional(),
       memberCount: z.number().int().optional(),
+      myRole: WorkspaceRole.optional(),
+      codePrefix: z.string().optional(),
       created_at: ISODateTime.optional(),
     })
     .openapi('Workspace')

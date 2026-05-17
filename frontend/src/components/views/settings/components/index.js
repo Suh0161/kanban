@@ -7,3 +7,5 @@ export { default as SettingsWebhooks } from './SettingsWebhooks';
 export { default as SettingsMembers } from './SettingsMembers.jsx';
 export { default as SettingsDangerZone } from './SettingsDangerZone.jsx';
 export { default as WorkspaceSwitch } from './WorkspaceSwitch.jsx';
+export { default as WorkspaceLogoField } from './WorkspaceLogoField.jsx';
+export { default as WorkspaceBackgroundField } from './WorkspaceBackgroundField.jsx';

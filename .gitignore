@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local databases / WAL files (NEVER commit user data)
+database/*.db
+database/*.db-shm
+database/*.db-wal
+
+# Environment files (secrets)
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+!backend/.env.example
+!website/.env.example
+
+# Uploads (user content)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local-only scripts
+_replace.ps1
+
+# Throwaway scratch tests (see AGENTS.md "Verify with a throwaway test")
+tmp-test-*
+*.scratch.test.*
+*.scratch.*
+
+# -- website/ -----------------------------------------------------------------
+# Explicit entries so it's obvious what belongs to the marketing site.
+website/node_modules/
+website/dist/
+website/.env.local
+website/.env.*.local

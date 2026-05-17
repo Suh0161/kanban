@@ -1,5 +1,4 @@
 import {
-  Layers,
   LayoutDashboard,
   Briefcase,
   Users,
@@ -10,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
-import { UserDropdown } from '../ui';
+import { UserDropdown, Avatar, Logo } from '../ui';
 
 export default function Sidebar({ isOpen, activeView, onSelectView, onToggle, onOpenSettings }) {
   const navigate = useNavigate();
@@ -34,8 +33,8 @@ export default function Sidebar({ isOpen, activeView, onSelectView, onToggle, on
     <aside className={`sidebar ${isOpen ? 'is-open' : 'is-collapsed'}`}>
       <div className="sidebar-header">
         <div className="logo">
-          <Layers className="logo-icon" size={18} />
-          <span className="logo-text">Jokel</span>
+          <Logo size={20} className="logo-icon" />
+          <span className="logo-text">Elevate</span>
         </div>
         <button
           type="button"
@@ -68,19 +67,20 @@ export default function Sidebar({ isOpen, activeView, onSelectView, onToggle, on
       <div className="sidebar-footer">
         <div className="user-profile">
           {user ? (
-            <>
-              <UserDropdown user={user} onLogout={handleLogout} placement="top" onOpenSettings={onOpenSettings} />
-              <div className="user-info">
-                <span className="user-name">{user.name}</span>
-              </div>
-            </>
+            <UserDropdown
+              user={user}
+              onLogout={handleLogout}
+              placement="top"
+              onOpenSettings={onOpenSettings}
+              fullRow
+            />
           ) : (
-            <>
-              <img src="https://api.dicebear.com/7.x/notionists-neutral/png?seed=Guest" alt="Guest" className="avatar" />
+            <div className="user-profile-guest">
+              <Avatar name="Guest" alt="Guest" className="avatar" />
               <div className="user-info">
                 <span className="user-name">Guest</span>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

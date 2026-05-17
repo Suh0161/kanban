@@ -1,4 +1,4 @@
-import { Activity, CalendarClock, CheckCircle2, ListTodo, Trash2, TriangleAlert, UsersRound } from 'lucide-react';
+import { Activity, CheckCircle2, ListTodo, Trash2 } from 'lucide-react';
 
 function percent(part, whole) {
   if (!whole) return 0;
@@ -11,9 +11,9 @@ function formatDueDate(date) {
 }
 
 export default function BacklogSidebar({
-  planned, ready, grooming, unscheduled, overdue, highUrgency, sprintDraft,
-  columns, columnOrder, visibleTasks, activeBucket,
-  onSelectTask, onUpdateTask, onBucketClick,
+  planned, ready, unscheduled, sprintDraft,
+  columns, columnOrder, visibleTasks,
+  onSelectTask, onUpdateTask,
 }) {
   const scheduledPercent = percent(planned.length - unscheduled.length, planned.length);
   const readyPercent = percent(ready.length, planned.length);
@@ -102,52 +102,6 @@ export default function BacklogSidebar({
               </div>
             );
           })}
-        </div>
-      </section>
-
-      {/* Attention */}
-      <section className="workspace-panel">
-        <div className="workspace-panel-header compact">
-          <h2>Attention</h2>
-          <CalendarClock size={15} />
-        </div>
-        <div className="backlog-attention">
-          <button
-            type="button"
-            className={`backlog-attention-row ${activeBucket === 'overdue' ? 'is-active' : ''}`}
-            onClick={() => onBucketClick('overdue')}
-          >
-            <TriangleAlert size={14} className="accent-red" />
-            <span>Overdue</span>
-            <strong className={overdue.length > 0 ? 'accent-red' : ''}>{overdue.length}</strong>
-          </button>
-          <button
-            type="button"
-            className={`backlog-attention-row ${activeBucket === 'unscheduled' ? 'is-active' : ''}`}
-            onClick={() => onBucketClick('unscheduled')}
-          >
-            <CalendarClock size={14} />
-            <span>Unscheduled</span>
-            <strong>{unscheduled.length}</strong>
-          </button>
-          <button
-            type="button"
-            className={`backlog-attention-row ${activeBucket === 'grooming' ? 'is-active' : ''}`}
-            onClick={() => onBucketClick('grooming')}
-          >
-            <UsersRound size={14} />
-            <span>Needs grooming</span>
-            <strong>{grooming.length}</strong>
-          </button>
-          <button
-            type="button"
-            className={`backlog-attention-row ${activeBucket === 'urgent' ? 'is-active' : ''}`}
-            onClick={() => onBucketClick('urgent')}
-          >
-            <Activity size={14} />
-            <span>High urgency</span>
-            <strong>{highUrgency.length}</strong>
-          </button>
         </div>
       </section>
 

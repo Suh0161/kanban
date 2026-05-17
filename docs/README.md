@@ -1,6 +1,6 @@
-# Jokel API Documentation
+# Elevate API Documentation
 
-Static documentation portal for the Jokel REST API. Served by the backend under `/api/docs`.
+Static documentation portal for the Elevate REST API. Served by the backend under `/api/docs`.
 
 ## Structure
 

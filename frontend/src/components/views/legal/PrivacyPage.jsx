@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Layers, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Logo } from '../../ui';
 import './css/legal.css';
 
 const TOC = [
@@ -42,8 +43,8 @@ export default function PrivacyPage() {
     <div className="legal-root">
       <nav className="legal-nav">
         <Link to="/" className="legal-nav-brand">
-          <div className="legal-nav-brand-icon"><Layers size={14} /></div>
-          <span>Jokel</span>
+          <Logo size={20} className="legal-nav-brand-icon" />
+          <span>Elevate</span>
         </Link>
         <Link to="/" className="legal-nav-back">
           <ArrowLeft size={13} /> Back to sign in
@@ -77,8 +78,8 @@ export default function PrivacyPage() {
 
           <section className="legal-section" id="overview">
             <h2 className="legal-section-title">Overview</h2>
-            <p>Jokel is committed to protecting your personal data. This Privacy Policy explains how we collect, use, store, and protect information when you use the Jokel workspace management platform.</p>
-            <p>This policy applies to all users of Jokel and complies with the General Data Protection Regulation (GDPR), the UK GDPR, and other applicable data protection laws.</p>
+            <p>Elevate is committed to protecting your personal data. This Privacy Policy explains how we collect, use, store, and protect information when you use the Elevate workspace management platform.</p>
+            <p>This policy applies to all users of Elevate and complies with the General Data Protection Regulation (GDPR), the UK GDPR, and other applicable data protection laws.</p>
             <div className="legal-callout">
               <div className="legal-callout-dot" />
               <p><strong>Plain English:</strong> We collect only what we need to run the service. We don&apos;t sell your data. You can request deletion at any time via Settings → Danger Zone.</p>
@@ -91,7 +92,7 @@ export default function PrivacyPage() {
             <ul>
               <li><strong>Account data</strong> — Name, email address, and hashed password when you register.</li>
               <li><strong>Profile data</strong> — Display name and avatar image you choose.</li>
-              <li><strong>Workspace data</strong> — Tasks, comments, attachments, and other content you create within Jokel.</li>
+              <li><strong>Workspace data</strong> — Tasks, comments, attachments, and other content you create within Elevate.</li>
               <li><strong>Usage data</strong> — Activity logs, login timestamps, and feature usage for security and audit purposes.</li>
               <li><strong>Technical data</strong> — IP address, browser type, and session tokens for authentication and security.</li>
             </ul>
@@ -102,7 +103,7 @@ export default function PrivacyPage() {
             <h2 className="legal-section-title">How We Use Your Data</h2>
             <p>We process your personal data for the following purposes and legal bases:</p>
             <ul>
-              <li><strong>Service delivery</strong> (Contract) — To provide, maintain, and improve the Jokel platform.</li>
+              <li><strong>Service delivery</strong> (Contract) — To provide, maintain, and improve the Elevate platform.</li>
               <li><strong>Authentication</strong> (Contract) — To verify your identity and secure your account.</li>
               <li><strong>Security & fraud prevention</strong> (Legitimate interest) — To detect and prevent unauthorized access and security incidents.</li>
               <li><strong>Audit logging</strong> (Legitimate interest / Legal obligation) — To maintain records of workspace activity for compliance.</li>
@@ -202,10 +203,10 @@ export default function PrivacyPage() {
 
           <section className="legal-section" id="cookies">
             <h2 className="legal-section-title">Cookies & Local Storage</h2>
-            <p>Jokel uses browser local storage (not cookies) to store:</p>
+            <p>Elevate uses browser local storage (not cookies) to store:</p>
             <ul>
-              <li><code>jokel-token</code> — Your JWT session token for authentication.</li>
-              <li><code>jokel-auth</code> — Your profile data cache to avoid repeated API calls.</li>
+              <li><code>Elevate-token</code> — Your JWT session token for authentication.</li>
+              <li><code>Elevate-auth</code> — Your profile data cache to avoid repeated API calls.</li>
               <li><strong>UI preferences</strong> — Sidebar state and active view, stored per workspace.</li>
             </ul>
             <p>We do <strong>not</strong> use tracking cookies, advertising cookies, or third-party analytics.</p>
@@ -213,7 +214,7 @@ export default function PrivacyPage() {
 
           <section className="legal-section" id="children">
             <h2 className="legal-section-title">Children&apos;s Privacy</h2>
-            <p>Jokel is not directed at children under the age of 16. We do not knowingly collect personal data from children. If you believe a child has provided us with personal data, please contact us immediately and we will delete it.</p>
+            <p>Elevate is not directed at children under the age of 16. We do not knowingly collect personal data from children. If you believe a child has provided us with personal data, please contact us immediately and we will delete it.</p>
           </section>
 
           <section className="legal-section" id="changes">
@@ -241,7 +242,7 @@ export default function PrivacyPage() {
       </div>
 
       <footer className="legal-footer">
-        <span>© {new Date().getFullYear()} Jokel. All rights reserved.</span>
+        <span>© {new Date().getFullYear()} Elevate. All rights reserved.</span>
         <div className="legal-footer-links">
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>

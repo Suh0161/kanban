@@ -95,6 +95,109 @@ export function createDb(dbPath = DB_PATH) {
   // Workspace: description
   migrate(db, "ALTER TABLE workspaces ADD COLUMN description TEXT NOT NULL DEFAULT ''");
 
+  // Workspace branding: logo URL pointer + board background style.
+  // Both nullable — null means "use defaults".
+  migrate(db, 'ALTER TABLE workspaces ADD COLUMN logo TEXT');
+  migrate(db, 'ALTER TABLE workspaces ADD COLUMN background TEXT');
+
+  // OAuth identities table (Google / GitHub linkage).
+  migrate(db, `
+    CREATE TABLE IF NOT EXISTS oauth_identities (
+      user_id          TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      provider         TEXT NOT NULL,
+      provider_user_id TEXT NOT NULL,
+      created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      PRIMARY KEY (provider, provider_user_id)
+    )
+  `);
+  migrate(db, 'CREATE INDEX IF NOT EXISTS idx_oauth_identities_user ON oauth_identities(user_id)');
+
+  // Task watchers — many-to-many join created lazily for old databases.
+  migrate(db, `
+    CREATE TABLE IF NOT EXISTS task_watchers (
+      task_id    TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      PRIMARY KEY (task_id, user_id)
+    )
+  `);
+  migrate(db, 'CREATE INDEX IF NOT EXISTS idx_task_watchers_user ON task_watchers(user_id)');
+
+  // Make users.password_hash nullable so OAuth-only users can exist.
+  // SQLite can't drop NOT NULL in place, so we rewrite the table only
+  // when the constraint is still present. Idempotent.
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info('users')").all();
+    const pwCol = tableInfo.find((c) => c.name === 'password_hash');
+    if (pwCol && pwCol.notnull === 1) {
+      db.exec('BEGIN');
+      try {
+        db.exec(`
+          CREATE TABLE users__new (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            avatar TEXT,
+            password_hash TEXT,
+            created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+            updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+          );
+          INSERT INTO users__new (id, email, name, avatar, password_hash, created_at, updated_at)
+            SELECT id, email, name, avatar, password_hash, created_at, updated_at FROM users;
+          DROP TABLE users;
+          ALTER TABLE users__new RENAME TO users;
+        `);
+        db.exec('COMMIT');
+      } catch (err) {
+        db.exec('ROLLBACK');
+        throw err;
+      }
+    }
+  } catch (err) {
+    console.warn('[db] users.password_hash migration skipped:', err.message);
+  }
+
+  // Permissions: enforce single owner per workspace and normalize unknown roles.
+  // SQLite can't add CHECK constraints to existing tables in-place, so we
+  // backstop with a unique partial index plus a role normalization pass.
+  try {
+    db.exec(`UPDATE workspace_members
+             SET role = 'member'
+             WHERE role NOT IN ('owner', 'admin', 'member', 'viewer')`);
+  } catch { /* ignore */ }
+  migrate(
+    db,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_one_owner
+       ON workspace_members(workspace_id) WHERE role = 'owner'`
+  );
+
+  // Normalize legacy timestamp rows. Older inserts used SQLite's
+  // `datetime('now')` which produces `'YYYY-MM-DD HH:MM:SS'` — no timezone
+  // marker, so JS parses it as local time and "X ago" math drifts by the
+  // user's timezone offset. New writes use ISO-8601 UTC; this backfills
+  // any row that doesn't already match (idempotent — converts in place).
+  const NORMALIZE_TS = (table, column) => `
+    UPDATE ${table}
+       SET ${column} = strftime('%Y-%m-%dT%H:%M:%fZ', ${column})
+     WHERE ${column} IS NOT NULL
+       AND ${column} NOT LIKE '%T%Z'`;
+  for (const [table, column] of [
+    ['users', 'created_at'], ['users', 'updated_at'],
+    ['workspaces', 'created_at'], ['workspaces', 'updated_at'],
+    ['workspace_members', 'created_at'],
+    ['columns', 'created_at'], ['columns', 'updated_at'], ['columns', 'deleted_at'],
+    ['tasks', 'created_at'], ['tasks', 'updated_at'], ['tasks', 'deleted_at'],
+    ['comments', 'created_at'],
+    ['attachments', 'created_at'],
+    ['checklists', 'created_at'],
+    ['checklist_items', 'created_at'],
+    ['activity_log', 'created_at'],
+    ['api_keys', 'created_at'], ['api_keys', 'last_used_at'], ['api_keys', 'expires_at'],
+    ['webhooks', 'created_at'], ['webhooks', 'updated_at'],
+  ]) {
+    try { db.exec(NORMALIZE_TS(table, column)); } catch { /* table or column may not exist on old DBs */ }
+  }
+
   return db;
 }
 

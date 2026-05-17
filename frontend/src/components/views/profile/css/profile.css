@@ -323,3 +323,67 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Upload / URL avatar ── */
+
+.profile-file-input {
+  display: none;
+}
+
+.profile-avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+}
+
+.profile-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background-color 0.12s;
+  width: fit-content;
+}
+
+.profile-upload-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.profile-avatar-hint {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.profile-url-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-input-wrap-url {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.profile-url-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.profile-url-input {
+  padding-left: 32px;
+}

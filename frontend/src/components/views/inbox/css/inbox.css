@@ -46,6 +46,11 @@
   gap: 12px;
 }
 
+.inbox-report-row.is-readonly {
+  padding-left: 18px;
+  grid-template-columns: minmax(280px, 1fr) auto auto;
+}
+
 .inbox-report-row:hover,
 .inbox-report-row.selected {
   border-color: var(--border-subtle);
@@ -202,6 +207,10 @@
 
   .inbox-report-row {
     grid-template-columns: minmax(220px, 1fr) 124px 132px 92px;
+  }
+
+  .inbox-report-row.is-readonly {
+    grid-template-columns: minmax(220px, 1fr) auto;
   }
 
   .inbox-report-actions {

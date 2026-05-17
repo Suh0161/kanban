@@ -247,6 +247,16 @@
   font-size: 0.82rem;
 }
 
+/* When the coverage list has no rows, the empty-state card replaces them.
+   The generic `.team-coverage-list div` rule above forces a 3-column grid
+   on every child, which would chop the title into a 16px column. Bump
+   specificity so the empty state can stack normally. */
+.team-coverage-list .workspace-empty-state {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 14px;
+  min-height: 0;
+}
+
 .team-escalation-list button {
   min-height: 60px;
   padding: 10px 12px;

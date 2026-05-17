@@ -1,20 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Webhook, Plus, Trash2, Pencil, Play, Copy, X, Check } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '../../../../api/client.js';
+import { WEBHOOK_EVENTS } from './webhookEvents.js';
 
-const AVAILABLE_EVENTS = [
-  'Task Created',
-  'Task Updated',
-  'Task Moved',
-  'Task Deleted',
-  'Task Archived',
-  'Task Restored',
-  'Column Created',
-  'Column Deleted',
-  'Comment Added',
-  'Checklist Created',
-  'Checklist Deleted'
-];
+/**
+ * Convert a backend `active` value (0/1/boolean) into a real boolean.
+ * SQLite returns 0/1 integers which both !== false, which used to make
+ * disabled webhooks render as Active. Treat anything non-truthy as off,
+ * with `null/undefined` as the new-form default.
+ */
+function isActive(value) {
+  if (value === undefined || value === null) return true;
+  return !!value && value !== 0;
+}
 
 export default function SettingsWebhooks({ workspaceId }) {
   const [webhooks, setWebhooks] = useState([]);
@@ -85,7 +83,7 @@ export default function SettingsWebhooks({ workspaceId }) {
       ? webhook.events.split(',').map(e => e.trim()).filter(Boolean)
       : (Array.isArray(webhook.events) ? webhook.events : []);
     setEvents(new Set(eventList));
-    setActive(webhook.active !== false);
+    setActive(isActive(webhook.active));
   };
 
   const toggleEvent = (eventName) => {
@@ -272,14 +270,14 @@ export default function SettingsWebhooks({ workspaceId }) {
             <div className="settings-form-row">
               <span>Events</span>
               <div className="settings-events-grid">
-                {AVAILABLE_EVENTS.map(eventName => (
+                {WEBHOOK_EVENTS.map(({ slug, label }) => (
                   <button
-                    key={eventName}
+                    key={slug}
                     type="button"
-                    className={`settings-event-pill ${events.has(eventName) ? 'active' : ''}`}
-                    onClick={() => toggleEvent(eventName)}
+                    className={`settings-event-pill ${events.has(slug) ? 'active' : ''}`}
+                    onClick={() => toggleEvent(slug)}
                   >
-                    {eventName}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -335,14 +333,14 @@ export default function SettingsWebhooks({ workspaceId }) {
                       <div className="settings-form-row">
                         <span>Events</span>
                         <div className="settings-events-grid">
-                          {AVAILABLE_EVENTS.map(eventName => (
+                          {WEBHOOK_EVENTS.map(({ slug, label }) => (
                             <button
-                              key={eventName}
+                              key={slug}
                               type="button"
-                              className={`settings-event-pill ${events.has(eventName) ? 'active' : ''}`}
-                              onClick={() => toggleEvent(eventName)}
+                              className={`settings-event-pill ${events.has(slug) ? 'active' : ''}`}
+                              onClick={() => toggleEvent(slug)}
                             >
-                              {eventName}
+                              {label}
                             </button>
                           ))}
                         </div>
@@ -367,8 +365,8 @@ export default function SettingsWebhooks({ workspaceId }) {
                 );
               }
               const evtCount = eventsCount(webhook);
-              const isActive = webhook.active !== false;
-              const testState = testResult && testResult.id === webhook.id;
+              const webhookActive = isActive(webhook.active);
+              const testState = testResult && testResult.id === webhook.id ? testResult : null;
 
               return (
                 <div key={webhook.id} className="settings-key-item">
@@ -379,9 +377,9 @@ export default function SettingsWebhooks({ workspaceId }) {
                     </div>
                     <div className="settings-key-meta">
                       <span className="settings-webhook-events-count">{evtCount} event{evtCount !== 1 ? 's' : ''}</span>
-                      <span className={`settings-webhook-status ${isActive ? 'active' : 'inactive'}`}>
+                      <span className={`settings-webhook-status ${webhookActive ? 'active' : 'inactive'}`}>
                         <span className="settings-webhook-dot" />
-                        {isActive ? 'Active' : 'Inactive'}
+                        {webhookActive ? 'Active' : 'Inactive'}
                       </span>
                       {testState && (
                         <span style={{

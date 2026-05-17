@@ -1,23 +1,39 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, Plus, X, ArrowRight, Users, Search, Sparkles } from 'lucide-react';
+import { Plus, X, ArrowRight, Users, Search, Sparkles, AlertTriangle } from 'lucide-react';
 import { useWorkspaces } from '../../../hooks/useWorkspaces.js';
 import { useAuth } from '../../../hooks/useAuth.js';
-import { UserDropdown } from '../../ui';
+import { UserDropdown, Logo } from '../../ui';
+import { WorkspaceCardMenu } from './components/index.js';
+import { resolveServerUrl } from '../../../api/client.js';
+import { ErrorState } from '../error';
 import './css/workspacelist.css';
 
 export default function WorkspaceList() {
-  const { workspaces, addWorkspace } = useWorkspaces();
+  const { workspaces, addWorkspace, updateWorkspace, deleteWorkspace, error: listError, refetch: refetchWorkspaces } = useWorkspaces();
   const { user } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [query, setQuery] = useState('');
-  const [welcome, setWelcome] = useState(() => sessionStorage.getItem('jokel-welcome') === '1');
+  const [welcome, setWelcome] = useState(() => sessionStorage.getItem('Elevate-welcome') === '1');
+
+  // Inline rename + delete modals. Holds the target workspace so the modal
+  // can render its name without a separate state field.
+  const [renameTarget, setRenameTarget] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameError, setRenameError] = useState(null);
+  const [renaming, setRenaming] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
     if (welcome) {
-      sessionStorage.removeItem('jokel-welcome');
+      sessionStorage.removeItem('Elevate-welcome');
       const timer = setTimeout(() => setWelcome(false), 4000);
       return () => clearTimeout(timer);
     }
@@ -37,6 +53,62 @@ export default function WorkspaceList() {
   const initials = (name) =>
     name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
+  const openRename = (ws) => {
+    setRenameTarget(ws);
+    setRenameValue(ws.name);
+    setRenameError(null);
+  };
+
+  const closeRename = () => {
+    setRenameTarget(null);
+    setRenameValue('');
+    setRenameError(null);
+    setRenaming(false);
+  };
+
+  const submitRename = async (e) => {
+    e.preventDefault();
+    const next = renameValue.trim();
+    if (!next || !renameTarget) return;
+    if (next === renameTarget.name) { closeRename(); return; }
+    setRenaming(true);
+    setRenameError(null);
+    try {
+      await updateWorkspace(renameTarget.id, { name: next });
+      closeRename();
+    } catch (err) {
+      setRenameError(err.message || 'Could not rename workspace');
+      setRenaming(false);
+    }
+  };
+
+  const openDelete = (ws) => {
+    setDeleteTarget(ws);
+    setDeleteConfirm('');
+    setDeleteError(null);
+  };
+
+  const closeDelete = () => {
+    setDeleteTarget(null);
+    setDeleteConfirm('');
+    setDeleteError(null);
+    setDeleting(false);
+  };
+
+  const submitDelete = async () => {
+    if (!deleteTarget) return;
+    if (deleteConfirm !== deleteTarget.name) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteWorkspace(deleteTarget.id);
+      closeDelete();
+    } catch (err) {
+      setDeleteError(err.message || 'Could not delete workspace');
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="wl-page">
       {/* Welcome toast */}
@@ -51,10 +123,8 @@ export default function WorkspaceList() {
       {/* Top navigation */}
       <nav className="wl-nav">
         <div className="wl-nav-brand">
-          <div className="wl-brand-icon">
-            <Layers size={18} />
-          </div>
-          <span className="wl-brand-text">Jokel</span>
+          <Logo size={22} className="wl-brand-icon" />
+          <span className="wl-brand-text">Elevate</span>
         </div>
 
         <div className="wl-nav-actions">
@@ -82,7 +152,14 @@ export default function WorkspaceList() {
         </header>
 
         {/* Cards */}
-        <div className="wl-grid">
+        {listError ? (
+          <ErrorState
+            error={listError}
+            title="Couldn't load your workspaces"
+            onRetry={refetchWorkspaces}
+          />
+        ) : (
+          <div className="wl-grid">
           {filtered.map((ws) => (
             <Link
               key={ws.id}
@@ -91,8 +168,26 @@ export default function WorkspaceList() {
             >
               <div className="wl-card-top">
                 <div className="wl-card-avatar">
-                  {initials(ws.name)}
+                  {ws.logo ? (
+                    <img
+                      src={resolveServerUrl(ws.logo)}
+                      alt=""
+                      className="wl-card-avatar-img"
+                      onError={(e) => {
+                        // Fall back to initials if the URL ever 404s,
+                        // so a deleted logo file can't break the card.
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement?.classList.add('wl-card-avatar-broken');
+                      }}
+                    />
+                  ) : null}
+                  <span className="wl-card-avatar-initials">{initials(ws.name)}</span>
                 </div>
+                <WorkspaceCardMenu
+                  workspace={ws}
+                  onRename={openRename}
+                  onDelete={openDelete}
+                />
               </div>
 
               <div className="wl-card-body">
@@ -148,7 +243,89 @@ export default function WorkspaceList() {
             </div>
           )}
         </div>
+        )}
       </main>
+
+      {/* ── Rename modal ─────────────────────────────────────────────── */}
+      {renameTarget && (
+        <div className="wl-modal-backdrop" onMouseDown={closeRename}>
+          <div className="wl-modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="wl-modal-head">
+              <h3>Rename workspace</h3>
+              <button type="button" className="wl-form-close" onClick={closeRename} aria-label="Close">
+                <X size={16} />
+              </button>
+            </div>
+            <form onSubmit={submitRename} className="wl-form">
+              <div className="wl-form-field">
+                <label>Workspace name</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={renameValue}
+                  onChange={(e) => { setRenameValue(e.target.value); setRenameError(null); }}
+                  maxLength={100}
+                  required
+                />
+              </div>
+              {renameError && <p className="wl-modal-error">{renameError}</p>}
+              <div className="wl-modal-actions">
+                <button type="button" className="wl-btn-secondary" onClick={closeRename}>Cancel</button>
+                <button
+                  type="submit"
+                  className="wl-form-submit"
+                  disabled={renaming || !renameValue.trim() || renameValue.trim() === renameTarget.name}
+                >
+                  {renaming ? 'Saving...' : 'Save changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete confirmation modal ────────────────────────────────── */}
+      {deleteTarget && (
+        <div className="wl-modal-backdrop" onMouseDown={closeDelete}>
+          <div className="wl-modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="wl-modal-head">
+              <h3>
+                <AlertTriangle size={16} className="wl-modal-danger-icon" />
+                Delete workspace
+              </h3>
+              <button type="button" className="wl-form-close" onClick={closeDelete} aria-label="Close">
+                <X size={16} />
+              </button>
+            </div>
+            <p className="wl-modal-body">
+              This permanently deletes <strong>{deleteTarget.name}</strong>, all its boards, tasks,
+              comments, and attachments. This cannot be undone.
+            </p>
+            <div className="wl-form-field">
+              <label>Type <strong>{deleteTarget.name}</strong> to confirm</label>
+              <input
+                type="text"
+                autoFocus
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder={deleteTarget.name}
+              />
+            </div>
+            {deleteError && <p className="wl-modal-error">{deleteError}</p>}
+            <div className="wl-modal-actions">
+              <button type="button" className="wl-btn-secondary" onClick={closeDelete}>Cancel</button>
+              <button
+                type="button"
+                className="wl-btn-danger"
+                onClick={submitDelete}
+                disabled={deleting || deleteConfirm !== deleteTarget.name}
+              >
+                {deleting ? 'Deleting...' : 'I understand, delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

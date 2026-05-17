@@ -379,6 +379,13 @@
   margin-bottom: 6px;
 }
 
+/* Stack the title above the description so neither gets squeezed when the
+   panel is narrow. Without explicit rows the strong + span ended up as
+   two inline grid columns and the title wrapped letter-by-letter. */
+.workspace-empty-state {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .workspace-review-summary span,
 .workspace-empty-state span {
   color: var(--text-secondary);

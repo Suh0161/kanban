@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, Check, Eye, EyeOff, Lock, User, X } from 'lucide-react';
+import { Camera, Check, Eye, EyeOff, Lock, Upload, User, X, Link } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth.js';
 import './css/profile.css';
 
@@ -9,26 +9,28 @@ const AVATAR_SEEDS = [
   'Zoe', 'Kai', 'Nova', 'Sage', 'River', 'Quinn', 'Blake', 'Avery',
 ];
 
-function avatarUrl(seed) {
+function presetUrl(seed) {
   return `https://api.dicebear.com/7.x/notionists-neutral/png?seed=${encodeURIComponent(seed)}`;
 }
 
 export default function ProfileModal({ onClose }) {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, uploadAvatar } = useAuth();
   const [tab, setTab] = useState('profile');
+  const fileInputRef = useRef(null);
 
-  // Profile tab state
+  // Profile state
   const [name, setName] = useState(user?.name || '');
-  const [avatarSeed, setAvatarSeed] = useState(() => {
-    // Try to extract seed from current avatar URL
-    const match = user?.avatar?.match(/seed=([^&]+)/);
-    return match ? decodeURIComponent(match[1]) : 'DemoUser';
-  });
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || presetUrl('DemoUser'));
+  // When the user picks a file we keep the File object so we can upload it
+  // via multipart on save instead of base64-ing it into the JSON PATCH body.
+  // null means "use the URL in `avatarPreview` as-is".
+  const [pendingFile, setPendingFile] = useState(null);
+  const [urlInput, setUrlInput] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [profileSaved, setProfileSaved] = useState(false);
 
-  // Password tab state
+  // Password state
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -38,6 +40,42 @@ export default function ProfileModal({ onClose }) {
   const [pwError, setPwError] = useState(null);
   const [pwSaved, setPwSaved] = useState(false);
 
+  // Handle file upload — preview locally with a blob URL, defer the real
+  // upload to save time. The backend accepts the binary via multipart so
+  // we never base64-stuff a 2 MB image into the JSON body.
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setProfileError('Please select an image file'); return; }
+    if (file.size > 2 * 1024 * 1024) { setProfileError('Image must be under 2MB'); return; }
+    setProfileError(null);
+    setPendingFile(file);
+    // Object URL keeps the preview tiny — no base64 inflation.
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  // Revoke object URLs when the preview changes or the modal closes,
+  // so we don't leak memory on repeated uploads.
+  useEffect(() => {
+    return () => {
+      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  const handleUrlApply = () => {
+    if (!urlInput.trim()) return;
+    setPendingFile(null);
+    setAvatarPreview(urlInput.trim());
+    setUrlInput('');
+  };
+
+  const handlePresetSelect = (seed) => {
+    setPendingFile(null);
+    setAvatarPreview(presetUrl(seed));
+  };
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -45,10 +83,19 @@ export default function ProfileModal({ onClose }) {
     setProfileError(null);
     setProfileSaved(false);
     try {
-      await updateProfile({
-        name: name.trim(),
-        avatar: avatarUrl(avatarSeed),
-      });
+      // Upload the picked file first (if any) so the URL the server returns
+      // is what we persist on the row.
+      if (pendingFile) {
+        await uploadAvatar(pendingFile);
+        setPendingFile(null);
+      }
+      // Then save name + (preset/URL) avatar. If we just uploaded, the server
+      // already updated `users.avatar` to the storage URL, so we only send
+      // the name to avoid stomping it with a stale value.
+      const updates = pendingFile
+        ? { name: name.trim() }
+        : { name: name.trim(), avatar: avatarPreview };
+      await updateProfile(updates);
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 2500);
     } catch (err) {
@@ -91,48 +138,86 @@ export default function ProfileModal({ onClose }) {
 
         {/* Tabs */}
         <div className="profile-tabs">
-          <button
-            type="button"
-            className={`profile-tab ${tab === 'profile' ? 'active' : ''}`}
-            onClick={() => setTab('profile')}
-          >
+          <button type="button" className={`profile-tab ${tab === 'profile' ? 'active' : ''}`} onClick={() => setTab('profile')}>
             <User size={14} /> Profile
           </button>
-          <button
-            type="button"
-            className={`profile-tab ${tab === 'password' ? 'active' : ''}`}
-            onClick={() => setTab('password')}
-          >
+          <button type="button" className={`profile-tab ${tab === 'password' ? 'active' : ''}`} onClick={() => setTab('password')}>
             <Lock size={14} /> Password
           </button>
         </div>
 
-        {/* Profile tab */}
+        {/* ── PROFILE TAB ── */}
         {tab === 'profile' && (
           <form onSubmit={handleSaveProfile} className="profile-body">
-            {/* Current avatar + picker */}
+
+            {/* Avatar preview + upload actions */}
             <div className="profile-avatar-section">
               <div className="profile-avatar-current">
-                <img src={avatarUrl(avatarSeed)} alt="" className="profile-avatar-img" />
-                <div className="profile-avatar-badge">
+                <img src={avatarPreview} alt="" className="profile-avatar-img" onError={e => { e.target.src = presetUrl('DemoUser'); }} />
+                <button
+                  type="button"
+                  className="profile-avatar-badge"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Upload image"
+                >
                   <Camera size={12} />
-                </div>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="profile-file-input"
+                  onChange={handleFileChange}
+                />
               </div>
-              <div className="profile-avatar-info">
-                <span className="profile-avatar-label">Choose an avatar</span>
-                <div className="profile-avatar-grid">
-                  {AVATAR_SEEDS.map(seed => (
+
+              <div className="profile-avatar-actions">
+                <button type="button" className="profile-upload-btn" onClick={() => fileInputRef.current?.click()}>
+                  <Upload size={13} /> Upload photo
+                </button>
+                <span className="profile-avatar-hint">JPG, PNG, GIF · max 2MB</span>
+              </div>
+            </div>
+
+            {/* URL input */}
+            <div className="profile-field">
+              <label>Or paste an image URL</label>
+              <div className="profile-url-row">
+                <div className="profile-input-wrap-url">
+                  <Link size={13} className="profile-url-icon" />
+                  <input
+                    type="url"
+                    className="profile-input profile-url-input"
+                    value={urlInput}
+                    onChange={e => setUrlInput(e.target.value)}
+                    placeholder="https://example.com/avatar.png"
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleUrlApply())}
+                  />
+                </div>
+                <button type="button" className="btn btn-outline btn-sm" onClick={handleUrlApply} disabled={!urlInput.trim()}>
+                  Apply
+                </button>
+              </div>
+            </div>
+
+            {/* Preset grid */}
+            <div className="profile-field">
+              <label>Or choose a preset avatar</label>
+              <div className="profile-avatar-grid">
+                {AVATAR_SEEDS.map(seed => {
+                  const url = presetUrl(seed);
+                  return (
                     <button
                       key={seed}
                       type="button"
-                      className={`profile-avatar-option ${avatarSeed === seed ? 'active' : ''}`}
-                      onClick={() => setAvatarSeed(seed)}
+                      className={`profile-avatar-option ${avatarPreview === url ? 'active' : ''}`}
+                      onClick={() => handlePresetSelect(seed)}
                       title={seed}
                     >
-                      <img src={avatarUrl(seed)} alt={seed} />
+                      <img src={url} alt={seed} />
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -167,9 +252,7 @@ export default function ProfileModal({ onClose }) {
             {profileError && <p className="profile-error">{profileError}</p>}
 
             <div className="profile-actions">
-              <button type="button" className="btn btn-outline btn-sm" onClick={onClose}>
-                Cancel
-              </button>
+              <button type="button" className="btn btn-outline btn-sm" onClick={onClose}>Cancel</button>
               <button type="submit" className="btn btn-primary btn-sm" disabled={profileSaving || !name.trim()}>
                 {profileSaved ? <><Check size={13} /> Saved</> : profileSaving ? 'Saving...' : 'Save changes'}
               </button>
@@ -177,21 +260,14 @@ export default function ProfileModal({ onClose }) {
           </form>
         )}
 
-        {/* Password tab */}
+        {/* ── PASSWORD TAB ── */}
         {tab === 'password' && (
           <form onSubmit={handleChangePassword} className="profile-body">
             <div className="profile-field">
               <label htmlFor="current-pw">Current password</label>
               <div className="profile-pw-row">
-                <input
-                  id="current-pw"
-                  type={showCurrent ? 'text' : 'password'}
-                  className="profile-input"
-                  value={currentPw}
-                  onChange={e => setCurrentPw(e.target.value)}
-                  placeholder="Enter current password"
-                  required
-                />
+                <input id="current-pw" type={showCurrent ? 'text' : 'password'} className="profile-input"
+                  value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Enter current password" required />
                 <button type="button" className="profile-pw-toggle" onClick={() => setShowCurrent(v => !v)} tabIndex={-1}>
                   {showCurrent ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -201,15 +277,8 @@ export default function ProfileModal({ onClose }) {
             <div className="profile-field">
               <label htmlFor="new-pw">New password</label>
               <div className="profile-pw-row">
-                <input
-                  id="new-pw"
-                  type={showNew ? 'text' : 'password'}
-                  className="profile-input"
-                  value={newPw}
-                  onChange={e => setNewPw(e.target.value)}
-                  placeholder="Min 8 chars, uppercase, number, symbol"
-                  required
-                />
+                <input id="new-pw" type={showNew ? 'text' : 'password'} className="profile-input"
+                  value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Min 8 chars, uppercase, number, symbol" required />
                 <button type="button" className="profile-pw-toggle" onClick={() => setShowNew(v => !v)} tabIndex={-1}>
                   {showNew ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -218,18 +287,10 @@ export default function ProfileModal({ onClose }) {
 
             <div className="profile-field">
               <label htmlFor="confirm-pw">Confirm new password</label>
-              <input
-                id="confirm-pw"
-                type="password"
-                className="profile-input"
-                value={confirmPw}
-                onChange={e => setConfirmPw(e.target.value)}
-                placeholder="Repeat new password"
-                required
-              />
+              <input id="confirm-pw" type="password" className="profile-input"
+                value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Repeat new password" required />
             </div>
 
-            {/* Password strength hints */}
             <div className="profile-pw-hints">
               {[
                 { label: 'At least 8 characters', ok: newPw.length >= 8 },
@@ -247,9 +308,7 @@ export default function ProfileModal({ onClose }) {
             {pwError && <p className="profile-error">{pwError}</p>}
 
             <div className="profile-actions">
-              <button type="button" className="btn btn-outline btn-sm" onClick={onClose}>
-                Cancel
-              </button>
+              <button type="button" className="btn btn-outline btn-sm" onClick={onClose}>Cancel</button>
               <button type="submit" className="btn btn-primary btn-sm" disabled={pwSaving || !currentPw || !newPw || !confirmPw}>
                 {pwSaved ? <><Check size={13} /> Changed</> : pwSaving ? 'Saving...' : 'Change password'}
               </button>

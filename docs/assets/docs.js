@@ -1,4 +1,4 @@
-// Jokel docs — shared interactions
+// Elevate docs — shared interactions
 
 // ---------- Copy buttons on code blocks ----------
 document.addEventListener('click', async (e) => {

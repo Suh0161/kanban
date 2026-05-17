@@ -4,7 +4,8 @@ export default function InboxSidebar({
   inboxTasks,
   triageColumnId,
   onMoveTask,
-  onSelectTask
+  onSelectTask,
+  canEdit = true,
 }) {
   const urgentReports = inboxTasks.filter(task => task.priority === 'Critical' || task.priority === 'High').slice(0, 3);
 
@@ -25,9 +26,11 @@ export default function InboxSidebar({
                 <span>{task.code}</span>
                 <strong>{task.title}</strong>
               </button>
-              <button className="btn btn-outline btn-sm" type="button" onClick={() => onMoveTask(task.id, triageColumnId)}>
-                <CheckCheck size={13} /> Send
-              </button>
+              {canEdit && (
+                <button className="btn btn-outline btn-sm" type="button" onClick={() => onMoveTask(task.id, triageColumnId)}>
+                  <CheckCheck size={13} /> Send
+                </button>
+              )}
             </div>
           ))}
           {urgentReports.length === 0 && (

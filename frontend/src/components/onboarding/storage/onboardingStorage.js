@@ -1,4 +1,4 @@
-const PREFIX = 'jokel-onboarding-done';
+const PREFIX = 'Elevate-onboarding-done';
 
 export function getOnboardingKey(user) {
   const id = user?.email || user?.name || '';

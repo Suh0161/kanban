@@ -1,22 +1,100 @@
 import { v4 as uuidv4 } from 'uuid';
 import { AppError } from '../middleware/error.js';
+import { getRequestContext } from '../requestContext.js';
+
+/**
+ * Role hierarchy (highest first):
+ *   owner  -> can do everything, exactly one per workspace
+ *   admin  -> manage settings, invites, integrations
+ *   member -> create/edit tasks but cannot change workspace settings
+ *   viewer -> read-only access
+ */
+export const ROLES = Object.freeze({
+  OWNER: 'owner',
+  ADMIN: 'admin',
+  MEMBER: 'member',
+  VIEWER: 'viewer',
+});
+
+export const ROLE_RANK = Object.freeze({
+  [ROLES.VIEWER]: 0,
+  [ROLES.MEMBER]: 1,
+  [ROLES.ADMIN]: 2,
+  [ROLES.OWNER]: 3,
+});
+
+export const VALID_ROLES = Object.freeze(Object.values(ROLES));
+
+export function getMemberRole(db, userId, workspaceId) {
+  const row = db
+    .prepare('SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?')
+    .get(workspaceId, userId);
+  return row?.role || null;
+}
+
+function assertApiKeyWorkspace(workspaceId) {
+  const apiKey = getRequestContext().apiKey;
+  if (!apiKey?.workspaceId) return;
+  if (apiKey.workspaceId !== workspaceId) {
+    throw new AppError('API key is not scoped to this workspace', 403, 'INSUFFICIENT_SCOPE');
+  }
+}
 
 export function assertWorkspaceMember(db, userId, workspaceId) {
+  assertApiKeyWorkspace(workspaceId);
   const member = db
     .prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?')
     .get(workspaceId, userId);
   if (!member) throw new AppError('Forbidden', 403, 'FORBIDDEN');
 }
 
+/**
+ * Assert the user holds at least one of the required roles in the workspace.
+ * Throws 403 if the user is not a member, or 403 if their role is not allowed.
+ */
+export function assertWorkspaceRole(db, userId, workspaceId, requiredRoles) {
+  assertApiKeyWorkspace(workspaceId);
+  const role = getMemberRole(db, userId, workspaceId);
+  if (!role) throw new AppError('Forbidden', 403, 'FORBIDDEN');
+  const allowed = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+  if (!allowed.includes(role)) {
+    throw new AppError(
+      `This action requires one of: ${allowed.join(', ')}`,
+      403,
+      'INSUFFICIENT_ROLE'
+    );
+  }
+  return role;
+}
+
+/** Convenience: requires owner OR admin. Returns the actual role. */
+export function assertCanManageWorkspace(db, userId, workspaceId) {
+  return assertWorkspaceRole(db, userId, workspaceId, [ROLES.OWNER, ROLES.ADMIN]);
+}
+
+/** Convenience: requires owner. Returns the actual role. */
+export function assertIsOwner(db, userId, workspaceId) {
+  return assertWorkspaceRole(db, userId, workspaceId, [ROLES.OWNER]);
+}
+
+/** Convenience: requires write access (owner/admin/member). Viewers blocked. */
+export function assertCanEdit(db, userId, workspaceId) {
+  return assertWorkspaceRole(db, userId, workspaceId, [ROLES.OWNER, ROLES.ADMIN, ROLES.MEMBER]);
+}
+
 export function getWorkspacesForUser(db, userId) {
+  const apiKey = getRequestContext().apiKey;
   const rows = db.prepare(`
-    SELECT w.id, w.name, w.description, w.custom_fields, w.labels, w.code_prefix, w.created_at,
+    SELECT w.id, w.name, w.description, w.custom_fields, w.labels, w.code_prefix,
+           w.logo, w.background, w.created_at,
+           wm.role AS my_role,
            (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = w.id) AS members
     FROM workspaces w
     JOIN workspace_members wm ON w.id = wm.workspace_id
     WHERE wm.user_id = ?
+      AND (? IS NULL OR w.id = ?)
     ORDER BY w.created_at DESC
-  `).all(userId);
+  `).all(userId, apiKey?.workspaceId || null, apiKey?.workspaceId || null);
 
   return rows.map(row => {
     let customFields = [];
@@ -31,6 +109,9 @@ export function getWorkspacesForUser(db, userId) {
       customFields,
       labels,
       codePrefix: row.code_prefix || 'SKY',
+      logo: row.logo || null,
+      background: row.background || null,
+      myRole: row.my_role,
       created_at: row.created_at,
     };
   });
@@ -70,7 +151,7 @@ export function createWorkspace(db, userId, { name }) {
   `).get(workspaceId, workspaceId);
 }
 
-export function updateWorkspace(db, workspaceId, updates) {
+export function updateWorkspace(db, workspaceId, updates, userId = null) {
   const fields = [];
   const values = [];
 
@@ -101,17 +182,37 @@ export function updateWorkspace(db, workspaceId, updates) {
     values.push(prefix);
   }
 
+  // Branding pointers. Pass `null` to clear back to defaults; pass a URL
+  // (storage pointer or external) to set. Background also accepts CSS
+  // colors like `#0a0a0a`.
+  if (updates.logo !== undefined) {
+    fields.push('logo = ?');
+    values.push(updates.logo || null);
+  }
+  if (updates.background !== undefined) {
+    fields.push('background = ?');
+    values.push(updates.background || null);
+  }
+
   if (fields.length > 0) {
     values.push(workspaceId);
     db.prepare(`UPDATE workspaces SET ${fields.join(', ')} WHERE id = ?`).run(...values);
   }
 
+  // Pull the row back with the caller's role joined in, so the response
+  // matches the shape `getWorkspacesForUser` returns. Without this, the
+  // frontend would see `myRole === undefined`, fall back to 'member', and
+  // mid-session lose access to manager-only sections after a save.
   const result = db.prepare(`
-    SELECT id, name, description, custom_fields, labels, code_prefix, created_at,
-           (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = ?) AS members
-    FROM workspaces
-    WHERE id = ?
-  `).get(workspaceId, workspaceId);
+    SELECT w.id, w.name, w.description, w.custom_fields, w.labels, w.code_prefix,
+           w.logo, w.background, w.created_at,
+           wm.role AS my_role,
+           (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = w.id) AS members
+    FROM workspaces w
+    LEFT JOIN workspace_members wm
+      ON wm.workspace_id = w.id AND wm.user_id = ?
+    WHERE w.id = ?
+  `).get(userId, workspaceId);
 
   try {
     result.customFields = JSON.parse(result.custom_fields || '[]');
@@ -125,8 +226,12 @@ export function updateWorkspace(db, workspaceId, updates) {
   }
   result.codePrefix = result.code_prefix || 'SKY';
   result.description = result.description || '';
+  result.logo = result.logo || null;
+  result.background = result.background || null;
+  result.myRole = result.my_role || null;
   delete result.custom_fields;
   delete result.code_prefix;
+  delete result.my_role;
 
   return result;
 }
@@ -147,6 +252,9 @@ export function getMembers(db, workspaceId) {
 }
 
 export function addMemberByEmail(db, workspaceId, email, role = 'member') {
+  if (!VALID_ROLES.includes(role) || role === ROLES.OWNER) {
+    throw new AppError('Invalid role', 400, 'VALIDATION_ERROR');
+  }
   const user = db.prepare('SELECT id, name, email, avatar FROM users WHERE email = ?').get(email);
   if (!user) {
     const err = new Error('No user with that email exists');
@@ -170,27 +278,112 @@ export function addMemberByEmail(db, workspaceId, email, role = 'member') {
 }
 
 export function removeMember(db, workspaceId, userId) {
-  const result = db.prepare(
-    'DELETE FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
-  ).run(workspaceId, userId);
-  if (result.changes === 0) {
+  const target = db.prepare(
+    'SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).get(workspaceId, userId);
+  if (!target) {
     const err = new Error('Member not found');
     err.status = 404;
     err.code = 'NOT_FOUND';
     throw err;
   }
+  if (target.role === ROLES.OWNER) {
+    throw new AppError(
+      'The workspace owner cannot be removed. Transfer ownership first.',
+      403,
+      'OWNER_PROTECTED'
+    );
+  }
+  db.prepare(
+    'DELETE FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).run(workspaceId, userId);
   return { success: true };
 }
 
 export function updateMemberRole(db, workspaceId, userId, role) {
-  const result = db.prepare(
-    'UPDATE workspace_members SET role = ? WHERE workspace_id = ? AND user_id = ?'
-  ).run(role, workspaceId, userId);
-  if (result.changes === 0) {
+  if (!VALID_ROLES.includes(role)) {
+    throw new AppError('Invalid role', 400, 'VALIDATION_ERROR');
+  }
+  if (role === ROLES.OWNER) {
+    throw new AppError(
+      'Use transfer ownership to assign the owner role',
+      400,
+      'USE_TRANSFER_OWNERSHIP'
+    );
+  }
+  const target = db.prepare(
+    'SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).get(workspaceId, userId);
+  if (!target) {
     const err = new Error('Member not found');
     err.status = 404;
     err.code = 'NOT_FOUND';
     throw err;
   }
+  if (target.role === ROLES.OWNER) {
+    throw new AppError(
+      'The owner role can only be changed via transfer ownership',
+      403,
+      'OWNER_PROTECTED'
+    );
+  }
+  db.prepare(
+    'UPDATE workspace_members SET role = ? WHERE workspace_id = ? AND user_id = ?'
+  ).run(role, workspaceId, userId);
   return { success: true, role };
+}
+
+/**
+ * Move ownership from the current owner to another existing member.
+ * Old owner becomes admin. Atomic.
+ */
+export function transferOwnership(db, workspaceId, currentOwnerId, newOwnerId) {
+  if (currentOwnerId === newOwnerId) {
+    throw new AppError('Cannot transfer ownership to yourself', 400, 'VALIDATION_ERROR');
+  }
+  const currentOwner = db.prepare(
+    'SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).get(workspaceId, currentOwnerId);
+  if (!currentOwner || currentOwner.role !== ROLES.OWNER) {
+    throw new AppError('Only the current owner can transfer ownership', 403, 'FORBIDDEN');
+  }
+  const newOwner = db.prepare(
+    'SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).get(workspaceId, newOwnerId);
+  if (!newOwner) {
+    throw new AppError('New owner must already be a workspace member', 404, 'NOT_FOUND');
+  }
+
+  db.transaction(() => {
+    db.prepare(
+      'UPDATE workspace_members SET role = ? WHERE workspace_id = ? AND user_id = ?'
+    ).run(ROLES.ADMIN, workspaceId, currentOwnerId);
+    db.prepare(
+      'UPDATE workspace_members SET role = ? WHERE workspace_id = ? AND user_id = ?'
+    ).run(ROLES.OWNER, workspaceId, newOwnerId);
+  })();
+
+  return { success: true };
+}
+
+/**
+ * A non-owner can leave the workspace voluntarily.
+ * Owner cannot leave; must transfer first.
+ */
+export function leaveWorkspace(db, workspaceId, userId) {
+  const member = db.prepare(
+    'SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).get(workspaceId, userId);
+  if (!member) throw new AppError('Not a member', 404, 'NOT_FOUND');
+  if (member.role === ROLES.OWNER) {
+    throw new AppError(
+      'Owners cannot leave. Transfer ownership first or delete the workspace.',
+      403,
+      'OWNER_PROTECTED'
+    );
+  }
+  db.prepare(
+    'DELETE FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).run(workspaceId, userId);
+  return { success: true };
 }

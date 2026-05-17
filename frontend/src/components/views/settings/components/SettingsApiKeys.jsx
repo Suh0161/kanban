@@ -108,9 +108,10 @@ export default function SettingsApiKeys({ workspaceId }) {
   };
 
   const keyPrefix = (key) => {
+    if (key.key_prefix) return key.key_prefix;
     if (key.prefix) return key.prefix;
     if (key.key_preview) return key.key_preview;
-    return 'jokel_****';
+    return 'Elevate_****';
   };
 
   if (loading) {

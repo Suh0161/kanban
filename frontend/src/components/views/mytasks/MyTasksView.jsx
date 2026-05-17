@@ -15,7 +15,7 @@ function sortPersonalQueue(a, b) {
   return a.code.localeCompare(b.code);
 }
 
-export default function MyTasksView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask, user }) {
+export default function MyTasksView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask, user, canEdit = true }) {
   const [queue, setQueue] = useState('open');
 
   // Tasks assigned to the current user (by id if available, fallback to any assigned)
@@ -101,6 +101,7 @@ export default function MyTasksView({ tasks, columns, columnOrder, onSelectTask,
                   onSelectTask={onSelectTask}
                   onMoveTask={onMoveTask}
                   onUpdateTask={onUpdateTask}
+                  canEdit={canEdit}
                 />
               ))}
               {visibleTasks.length === 0 && (

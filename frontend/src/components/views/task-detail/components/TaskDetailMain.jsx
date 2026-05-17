@@ -5,6 +5,9 @@ import {
 } from 'lucide-react';
 import { marked } from 'marked';
 import Select from '../../../ui/Select.jsx';
+import { Avatar } from '../../../ui';
+import { useAuth } from '../../../../hooks/useAuth.js';
+import { formatRelativeTime, formatAbsoluteTime } from '../../../../utils/time.js';
 
 // Configure marked for safe rendering
 marked.setOptions({
@@ -27,6 +30,7 @@ export default function TaskDetailMain({
   onDeleteAttachment,
   onLightboxOpen,
   onAddComment,
+  canEdit = true,
 }) {
   const [newCommentText, setNewCommentText] = useState('');
   const [dropActive, setDropActive] = useState(false);
@@ -37,6 +41,7 @@ export default function TaskDetailMain({
   const [editingDesc, setEditingDesc] = useState(false);
   const fileInputRef = useRef(null);
   const descRef = useRef(null);
+  const { user: currentUser } = useAuth();
 
   const descriptionHtml = useMemo(() => {
     if (!task.description) return '';
@@ -94,7 +99,7 @@ export default function TaskDetailMain({
       <section className="task-detail-section">
         <div className="section-header-row">
           <span className="task-detail-section-label"><AlignLeft size={14} /> Description</span>
-          {!editingDesc && task.description && (
+          {canEdit && !editingDesc && task.description && (
             <button
               type="button"
               className="btn btn-outline btn-sm"
@@ -114,7 +119,7 @@ export default function TaskDetailMain({
           )}
         </div>
 
-        {editingDesc || !task.description ? (
+        {canEdit && (editingDesc || !task.description) ? (
           <div className="task-detail-desc-wrap">
             <div className="desc-format-toolbar-static">
               <button type="button" title="Bold (Ctrl+B)" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('**')}><strong>B</strong></button>
@@ -152,11 +157,15 @@ export default function TaskDetailMain({
               }}
             />
           </div>
-        ) : (
+        ) : task.description ? (
           <div
             className="task-detail-desc-rendered"
             dangerouslySetInnerHTML={{ __html: descriptionHtml }}
           />
+        ) : (
+          <div className="task-detail-desc-rendered task-detail-desc-empty">
+            No description.
+          </div>
         )}
       </section>
 
@@ -176,6 +185,8 @@ export default function TaskDetailMain({
                     onChange={e => onUpdateTask(task.id, {
                       customFields: { ...task.customFields, [field.name]: e.target.value }
                     })}
+                    disabled={!canEdit}
+                    readOnly={!canEdit}
                   />
                 )}
                 {field.type === 'number' && (
@@ -186,6 +197,8 @@ export default function TaskDetailMain({
                     onChange={e => onUpdateTask(task.id, {
                       customFields: { ...task.customFields, [field.name]: e.target.value }
                     })}
+                    disabled={!canEdit}
+                    readOnly={!canEdit}
                   />
                 )}
                 {field.type === 'date' && (
@@ -196,19 +209,25 @@ export default function TaskDetailMain({
                     onChange={e => onUpdateTask(task.id, {
                       customFields: { ...task.customFields, [field.name]: e.target.value }
                     })}
+                    disabled={!canEdit}
+                    readOnly={!canEdit}
                   />
                 )}
                 {field.type === 'dropdown' && (
-                  <Select
-                    value={task.customFields?.[field.name] || ''}
-                    onChange={val => onUpdateTask(task.id, {
-                      customFields: { ...task.customFields, [field.name]: val }
-                    })}
-                    options={[
-                      { value: '', label: 'None' },
-                      ...(field.options || []).map(opt => ({ value: opt, label: opt }))
-                    ]}
-                  />
+                  canEdit ? (
+                    <Select
+                      value={task.customFields?.[field.name] || ''}
+                      onChange={val => onUpdateTask(task.id, {
+                        customFields: { ...task.customFields, [field.name]: val }
+                      })}
+                      options={[
+                        { value: '', label: 'None' },
+                        ...(field.options || []).map(opt => ({ value: opt, label: opt }))
+                      ]}
+                    />
+                  ) : (
+                    <span className="property-readonly">{task.customFields?.[field.name] || '—'}</span>
+                  )
                 )}
               </div>
             ))}
@@ -220,12 +239,14 @@ export default function TaskDetailMain({
       <section className="task-detail-section">
         <div className="section-header-row">
           <span className="task-detail-section-label"><CheckSquare size={14} /> Checklists</span>
-          <button className="btn btn-outline btn-sm" onClick={() => setAddingChecklist(true)}>
-            <Plus size={12} /> Add list
-          </button>
+          {canEdit && (
+            <button className="btn btn-outline btn-sm" onClick={() => setAddingChecklist(true)}>
+              <Plus size={12} /> Add list
+            </button>
+          )}
         </div>
 
-        {addingChecklist && (
+        {canEdit && addingChecklist && (
           <form onSubmit={handleSubmitChecklist} className="checklist-add-form">
             <input
               className="form-input"
@@ -253,9 +274,11 @@ export default function TaskDetailMain({
                 <span className="checklist-title">{cl.title}</span>
                 <div className="checklist-actions">
                   <span className="checklist-progress-text">{doneCount}/{cl.items.length}</span>
-                  <button className="btn-icon-small" onClick={() => onDeleteChecklist(task.id, cl.id)} title="Delete checklist">
-                    <Trash size={14} />
-                  </button>
+                  {canEdit && (
+                    <button className="btn-icon-small" onClick={() => onDeleteChecklist(task.id, cl.id)} title="Delete checklist">
+                      <Trash size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
               {cl.items.length > 0 && (
@@ -272,23 +295,25 @@ export default function TaskDetailMain({
                       <button
                         type="button"
                         className="counter-btn"
-                        disabled={item.currentCount <= 0}
+                        disabled={!canEdit || item.currentCount <= 0}
                         onClick={() => onUpdateChecklistItemCount(task.id, cl.id, item.id, (item.currentCount || 0) - 1)}
                       >−</button>
                       <span className="counter-value">{item.currentCount || 0}/{item.targetCount}</span>
                       <button
                         type="button"
                         className="counter-btn"
-                        disabled={item.currentCount >= item.targetCount}
+                        disabled={!canEdit || item.currentCount >= item.targetCount}
                         onClick={() => onUpdateChecklistItemCount(task.id, cl.id, item.id, (item.currentCount || 0) + 1)}
                       >+</button>
                     </div>
-                    <button
-                      type="button"
-                      className="checklist-item-delete"
-                      title="Delete item"
-                      onClick={() => onDeleteChecklistItem(task.id, cl.id, item.id)}
-                    ><X size={12} /></button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="checklist-item-delete"
+                        title="Delete item"
+                        onClick={() => onDeleteChecklistItem(task.id, cl.id, item.id)}
+                      ><X size={12} /></button>
+                    )}
                   </div>
                 ) : (
                   <label key={item.id} className="checklist-item">
@@ -296,38 +321,43 @@ export default function TaskDetailMain({
                       type="checkbox"
                       checked={item.done}
                       onChange={() => onToggleChecklistItem(task.id, cl.id, item.id)}
+                      disabled={!canEdit}
                     />
                     <span className={item.done ? 'item-done' : ''}>{item.text}</span>
-                    <button
-                      type="button"
-                      className="checklist-item-delete"
-                      title="Delete item"
-                      onClick={(e) => { e.preventDefault(); onDeleteChecklistItem(task.id, cl.id, item.id); }}
-                    ><X size={12} /></button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="checklist-item-delete"
+                        title="Delete item"
+                        onClick={(e) => { e.preventDefault(); onDeleteChecklistItem(task.id, cl.id, item.id); }}
+                      ><X size={12} /></button>
+                    )}
                   </label>
                 );
               })}
-              <div className="checklist-add-item">
-                <input
-                  className="comment-input"
-                  placeholder="Add an item..."
-                  value={newItemTexts[cl.id] || ''}
-                  onChange={e => setNewItemTexts(prev => ({ ...prev, [cl.id]: e.target.value }))}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') { e.preventDefault(); handleAddItem(cl.id); }
-                  }}
-                />
-                <input
-                  type="number"
-                  className="checklist-count-input"
-                  placeholder="×"
-                  min="1"
-                  title="Target count (leave empty for checkbox)"
-                  value={newItemTexts[`${cl.id}-count`] || ''}
-                  onChange={e => setNewItemTexts(prev => ({ ...prev, [`${cl.id}-count`]: e.target.value }))}
-                />
-                <button className="btn btn-outline btn-sm" onClick={() => handleAddItem(cl.id)}>Add</button>
-              </div>
+              {canEdit && (
+                <div className="checklist-add-item">
+                  <input
+                    className="comment-input"
+                    placeholder="Add an item..."
+                    value={newItemTexts[cl.id] || ''}
+                    onChange={e => setNewItemTexts(prev => ({ ...prev, [cl.id]: e.target.value }))}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.preventDefault(); handleAddItem(cl.id); }
+                    }}
+                  />
+                  <input
+                    type="number"
+                    className="checklist-count-input"
+                    placeholder="×"
+                    min="1"
+                    title="Target count (leave empty for checkbox)"
+                    value={newItemTexts[`${cl.id}-count`] || ''}
+                    onChange={e => setNewItemTexts(prev => ({ ...prev, [`${cl.id}-count`]: e.target.value }))}
+                  />
+                  <button className="btn btn-outline btn-sm" onClick={() => handleAddItem(cl.id)}>Add</button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -341,34 +371,38 @@ export default function TaskDetailMain({
             <div key={att.id} className="attachment-thumb">
               <img src={att.url} alt={att.name} onClick={() => onLightboxOpen(att.url)} />
               <span className="attachment-name" onClick={() => onLightboxOpen(att.url)}>{att.name}</span>
-              <button
-                className="attachment-delete-btn"
-                onClick={(e) => { e.stopPropagation(); onDeleteAttachment(task.id, att.id); }}
-                title="Delete attachment"
-              >
-                <X size={14} />
-              </button>
+              {canEdit && (
+                <button
+                  className="attachment-delete-btn"
+                  onClick={(e) => { e.stopPropagation(); onDeleteAttachment(task.id, att.id); }}
+                  title="Delete attachment"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           ))}
         </div>
-        <div
-          className={`attachment-dropzone ${dropActive ? 'active' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setDropActive(true); }}
-          onDragLeave={() => setDropActive(false)}
-          onDrop={(e) => { e.preventDefault(); setDropActive(false); onFileSelect(e.dataTransfer.files, task.id); }}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            accept="image/*"
-            multiple
-            onChange={(e) => onFileSelect(e.target.files, task.id)}
-          />
-          <Upload size={18} />
-          <span>Drop images here or click to browse</span>
-        </div>
+        {canEdit && (
+          <div
+            className={`attachment-dropzone ${dropActive ? 'active' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setDropActive(true); }}
+            onDragLeave={() => setDropActive(false)}
+            onDrop={(e) => { e.preventDefault(); setDropActive(false); onFileSelect(e.dataTransfer.files, task.id); }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept="image/*"
+              multiple
+              onChange={(e) => onFileSelect(e.target.files, task.id)}
+            />
+            <Upload size={18} />
+            <span>Drop images here or click to browse</span>
+          </div>
+        )}
       </section>
 
       {/* Comments / Activity */}
@@ -392,40 +426,43 @@ export default function TaskDetailMain({
 
         {activeTab === 'comments' && (
           <div className="comments-list">
-            <div className="comment-input-row" style={{ marginBottom: 16 }}>
-              <img
-                src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix"
-                alt="You"
-                className="avatar tiny"
-              />
-              <div className="comment-input-wrap">
-                <input
-                  className="comment-input"
-                  placeholder="Write a comment..."
-                  value={newCommentText}
-                  onChange={e => setNewCommentText(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      onAddComment(task.id, newCommentText);
-                      setNewCommentText('');
-                    }
-                  }}
+            {canEdit && (
+              <div className="comment-input-row" style={{ marginBottom: 16 }}>
+                <Avatar
+                  src={currentUser?.avatar}
+                  name={currentUser?.name || 'You'}
+                  alt="You"
+                  className="avatar tiny"
                 />
-                <button
-                  type="button"
-                  className="comment-send-btn"
-                  onClick={() => { onAddComment(task.id, newCommentText); setNewCommentText(''); }}
-                  disabled={!newCommentText.trim()}
-                >
-                  <SendHorizontal size={16} />
-                </button>
+                <div className="comment-input-wrap">
+                  <input
+                    className="comment-input"
+                    placeholder="Write a comment..."
+                    value={newCommentText}
+                    onChange={e => setNewCommentText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        onAddComment(task.id, newCommentText);
+                        setNewCommentText('');
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="comment-send-btn"
+                    onClick={() => { onAddComment(task.id, newCommentText); setNewCommentText(''); }}
+                    disabled={!newCommentText.trim()}
+                  >
+                    <SendHorizontal size={16} />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {(task.comments || []).slice().reverse().map(comment => (
               <div key={comment.id} className="comment">
-                <img src={comment.avatar} alt={comment.author} className="avatar tiny" />
+                <Avatar src={comment.avatar} name={comment.author} alt={comment.author} className="avatar tiny" />
                 <div className="comment-body">
                   <div className="comment-header">
                     <span className="comment-author">{comment.author}</span>
@@ -478,7 +515,9 @@ function ActivityFeed({ activities }) {
           </div>
           <div className="activity-content">
             <ActivityDescription activity={activity} />
-            <span className="activity-time">{formatRelativeTime(activity.time)}</span>
+            <span className="activity-time" title={formatAbsoluteTime(activity.time)}>
+              {formatRelativeTime(activity.time)}
+            </span>
           </div>
         </div>
       ))}
@@ -559,20 +598,4 @@ function renderChange(change) {
     default:
       return <>{field} changed</>;
   }
-}
-
-function formatRelativeTime(dateStr) {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHr = Math.floor(diffMs / 3600000);
-  const diffDay = Math.floor(diffMs / 86400000);
-
-  if (diffMin < 1) return 'just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString();
 }

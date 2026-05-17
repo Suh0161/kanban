@@ -4,7 +4,7 @@ import { AppError } from '../middleware/error.js';
 import { sanitizeString } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/auth.js';
 import db from '../db.js';
-import { assertWorkspaceMember } from '../services/workspaceService.js';
+import { assertCanEdit } from '../services/workspaceService.js';
 import { getColumnWorkspaceId } from '../services/columnService.js';
 import {
   getTaskWorkspaceId,
@@ -82,7 +82,7 @@ defineRoute(
       const description = sanitizeString(req.body.description || '', 10000);
 
       const workspaceId = getColumnWorkspaceId(db, columnId);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
 
       const task = createTask(db, { columnId, title, priority, tags, description, dueDate, assigneeId });
 
@@ -121,7 +121,7 @@ defineRoute(
       const { title, priority, tags, description, dueDate, assigneeId, customFields, labelIds, sprintId } = req.body;
 
       const workspaceId = getTaskWorkspaceId(db, id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
 
       // Snapshot old values for diff
       const oldTask = db.prepare('SELECT title, priority, description, due_date, assignee_id, custom_fields FROM tasks WHERE id = ?').get(id);
@@ -217,7 +217,7 @@ defineRoute(
     try {
       const { id } = req.params;
       const workspaceId = getTaskWorkspaceId(db, id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const taskToDelete = db.prepare('SELECT title FROM tasks WHERE id = ?').get(id);
       deleteTask(db, id);
       logActivity(db, {
@@ -253,8 +253,8 @@ defineRoute(
 
       const sourceWorkspaceId = getTaskWorkspaceId(db, id);
       const targetWorkspaceId = getColumnWorkspaceId(db, targetColumnId);
-      assertWorkspaceMember(db, req.userId, sourceWorkspaceId);
-      assertWorkspaceMember(db, req.userId, targetWorkspaceId);
+      assertCanEdit(db, req.userId, sourceWorkspaceId);
+      assertCanEdit(db, req.userId, targetWorkspaceId);
 
       const { task, activityDetail } = moveTask(db, id, targetColumnId);
 
@@ -290,7 +290,7 @@ defineRoute(
     try {
       const { taskIds, targetColumnId } = req.body;
       const targetWorkspaceId = getColumnWorkspaceId(db, targetColumnId);
-      assertWorkspaceMember(db, req.userId, targetWorkspaceId);
+      assertCanEdit(db, req.userId, targetWorkspaceId);
 
       for (const taskId of taskIds) {
         const wsId = getTaskWorkspaceId(db, taskId);
@@ -329,7 +329,7 @@ defineRoute(
     try {
       const { id } = req.params;
       const workspaceId = getTaskWorkspaceId(db, id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const taskToArchive = db.prepare('SELECT title FROM tasks WHERE id = ?').get(id);
       archiveTask(db, id);
       logActivity(db, {
@@ -361,7 +361,7 @@ defineRoute(
     try {
       const { id } = req.params;
       const workspaceId = getTaskWorkspaceId(db, id);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const taskToRestore = db.prepare('SELECT title FROM tasks WHERE id = ?').get(id);
       restoreTask(db, id);
       logActivity(db, {
@@ -392,7 +392,7 @@ defineRoute(
   async (req, res, next) => {
     try {
       const { workspaceId } = req.body;
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
       const result = purgeArchivedTasks(db, workspaceId);
       logActivity(db, {
         userId: req.userId,

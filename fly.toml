@@ -1,0 +1,70 @@
+# Fly.io configuration for the Elevate backend.
+#
+# First-time setup:
+#   1. Install flyctl (https://fly.io/docs/flyctl/install)
+#   2. fly auth login
+#   3. fly apps create elevate-api          (or pick another name and
+#      update `app =` below)
+#   4. fly volumes create elevate_data --region sin --size 1
+#   5. fly secrets set \
+#        JWT_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toString('base64'))")" \
+#        FRONTEND_URL="https://elevate.vercel.app" \
+#        GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... \
+#        GITHUB_CLIENT_ID=... GITHUB_CLIENT_SECRET=... \
+#        STORAGE_BACKEND=supabase \
+#        SUPABASE_URL=https://xxx.supabase.co \
+#        SUPABASE_SERVICE_ROLE_KEY=ey...
+#   6. fly deploy
+#
+# Pick a region close to your users. `sin` (Singapore) matches the Supabase
+# project shown in the dashboard. See `fly platform regions`.
+
+app = "elevate-api"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# ── App-level env (non-secret) ─────────────────────────────────────────────
+# Anything sensitive goes through `fly secrets set` instead.
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+  DB_PATH = "/data/elevate.db"
+  AUDIT_LOG_ENABLED = "true"
+
+# ── Persistent volume for SQLite ───────────────────────────────────────────
+# Even after we move data to Supabase, this volume still useful for
+# the SQLite WAL during the cutover and for any local-disk fallback.
+[mounts]
+  source = "elevate_data"
+  destination = "/data"
+
+# ── HTTP service ───────────────────────────────────────────────────────────
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines  = "stop"
+  auto_start_machines = true
+  min_machines_running = 0   # bump to 1 once you have real traffic
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+# Health check at /api/health — same endpoint Helmet exposes for probes.
+[[http_service.checks]]
+  grace_period  = "20s"
+  interval      = "30s"
+  method        = "GET"
+  timeout       = "5s"
+  path          = "/api/health"
+
+# ── Machine sizing ─────────────────────────────────────────────────────────
+# Default to a small shared CPU. Bump cpus / memory_mb when needed.
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

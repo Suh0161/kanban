@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { AppError } from '../middleware/error.js';
 import { sanitizeString } from '../middleware/validate.js';
 import { auditLog } from '../middleware/audit.js';
 import { registerUser, loginUser, getUserById, updateUser } from '../services/authService.js';
@@ -119,7 +120,7 @@ defineRoute(
 
 const UpdateMeBody = z.object({
   name: z.string().min(1).max(100).optional(),
-  avatar: z.string().url().nullable().optional(),
+  avatar: z.string().max(2097152).nullable().optional(), // up to 2MB base64
   password: z.string().min(8).max(128).optional(),
   currentPassword: z.string().optional(),
 });
@@ -137,10 +138,15 @@ defineRoute(
       200: jsonContent(z.object({ user: User }), 'Updated user'),
       400: errorResponse('Validation error'),
       401: errorResponse('Current password incorrect'),
+      403: errorResponse('User session required'),
     },
   },
   async (req, res, next) => {
     try {
+      if (req.apiKeyId) {
+        throw new AppError('User session required to update account profile', 403, 'INSUFFICIENT_SCOPE');
+      }
+
       const updates = {};
       if (req.body.name !== undefined) updates.name = sanitizeString(req.body.name, 100);
       if (req.body.avatar !== undefined) updates.avatar = req.body.avatar;

@@ -55,7 +55,7 @@ export function reorderColumns(db, { columnOrder }) {
 
 export function archiveColumn(db, columnId) {
   const result = db
-    .prepare("UPDATE columns SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL")
+    .prepare("UPDATE columns SET deleted_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND deleted_at IS NULL")
     .run(columnId);
   if (result.changes === 0) throw new AppError('Column not found', 404, 'NOT_FOUND');
 }

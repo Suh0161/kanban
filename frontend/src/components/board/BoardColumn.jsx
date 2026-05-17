@@ -27,6 +27,7 @@ export default function BoardColumn({
   columns,
   columnOrder,
   labels = [],
+  canEdit = true,
 }) {
   const isEditing = editingCol === column.id;
   const isAdding = addingToCol === column.id;
@@ -44,7 +45,7 @@ export default function BoardColumn({
       draggableId={`col-drag-${column.id}`}
       index={columnIndex}
       type="COLUMN"
-      isDragDisabled={isCollapsed}
+      isDragDisabled={isCollapsed || !canEdit}
     >
       {(colProvided) => (
         <div
@@ -96,18 +97,20 @@ export default function BoardColumn({
                   >
                     <ChevronLeft size={14} />
                   </button>
-                  <ColumnMenu
-                    columnId={column.id}
-                    menuOpenCol={menuOpenCol}
-                    onToggleMenu={onToggleMenu}
-                    onRename={onStartRenameColumn}
-                    onClear={onClearColumn}
-                    onDelete={onDeleteColumn}
-                  />
+                  {canEdit && (
+                    <ColumnMenu
+                      columnId={column.id}
+                      menuOpenCol={menuOpenCol}
+                      onToggleMenu={onToggleMenu}
+                      onRename={onStartRenameColumn}
+                      onClear={onClearColumn}
+                      onDelete={onDeleteColumn}
+                    />
+                  )}
                 </div>
               </div>
 
-              <Droppable droppableId={column.id} isDropDisabled={isFiltered} type="TASK">
+              <Droppable droppableId={column.id} isDropDisabled={isFiltered || !canEdit} type="TASK">
                 {(provided) => (
                   <div
                     className="column-content"
@@ -128,6 +131,7 @@ export default function BoardColumn({
                         columns={columns}
                         columnOrder={columnOrder}
                         labels={labels}
+                        canEdit={canEdit}
                       />
                     ))}
                     {provided.placeholder}
@@ -152,7 +156,7 @@ export default function BoardColumn({
                       </button>
                     )}
 
-                    {!isFiltered && (
+                    {canEdit && !isFiltered && (
                       <AddCardComposer
                         columnId={column.id}
                         isOpen={isAdding}

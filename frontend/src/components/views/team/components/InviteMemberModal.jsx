@@ -51,7 +51,7 @@ export default function InviteMemberModal({ onSubmit, onClose, error }) {
               required
             />
           </label>
-          <p className="invite-hint">The user must already have a Jokel account.</p>
+          <p className="invite-hint">The user must already have a Elevate account.</p>
           {error && <div className="invite-error">{error}</div>}
           <div className="invite-modal-actions">
             <button type="button" className="btn btn-outline btn-sm" onClick={onClose} disabled={submitting}>

@@ -17,6 +17,7 @@ export default function TaskCard({
   task, index, isFiltered,
   onSelect, onQuickEdit, onChangePriority, onMoveTask, onDeleteTask,
   onOpenModal = onSelect, columns, columnOrder, labels = [],
+  canEdit = true,
 }) {
   const [hovered, setHovered] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
@@ -33,7 +34,7 @@ export default function TaskCard({
 
   return (
     <>
-      <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isFiltered}>
+      <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isFiltered || !canEdit}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
@@ -41,7 +42,7 @@ export default function TaskCard({
             {...provided.dragHandleProps}
             className={`card ${snapshot.isDragging ? 'is-dragging' : ''}`}
             onClick={() => onSelect(task)}
-            onContextMenu={e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, task }); }}
+            onContextMenu={canEdit ? (e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, task }); }) : undefined}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             style={provided.draggableProps.style}
@@ -80,9 +81,10 @@ export default function TaskCard({
             <div className="card-title-row">
               <h4 className="card-title">{task.title}</h4>
               <button
-                className={`card-quick-edit ${hovered ? 'visible' : ''}`}
+                className={`card-quick-edit ${hovered && canEdit ? 'visible' : ''}`}
                 title="Quick edit"
                 onClick={e => { e.stopPropagation(); onQuickEdit(task); }}
+                style={canEdit ? undefined : { display: 'none' }}
               >
                 <Pencil size={13} />
               </button>

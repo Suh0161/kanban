@@ -22,6 +22,7 @@ export default function TaskDetailView({
   onUpdateChecklistItemCount,
   onDeleteChecklist,
   onDeleteChecklistItem,
+  canEdit = true,
 }) {
   const { taskCode } = useParams();
   const navigate = useNavigate();
@@ -94,6 +95,7 @@ export default function TaskDetailView({
           onBack={handleBack}
           onDelete={handleDelete}
           onUpdateTask={onUpdateTask}
+          canEdit={canEdit}
         />
 
         <div className="task-detail-body">
@@ -112,6 +114,7 @@ export default function TaskDetailView({
             onDeleteAttachment={onDeleteAttachment}
             onLightboxOpen={setLightboxImage}
             onAddComment={onAddComment}
+            canEdit={canEdit}
           />
 
           <TaskDetailSidebar
@@ -124,6 +127,7 @@ export default function TaskDetailView({
             onMoveTask={onMoveTask}
             onUpdateTask={onUpdateTask}
             onUpdateDueDate={onUpdateDueDate}
+            canEdit={canEdit}
           />
         </div>
       </div>

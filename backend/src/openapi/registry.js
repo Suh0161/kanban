@@ -39,13 +39,13 @@ export function buildOpenApiDocument() {
   return generator.generateDocument({
     openapi: '3.0.3',
     info: {
-      title: 'Jokel API',
+      title: 'Elevate API',
       version: '1.0.0',
       description:
-        'REST API for Jokel — a dark-themed Taiga+Trello style planning and Kanban app. ' +
+        'REST API for Elevate, a dark-themed Kanban and planning app. ' +
         'Authenticate via JWT bearer tokens (from /api/v1/auth/login) or API keys ' +
         '(X-API-Key header or ?api_key= query param). Use workspace_id to scope all operations.',
-      contact: { name: 'Jokel' },
+      contact: { name: 'Elevate' },
     },
     servers: [
       { url: 'http://localhost:3001/api/v1', description: 'API v1' },

@@ -4,7 +4,7 @@ import { AppError } from '../middleware/error.js';
 import { sanitizeString } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/auth.js';
 import db from '../db.js';
-import { assertWorkspaceMember } from '../services/workspaceService.js';
+import { assertCanEdit } from '../services/workspaceService.js';
 import { getTaskWorkspaceId } from '../services/taskService.js';
 import { logActivity } from '../services/activityService.js';
 import { dispatchWebhook } from '../services/webhookService.js';
@@ -39,7 +39,7 @@ function assertChecklistAccess(checklistId, userId) {
     )
     .get(checklistId);
   if (!cl) throw new AppError('Checklist not found', 404, 'NOT_FOUND');
-  assertWorkspaceMember(db, userId, cl.workspace_id);
+  assertCanEdit(db, userId, cl.workspace_id);
   return cl;
 }
 
@@ -55,7 +55,7 @@ function assertChecklistItemAccess(itemId, userId) {
     )
     .get(itemId);
   if (!item) throw new AppError('Checklist item not found', 404, 'NOT_FOUND');
-  assertWorkspaceMember(db, userId, item.workspace_id);
+  assertCanEdit(db, userId, item.workspace_id);
 }
 
 defineRoute(
@@ -73,7 +73,7 @@ defineRoute(
     try {
       const { taskId } = req.params;
       const workspaceId = getTaskWorkspaceId(db, taskId);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
 
       const title = sanitizeString(req.body.title, 200);
       const checklist = createChecklist(db, { taskId, title });

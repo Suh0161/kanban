@@ -3,7 +3,7 @@ import { Archive, CheckCheck, ClipboardList, ShieldAlert, UserRound } from 'luci
 import { InboxReportRow, InboxSidebar, InboxStats } from './components/index.js';
 import './css/inbox.css';
 
-export default function InboxView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask }) {
+export default function InboxView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask, canEdit = true }) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [selectedIds, setSelectedIds] = useState([]);
   const inboxTasks = useMemo(
@@ -60,14 +60,16 @@ export default function InboxView({ tasks, columns, columnOrder, onSelectTask, o
     <section className="workspace-view inbox-view">
       <div className="workspace-page mywork-inner-page">
         <div className="workspace-page-header">
-          <div className="inbox-actions">
-            <button className="btn btn-outline btn-sm" type="button" onClick={() => moveSelected(doneColumnId)} disabled={!selectedIds.length || !doneColumnId}>
-              <Archive size={14} /> Archive
-            </button>
-            <button className="btn btn-primary btn-sm" type="button" onClick={() => moveSelected(triageColumnId)} disabled={!selectedIds.length}>
-              <CheckCheck size={14} /> Triage selected
-            </button>
-          </div>
+          {canEdit && (
+            <div className="inbox-actions">
+              <button className="btn btn-outline btn-sm" type="button" onClick={() => moveSelected(doneColumnId)} disabled={!selectedIds.length || !doneColumnId}>
+                <Archive size={14} /> Archive
+              </button>
+              <button className="btn btn-primary btn-sm" type="button" onClick={() => moveSelected(triageColumnId)} disabled={!selectedIds.length}>
+                <CheckCheck size={14} /> Triage selected
+              </button>
+            </div>
+          )}
         </div>
 
         <InboxStats
@@ -107,6 +109,7 @@ export default function InboxView({ tasks, columns, columnOrder, onSelectTask, o
                   onSelectTask={onSelectTask}
                   onMoveTask={onMoveTask}
                   onUpdateTask={onUpdateTask}
+                  canEdit={canEdit}
                 />
               ))}
               {visibleTasks.length === 0 && (
@@ -123,6 +126,7 @@ export default function InboxView({ tasks, columns, columnOrder, onSelectTask, o
             triageColumnId={triageColumnId}
             onMoveTask={onMoveTask}
             onSelectTask={onSelectTask}
+            canEdit={canEdit}
           />
         </div>
       </div>

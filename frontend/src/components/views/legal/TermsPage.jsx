@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Layers, FileText } from 'lucide-react';
+import { ArrowLeft, FileText } from 'lucide-react';
+import { Logo } from '../../ui';
 import './css/legal.css';
 
 const TOC = [
@@ -45,8 +46,8 @@ export default function TermsPage() {
     <div className="legal-root">
       <nav className="legal-nav">
         <Link to="/" className="legal-nav-brand">
-          <div className="legal-nav-brand-icon"><Layers size={14} /></div>
-          <span>Jokel</span>
+          <Logo size={20} className="legal-nav-brand-icon" />
+          <span>Elevate</span>
         </Link>
         <Link to="/" className="legal-nav-back">
           <ArrowLeft size={13} /> Back to sign in
@@ -78,23 +79,23 @@ export default function TermsPage() {
 
           <section className="legal-section" id="acceptance">
             <h2 className="legal-section-title">Acceptance of Terms</h2>
-            <p>By accessing or using Jokel (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
+            <p>By accessing or using Elevate (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
             <p>By creating an account, you confirm that you are at least 16 years old and have the legal capacity to enter into this agreement.</p>
             <div className="legal-callout">
               <div className="legal-callout-dot" />
-              <p>These Terms form a legally binding agreement between you and Jokel. Please read them carefully before using the Service.</p>
+              <p>These Terms form a legally binding agreement between you and Elevate. Please read them carefully before using the Service.</p>
             </div>
           </section>
 
           <section className="legal-section" id="service">
             <h2 className="legal-section-title">Description of Service</h2>
-            <p>Jokel is a workspace management and project planning platform providing Kanban boards, backlog management, team collaboration tools, and related features.</p>
+            <p>Elevate is a workspace management and project planning platform providing Kanban boards, backlog management, team collaboration tools, and related features.</p>
             <p>The Service is provided &quot;as is&quot; and may be updated, modified, or discontinued at any time with reasonable notice where possible.</p>
           </section>
 
           <section className="legal-section" id="accounts">
             <h2 className="legal-section-title">Accounts & Registration</h2>
-            <p>To use Jokel, you must create an account. You agree to:</p>
+            <p>To use Elevate, you must create an account. You agree to:</p>
             <ul>
               <li>Provide accurate, current, and complete information during registration.</li>
               <li>Maintain the security of your password and account credentials.</li>
@@ -122,14 +123,14 @@ export default function TermsPage() {
 
           <section className="legal-section" id="content">
             <h2 className="legal-section-title">Your Content</h2>
-            <p>You retain ownership of all content you create within Jokel (&quot;User Content&quot;), including tasks, comments, attachments, and workspace data.</p>
-            <p>By using the Service, you grant Jokel a limited, non-exclusive, royalty-free license to store, process, and display your User Content solely for the purpose of providing the Service to you.</p>
+            <p>You retain ownership of all content you create within Elevate (&quot;User Content&quot;), including tasks, comments, attachments, and workspace data.</p>
+            <p>By using the Service, you grant Elevate a limited, non-exclusive, royalty-free license to store, process, and display your User Content solely for the purpose of providing the Service to you.</p>
             <p>You represent that your User Content does not infringe any third-party intellectual property rights and does not violate any applicable laws.</p>
           </section>
 
           <section className="legal-section" id="ip">
             <h2 className="legal-section-title">Intellectual Property</h2>
-            <p>The Jokel platform, including its software, design, logos, and documentation, is owned by Jokel and protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works without our express written permission.</p>
+            <p>The Elevate platform, including its software, design, logos, and documentation, is owned by Elevate and protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works without our express written permission.</p>
           </section>
 
           <section className="legal-section" id="privacy">
@@ -156,7 +157,7 @@ export default function TermsPage() {
 
           <section className="legal-section" id="liability">
             <h2 className="legal-section-title">Limitation of Liability</h2>
-            <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, JOKEL SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, DATA, OR GOODWILL.</p>
+            <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, Elevate SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, DATA, OR GOODWILL.</p>
             <p>IN NO EVENT SHALL OUR TOTAL LIABILITY TO YOU EXCEED THE AMOUNT YOU PAID TO USE THE SERVICE IN THE TWELVE MONTHS PRECEDING THE CLAIM, OR £100 (GBP), WHICHEVER IS GREATER.</p>
           </section>
 
@@ -200,7 +201,7 @@ export default function TermsPage() {
       </div>
 
       <footer className="legal-footer">
-        <span>© {new Date().getFullYear()} Jokel. All rights reserved.</span>
+        <span>© {new Date().getFullYear()} Elevate. All rights reserved.</span>
         <div className="legal-footer-links">
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>

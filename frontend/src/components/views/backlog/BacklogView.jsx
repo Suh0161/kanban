@@ -14,7 +14,7 @@ function sortForPlanning(a, b) {
   return a.code.localeCompare(b.code);
 }
 
-export default function BacklogView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask }) {
+export default function BacklogView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask, canEdit = true }) {
   const [activeBucket, setActiveBucket] = useState('all');
 
   const planned = useMemo(
@@ -96,6 +96,7 @@ export default function BacklogView({ tasks, columns, columnOrder, onSelectTask,
                         onSelectTask={onSelectTask}
                         onMoveTask={onMoveTask}
                         onUpdateTask={onUpdateTask}
+                        canEdit={canEdit}
                       />
                     ))
                   ) : (
@@ -112,18 +113,13 @@ export default function BacklogView({ tasks, columns, columnOrder, onSelectTask,
           <BacklogSidebar
             planned={planned}
             ready={ready}
-            grooming={grooming}
             unscheduled={unscheduled}
-            overdue={overdue}
-            highUrgency={highUrgency}
             sprintDraft={sprintDraft}
             columns={columns}
             columnOrder={columnOrder}
             visibleTasks={visibleTasks}
-            activeBucket={activeBucket}
             onSelectTask={onSelectTask}
             onUpdateTask={onUpdateTask}
-            onBucketClick={setActiveBucket}
           />
         </div>
       </div>

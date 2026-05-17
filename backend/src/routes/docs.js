@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { IS_DEV } from '../config.js';
-import { buildOpenApiDocument } from '../openapi/registry.js';
+import { buildSpec } from '../openapi/generate.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const router = Router();
@@ -61,18 +61,19 @@ router.get('/docs/assets/style.css',    (_req, res) => sendFile(res, 'assets/sty
 router.get('/docs/assets/docs.js',      (_req, res) => sendFile(res, 'assets/docs.js'));
 router.get('/docs/assets/reference.js', (_req, res) => sendFile(res, 'assets/reference.js'));
 router.get('/docs/assets/hero.png',     (_req, res) => sendFile(res, 'assets/hero.png'));
+router.get('/docs/assets/elevate.svg',  (_req, res) => sendFile(res, 'assets/elevate.svg'));
 
 // ---------- OpenAPI spec (generated from code) ----------
 let specCache = null;
-router.get('/spec', (_req, res) => {
-  if (!specCache || IS_DEV) {
-    try {
-      specCache = buildOpenApiDocument();
-    } catch (err) {
-      return res.status(500).json({ error: 'failed to build spec', detail: err.message });
+router.get('/spec', async (_req, res) => {
+  try {
+    if (!specCache || IS_DEV) {
+      specCache = await buildSpec();
     }
+    res.json(specCache);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to build spec', detail: err.message });
   }
-  res.json(specCache);
 });
 
 export default router;

@@ -4,7 +4,7 @@ import { AppError } from '../middleware/error.js';
 import { sanitizeString } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/auth.js';
 import db from '../db.js';
-import { assertWorkspaceMember } from '../services/workspaceService.js';
+import { assertCanEdit } from '../services/workspaceService.js';
 import { getTaskWorkspaceId } from '../services/taskService.js';
 import { addComment } from '../services/commentService.js';
 import { logActivity } from '../services/activityService.js';
@@ -32,7 +32,7 @@ defineRoute(
     try {
       const { taskId } = req.params;
       const workspaceId = getTaskWorkspaceId(db, taskId);
-      assertWorkspaceMember(db, req.userId, workspaceId);
+      assertCanEdit(db, req.userId, workspaceId);
 
       const text = sanitizeString(req.body.text, 5000);
       const user = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(req.userId);

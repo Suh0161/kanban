@@ -297,7 +297,7 @@ export function batchMoveTasks(db, { taskIds, targetColumnId }) {
 
 export function archiveTask(db, taskId) {
   const result = db
-    .prepare("UPDATE tasks SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL")
+    .prepare("UPDATE tasks SET deleted_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND deleted_at IS NULL")
     .run(taskId);
   if (result.changes === 0) throw new AppError('Task not found', 404, 'NOT_FOUND');
 }
@@ -314,7 +314,7 @@ export function purgeArchivedTasks(db, workspaceId) {
     .prepare(
       `SELECT COUNT(*) as count FROM tasks t
        JOIN columns c ON t.column_id = c.id
-       WHERE c.workspace_id = ? AND t.deleted_at < datetime('now', '-30 days')`
+       WHERE c.workspace_id = ? AND t.deleted_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days')`
     )
     .get(workspaceId);
 
@@ -322,7 +322,7 @@ export function purgeArchivedTasks(db, workspaceId) {
     `DELETE FROM tasks WHERE id IN (
        SELECT t.id FROM tasks t
        JOIN columns c ON t.column_id = c.id
-       WHERE c.workspace_id = ? AND t.deleted_at < datetime('now', '-30 days')
+       WHERE c.workspace_id = ? AND t.deleted_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days')
      )`
   ).run(workspaceId);
 

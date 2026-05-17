@@ -3,6 +3,8 @@ import { useParams, Navigate, Routes, Route, useNavigate, useMatch } from 'react
 import { Sidebar, Topbar, NewIssueModal, TaskDetailView } from '../index.js';
 import { ErrorBoundary } from '../ui';
 import SearchPalette from '../ui/SearchPalette.jsx';
+import QuickStartCard from '../board/QuickStartCard.jsx';
+import { ErrorState, NotFoundPage, ForbiddenPage } from '../views/error';
 
 const Board = lazy(() => import('../board/Board'));
 const BacklogView = lazy(() => import('../views/backlog/BacklogView'));
@@ -43,7 +45,7 @@ const WORKSPACE_ONBOARDING_STEPS = [
   {
     targetSelector: '[data-onboarding="board-canvas"]',
     title: 'Run the board',
-    body: 'Cards move through workflow lists just like Trello, with Taiga-style planning data kept close to each issue.',
+    body: 'Cards move through workflow lists, with planning data kept close to each issue.',
     placement: 'bottom',
     activeView: 'boards',
   },
@@ -107,6 +109,7 @@ export default function WorkspaceLayout() {
   const { workspaces, loading: workspacesLoading, updateWorkspace } = useWorkspaces();
   const {
     data: boardData, isSearching,
+    error: boardError,
     refetch, searchBoard,
     allTags, onDragEnd: boardOnDragEnd,
     createTask, addColumn, deleteColumn, clearColumn, renameColumn,
@@ -118,6 +121,13 @@ export default function WorkspaceLayout() {
   } = useBoard(workspaceId);
 
   const currentWorkspace = workspaces.find(w => w.id === workspaceId);
+
+  // Workspace-wide edit gate. Used to hide composers, drag handles,
+  // status pickers, and other write controls so a viewer never sees an
+  // affordance the backend would refuse. The server still enforces this
+  // on every mutation — this is purely UX.
+  const myRole = currentWorkspace?.myRole || 'member';
+  const canEdit = myRole === 'owner' || myRole === 'admin' || myRole === 'member';
 
   const navigate = useNavigate();
   const taskRouteMatch = useMatch('/workspace/:workspaceId/tasks/:taskCode');
@@ -146,8 +156,8 @@ export default function WorkspaceLayout() {
   const [addingColumn, setAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
 
-  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('jokel-sidebar-open') !== 'false');
-  const [activeView, setActiveView] = useState(() => localStorage.getItem(`jokel-active-view-${workspaceId}`) || 'boards');
+  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('Elevate-sidebar-open') !== 'false');
+  const [activeView, setActiveView] = useState(() => localStorage.getItem(`Elevate-active-view-${workspaceId}`) || 'boards');
 
   const [menuOpenCol, setMenuOpenCol] = useState(null);
   const [editingCol, setEditingCol] = useState(null);
@@ -157,6 +167,10 @@ export default function WorkspaceLayout() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingMountKey, setOnboardingMountKey] = useState(0);
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
+  // When QuickStart sends the user into Settings, this records which section
+  // to land on. Cleared after Settings opens so subsequent visits start
+  // wherever the user last was.
+  const [settingsInitialSection, setSettingsInitialSection] = useState('general');
 
   const autoTourStartedRef = useRef(false);
   const tourSnapshotViewRef = useRef('boards');
@@ -168,7 +182,7 @@ export default function WorkspaceLayout() {
   const isBoardView = activeView === 'boards';
 
   useEffect(() => {
-    localStorage.setItem('jokel-sidebar-open', sidebarOpen ? 'true' : 'false');
+    localStorage.setItem('Elevate-sidebar-open', sidebarOpen ? 'true' : 'false');
   }, [sidebarOpen]);
 
   useEffect(() => {
@@ -183,7 +197,7 @@ export default function WorkspaceLayout() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(`jokel-active-view-${workspaceId}`, activeView);
+    localStorage.setItem(`Elevate-active-view-${workspaceId}`, activeView);
   }, [activeView, workspaceId]);
 
   useEffect(() => {
@@ -363,6 +377,7 @@ export default function WorkspaceLayout() {
               onSelectTask={openTask}
               onMoveTask={boardMoveTask}
               onUpdateTask={handleUpdateTask}
+              canEdit={canEdit}
             />
           </Suspense>
         </ErrorBoundary>
@@ -380,6 +395,7 @@ export default function WorkspaceLayout() {
               onMoveTask={boardMoveTask}
               onUpdateTask={handleUpdateTask}
               user={user}
+              canEdit={canEdit}
             />
           </Suspense>
         </ErrorBoundary>
@@ -410,6 +426,7 @@ export default function WorkspaceLayout() {
               onReplayGuidedTour={replayGuidedTour}
               labels={boardData.labels || []}
               onUpdateLabels={updateWorkspaceLabels}
+              initialSection={settingsInitialSection}
             />
           </Suspense>
         </ErrorBoundary>
@@ -419,6 +436,37 @@ export default function WorkspaceLayout() {
     return (
       <ErrorBoundary key="boards">
         <Suspense fallback={<ViewFallback />}>
+          {boardError ? (
+            <div style={{ padding: '24px' }}>
+              <ErrorState
+                error={boardError}
+                title="Couldn't load this board"
+                onRetry={() => refetch()}
+              />
+            </div>
+          ) : (
+            <>
+              <QuickStartCard
+                workspaceId={workspaceId}
+                workspaceName={currentWorkspace?.name}
+                tasks={boardData.tasks}
+                labels={boardData.labels || []}
+                memberCount={currentWorkspace?.members ?? 1}
+                myRole={currentWorkspace?.myRole || 'member'}
+                onCreateTask={() => {
+                  if (boardData.columnOrder.length > 0) {
+                    setAddingToCol(boardData.columnOrder[0]);
+                  }
+                }}
+                onOpenLabels={() => {
+                  setSettingsInitialSection('labels');
+                  setActiveView('settings');
+                }}
+                onOpenMembers={() => {
+                  setSettingsInitialSection('members');
+                  setActiveView('settings');
+                }}
+              />
           <Board
             data={boardData}
             columnOrder={boardData.columnOrder}
@@ -426,6 +474,8 @@ export default function WorkspaceLayout() {
             searchQuery={searchQuery}
             activeFilterCount={activeFilterCount}
             onDragEnd={(result) => boardOnDragEnd(result, isFiltered)}
+            background={currentWorkspace?.background || null}
+            canEdit={canEdit}
             menuOpenCol={menuOpenCol}
             onToggleMenu={setMenuOpenCol}
             editingCol={editingCol}
@@ -465,6 +515,8 @@ export default function WorkspaceLayout() {
             labels={boardData.labels || []}
             workspaceId={workspaceId}
           />
+            </>
+          )}
         </Suspense>
       </ErrorBoundary>
     );
@@ -478,7 +530,20 @@ export default function WorkspaceLayout() {
     );
   }
 
+  // Treat board-fetch failures as the source of truth for "can the user
+  // see this workspace?" — the backend returns 404 if the row isn't
+  // visible to the caller and 403 when role checks reject access.
+  if (boardError?.status === 403) {
+    return <ForbiddenPage />;
+  }
+  if (boardError?.status === 404) {
+    return <NotFoundPage title="Workspace not found" message="This workspace may have been deleted, or you may not have access." />;
+  }
+
   if (!currentWorkspace) {
+    // The workspaces list loaded successfully but didn't include this id —
+    // either we just deleted it, or we never had access. Send the user
+    // somewhere useful instead of a blank screen.
     return <Navigate to="/workspace" replace />;
   }
 
@@ -499,7 +564,9 @@ export default function WorkspaceLayout() {
         <Topbar
           activeViewTitle={isTaskRoute ? (taskRouteMatch?.params?.taskCode || 'Task') : viewTitles[activeView]}
           workspaceName={currentWorkspace.name}
+          workspaceLogo={currentWorkspace.logo || null}
           isBoardView={isBoardView && !isTaskRoute}
+          canEdit={canEdit}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           filterOpen={filterOpen}
@@ -540,10 +607,15 @@ export default function WorkspaceLayout() {
                   onUpdateChecklistItemCount={updateChecklistItemCount}
                   onDeleteChecklist={deleteChecklist}
                   onDeleteChecklistItem={deleteChecklistItem}
+                  canEdit={canEdit}
                 />
               }
             />
-            <Route path="*" element={renderActiveView()} />
+            {/* Only the bare workspace path renders the active view; anything
+                else nested under /workspace/:id/... that we don't recognise
+                falls through to the 404 catch-all. */}
+            <Route index element={renderActiveView()} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </div>
       </main>

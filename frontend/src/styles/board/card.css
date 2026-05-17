@@ -1,5 +1,5 @@
 /* ============================================================
-   Task card — Trello density, Taiga semantics, monochrome theme
+   Task card, monochrome theme
    ============================================================ */
 
 .card {
@@ -35,7 +35,7 @@
   display: block;
 }
 
-/* ---- Label strips (Trello-style) ---- */
+/* ---- Label strips ---- */
 .card-label-strips {
   display: flex;
   gap: 4px;

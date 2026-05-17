@@ -65,6 +65,10 @@
   transition: background-color 0.1s, border-color 0.1s;
 }
 
+.mytask-row.is-readonly {
+  grid-template-columns: minmax(260px, 1fr) auto;
+}
+
 .mytask-row:hover {
   border-color: var(--border-subtle);
   background-color: var(--bg-hover);
@@ -424,6 +428,10 @@
 
   .mytask-row {
     grid-template-columns: minmax(220px, 1fr) 120px 128px auto;
+  }
+
+  .mytask-row.is-readonly {
+    grid-template-columns: minmax(220px, 1fr) auto;
   }
 }
 

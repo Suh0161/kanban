@@ -24,14 +24,10 @@
 }
 
 .wl-brand-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  background: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--bg-app);
+  width: 22px;
+  height: auto;
+  flex: 0 0 auto;
+  display: block;
 }
 
 .wl-brand-text {
@@ -162,6 +158,7 @@
 }
 
 .wl-card-avatar {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
@@ -172,6 +169,23 @@
   font-size: 0.9rem;
   color: var(--text-primary);
   background: var(--border-subtle);
+  overflow: hidden;
+}
+
+.wl-card-avatar-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+/* Initials live underneath the image; if the logo loads they're hidden,
+   if it fails (`.wl-card-avatar-broken`) they re-appear automatically. */
+.wl-card-avatar-initials {
+  position: relative;
+  z-index: 0;
 }
 
 .wl-card-menu {
@@ -436,4 +450,210 @@
 @keyframes wl-toast-in {
   from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Three-dot card menu ─────────────────────────────────────────────────── */
+
+.wl-card-menu-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  /* Hide until the user hovers the card or opens the menu, so it stays
+     clean on a list of many workspaces. */
+  opacity: 0;
+  transition: opacity 0.15s, color 0.12s, background-color 0.12s, border-color 0.12s;
+}
+
+.wl-card:hover .wl-card-menu-btn,
+.wl-card-menu-btn:focus-visible,
+.wl-card-menu-btn.is-open {
+  opacity: 1;
+}
+
+.wl-card-menu-btn:hover,
+.wl-card-menu-btn.is-open {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+/* Portal-rendered popover */
+.wl-card-menu-pop {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  box-shadow: var(--shadow-dropdown);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: wl-pop-in 0.12s ease-out;
+}
+
+@keyframes wl-pop-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.wl-card-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s, color 0.1s;
+}
+
+.wl-card-menu-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.wl-card-menu-item.is-danger {
+  color: var(--color-red);
+}
+
+.wl-card-menu-item.is-danger:hover {
+  background: color-mix(in srgb, var(--color-red) 12%, transparent);
+  color: var(--color-red);
+}
+
+.wl-card-menu-item svg {
+  flex-shrink: 0;
+}
+
+.wl-card-menu-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 2px;
+}
+
+/* ── Modal (rename + delete) ─────────────────────────────────────────────── */
+
+.wl-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  animation: wl-fade-in 0.15s ease-out;
+}
+
+.wl-modal {
+  width: min(440px, calc(100vw - 32px));
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--shadow-dropdown);
+  animation: wl-pop-in 0.18s ease-out;
+}
+
+.wl-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wl-modal-head h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wl-modal-danger-icon {
+  color: var(--color-red);
+}
+
+.wl-modal-body {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.wl-modal-body strong {
+  color: var(--text-primary);
+}
+
+.wl-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.wl-modal-error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-red);
+}
+
+.wl-btn-secondary {
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.wl-btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.wl-btn-danger {
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 0;
+  background: var(--color-red);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.12s, opacity 0.12s;
+}
+
+.wl-btn-danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.wl-btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes wl-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

@@ -1,0 +1,44 @@
+# Keep the build context lean. Anything not needed inside the runtime
+# image goes here.
+
+# Local node_modules (re-installed inside the image)
+**/node_modules
+
+# Build output
+**/dist
+**/build
+**/.vite
+
+# Environment + secrets — Fly injects these via `fly secrets set`
+.env
+.env.*
+!.env.example
+
+# Local SQLite databases (NEVER ship these inside an image)
+database/*.db
+database/*.db-shm
+database/*.db-wal
+
+# Backend uploads (user content, persisted on the volume instead)
+backend/uploads/
+
+# Frontend / website / docs aren't part of the API container
+frontend/
+website/
+docs/
+
+# Git + editor + OS artefacts
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Logs + scratch files
+*.log
+tmp-test-*
+*.scratch.*
+
+# Local-only scripts
+_replace.ps1

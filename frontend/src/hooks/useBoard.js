@@ -1,8 +1,28 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { apiGetBoard, apiPost, apiPatch, apiDelete, getApiBase } from '../api/client.js';
+import { apiGetBoard, apiPost, apiPatch, apiDelete, getApiBase, resolveServerUrl } from '../api/client.js';
+import { recordQuickStartDrag } from '../components/board/quickStartStorage.js';
 
 function getToken() {
-  return localStorage.getItem('jokel-token');
+  return localStorage.getItem('Elevate-token');
+}
+
+/**
+ * Resolve every avatar/url field on the board so consumers can render
+ * them with `<img src>` regardless of whether the backend returned a
+ * relative path (`/api/v1/avatars/...`) or an absolute URL.
+ */
+function normalizeBoardData(board) {
+  if (!board) return board;
+  const tasks = {};
+  for (const [id, t] of Object.entries(board.tasks || {})) {
+    tasks[id] = {
+      ...t,
+      assigneeImg: resolveServerUrl(t.assigneeImg),
+      comments: (t.comments || []).map((c) => ({ ...c, avatar: resolveServerUrl(c.avatar) })),
+      attachments: (t.attachments || []).map((a) => ({ ...a, url: resolveServerUrl(a.url) })),
+    };
+  }
+  return { ...board, tasks };
 }
 
 export function useBoard(workspaceId) {
@@ -28,17 +48,18 @@ export function useBoard(workspaceId) {
       }
       try {
         const boardData = await apiGetBoard(workspaceId);
+        const normalized = normalizeBoardData(boardData);
         if (!cancelled) {
-          setData(boardData || { tasks: {}, columns: {}, columnOrder: [], customFields: [], labels: [] });
+          setData(normalized || { tasks: {}, columns: {}, columnOrder: [], customFields: [], labels: [] });
           // Compute all available tags from unfiltered data
           const tags = new Set();
-          Object.values(boardData?.tasks || {}).forEach(t => t.tags?.forEach(tag => tags.add(tag)));
+          Object.values(normalized?.tasks || {}).forEach(t => t.tags?.forEach(tag => tags.add(tag)));
           setAllAvailableTags(Array.from(tags));
           setLoading(false);
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err.message || 'Failed to fetch board');
+          setError(err);
           setLoading(false);
         }
       }
@@ -61,6 +82,12 @@ export function useBoard(workspaceId) {
     const { destination, source, draggableId, type } = result;
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    // Mark the QuickStart "drag" step as complete on any successful drag
+    // (including reorder within the same column). Idempotent.
+    if (type !== 'COLUMN') {
+      recordQuickStartDrag(workspaceId);
+    }
 
     if (type === 'COLUMN') {
       const newColumnOrder = Array.from(data.columnOrder);
@@ -101,7 +128,7 @@ export function useBoard(workspaceId) {
     }));
 
     apiPatch(`/tasks/${draggableId}/move`, { targetColumnId: destination.droppableId }).catch(() => {});
-  }, [data.columns, data.columnOrder]);
+  }, [data.columns, data.columnOrder, workspaceId]);
 
   const createTask = async (columnId, { title, priority, tags, description, dueDate, assigneeId, assigneeName, assigneeImg }) => {
     const parsedTags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : (tags || []);
@@ -448,12 +475,13 @@ export function useBoard(workspaceId) {
 
     try {
       const boardData = await apiGetBoard(workspaceId, filters);
+      const normalized = normalizeBoardData(boardData);
       if (!cancelledRef.current) {
-        setData(boardData || { tasks: {}, columns: {}, columnOrder: [] });
+        setData(normalized || { tasks: {}, columns: {}, columnOrder: [] });
       }
     } catch (err) {
       if (!cancelledRef.current) {
-        setError(err.message || 'Failed to fetch board');
+        setError(err);
       }
     } finally {
       if (!cancelledRef.current) {

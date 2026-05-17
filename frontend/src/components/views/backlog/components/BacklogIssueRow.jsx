@@ -10,7 +10,7 @@ function formatDueDate(date) {
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function BacklogIssueRow({ task, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask }) {
+export default function BacklogIssueRow({ task, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask, canEdit = true }) {
   const columnOptions = columnOrder
     .map(id => columns[id])
     .filter(Boolean)
@@ -32,7 +32,7 @@ export default function BacklogIssueRow({ task, columns, columnOrder, onSelectTa
   };
 
   return (
-    <article className={`backlog-issue-row ${overdue ? 'is-overdue' : ''}`}>
+    <article className={`backlog-issue-row ${overdue ? 'is-overdue' : ''} ${!canEdit ? 'is-readonly' : ''}`}>
       <span className={`backlog-issue-accent ${task.priority.toLowerCase()}`} />
 
       {/* Main info */}
@@ -66,38 +66,44 @@ export default function BacklogIssueRow({ task, columns, columnOrder, onSelectTa
       </div>
 
       {/* Priority */}
-      <div className="backlog-field">
-        <span>Priority</span>
-        <Select
-          value={task.priority}
-          options={priorityOptions}
-          className="backlog-select"
-          onChange={value => onUpdateTask(task.id, { priority: value })}
-        />
-      </div>
+      {canEdit && (
+        <div className="backlog-field">
+          <span>Priority</span>
+          <Select
+            value={task.priority}
+            options={priorityOptions}
+            className="backlog-select"
+            onChange={value => onUpdateTask(task.id, { priority: value })}
+          />
+        </div>
+      )}
 
       {/* Status / column */}
-      <div className="backlog-field">
-        <span>Status</span>
-        <Select
-          value={task.columnId}
-          options={columnOptions}
-          className="backlog-select"
-          onChange={value => onMoveTask(task.id, value)}
-        />
-      </div>
+      {canEdit && (
+        <div className="backlog-field">
+          <span>Status</span>
+          <Select
+            value={task.columnId}
+            options={columnOptions}
+            className="backlog-select"
+            onChange={value => onMoveTask(task.id, value)}
+          />
+        </div>
+      )}
 
       {/* Due date */}
-      <label className="backlog-field">
-        <span>Due date</span>
-        <input
-          type="date"
-          value={task.dueDate || ''}
-          onChange={e => onUpdateTask(task.id, { dueDate: e.target.value || null })}
-          aria-label={`${task.code} due date`}
-          className={overdue ? 'overdue-input' : ''}
-        />
-      </label>
+      {canEdit && (
+        <label className="backlog-field">
+          <span>Due date</span>
+          <input
+            type="date"
+            value={task.dueDate || ''}
+            onChange={e => onUpdateTask(task.id, { dueDate: e.target.value || null })}
+            aria-label={`${task.code} due date`}
+            className={overdue ? 'overdue-input' : ''}
+          />
+        </label>
+      )}
 
       {/* Metrics + assignee + plan */}
       <div className="backlog-issue-actions">
@@ -119,16 +125,18 @@ export default function BacklogIssueRow({ task, columns, columnOrder, onSelectTa
             ? <img src={task.assigneeImg} alt={task.assigneeName || ''} className="avatar backlog-avatar" title={task.assigneeName} />
             : <span className="workspace-avatar-empty backlog-avatar" title="Unassigned" />
           }
-          <button
-            type="button"
-            className={`btn btn-outline btn-sm backlog-plan-btn ${inSprint ? 'planned' : ''}`}
-            onClick={toggleSprint}
-            disabled={!ready && !inSprint}
-            title={!ready && !inSprint ? 'Resolve grooming issues first' : undefined}
-            aria-label={inSprint ? `Remove ${task.code} from sprint draft` : `Add ${task.code} to sprint draft`}
-          >
-            {inSprint ? <><X size={12} /> Remove</> : <><Plus size={12} /> Plan</>}
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              className={`btn btn-outline btn-sm backlog-plan-btn ${inSprint ? 'planned' : ''}`}
+              onClick={toggleSprint}
+              disabled={!ready && !inSprint}
+              title={!ready && !inSprint ? 'Resolve grooming issues first' : undefined}
+              aria-label={inSprint ? `Remove ${task.code} from sprint draft` : `Add ${task.code} to sprint draft`}
+            >
+              {inSprint ? <><X size={12} /> Remove</> : <><Plus size={12} /> Plan</>}
+            </button>
+          )}
         </div>
       </div>
     </article>

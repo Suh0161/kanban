@@ -7,7 +7,7 @@ const PRIORITY_DOT = {
   Low:      'var(--color-blue)',
 };
 
-export default function TaskDetailHeader({ task, columnTitle, onBack, onDelete, onUpdateTask }) {
+export default function TaskDetailHeader({ task, columnTitle, onBack, onDelete, onUpdateTask, canEdit = true }) {
   return (
     <header className="task-detail-header">
       <div className="task-detail-header-top">
@@ -33,16 +33,18 @@ export default function TaskDetailHeader({ task, columnTitle, onBack, onDelete, 
           )}
         </div>
 
-        <div className="task-detail-header-actions">
-          <button
-            type="button"
-            className="btn-icon-small danger-hover"
-            onClick={() => onDelete(task.id)}
-            title="Delete task"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+        {canEdit && (
+          <div className="task-detail-header-actions">
+            <button
+              type="button"
+              className="btn-icon-small danger-hover"
+              onClick={() => onDelete(task.id)}
+              title="Delete task"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
       <input
@@ -51,6 +53,8 @@ export default function TaskDetailHeader({ task, columnTitle, onBack, onDelete, 
         onChange={e => onUpdateTask(task.id, { title: e.target.value })}
         placeholder="Untitled task"
         aria-label="Task title"
+        disabled={!canEdit}
+        readOnly={!canEdit}
       />
     </header>
   );

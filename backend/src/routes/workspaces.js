@@ -7,6 +7,8 @@ import { sanitizeString } from '../middleware/validate.js';
 import { auditLog } from '../middleware/audit.js';
 import {
   assertWorkspaceMember,
+  assertCanManageWorkspace,
+  assertIsOwner,
   getWorkspacesForUser,
   createWorkspace,
   updateWorkspace,
@@ -15,10 +17,12 @@ import {
   addMemberByEmail,
   removeMember,
   updateMemberRole,
+  transferOwnership,
+  leaveWorkspace,
 } from '../services/workspaceService.js';
 import { logActivity } from '../services/activityService.js';
 import { defineRoute, withPrefix } from '../openapi/route.js';
-import { Workspace, User, errorResponse, jsonContent } from '../openapi/schemas.js';
+import { Workspace, WorkspaceMember, errorResponse, jsonContent } from '../openapi/schemas.js';
 
 const router = withPrefix(Router(), '/workspaces');
 router.use(requireAuth);
@@ -31,11 +35,23 @@ const CreateWorkspaceBody = z.object({
   name: z.string().min(1).max(100),
 });
 
+const LabelSchema = z.object({
+  id: z.string(),
+  name: z.string().max(100).optional(),
+  color: z.string().max(32).optional(),
+});
+
 const UpdateWorkspaceBody = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
   customFields: z.array(z.any()).optional(),
+  labels: z.array(LabelSchema).optional(),
   codePrefix: z.string().min(1).max(10).optional(),
+  // Logo: nullable string (URL pointer or external https URL).
+  logo: z.string().max(2048).nullable().optional(),
+  // Background: CSS color (`#rrggbb`, `rgb(...)`) or URL pointer. nullable
+  // means "reset to default canvas color".
+  background: z.string().max(2048).nullable().optional(),
 });
 
 // ---------- Routes ----------
@@ -70,10 +86,15 @@ defineRoute(
     responses: {
       201: { description: 'Created', schema: Workspace },
       400: errorResponse('Validation error'),
+      403: errorResponse('User session required'),
     },
   },
   (req, res, next) => {
     try {
+      if (req.apiKeyId) {
+        throw new AppError('User session required to create a workspace', 403, 'INSUFFICIENT_SCOPE');
+      }
+
       const name = sanitizeString(req.body.name, 100);
       if (!name) throw new AppError('Name is required', 400, 'VALIDATION_ERROR');
 
@@ -115,10 +136,13 @@ defineRoute(
       if (req.body.name !== undefined) updates.name = sanitizeString(req.body.name, 100);
       if (req.body.description !== undefined) updates.description = sanitizeString(req.body.description, 500);
       if (req.body.customFields !== undefined) updates.customFields = req.body.customFields;
+      if (req.body.labels !== undefined) updates.labels = req.body.labels;
       if (req.body.codePrefix !== undefined) updates.codePrefix = req.body.codePrefix;
+      if (req.body.logo !== undefined) updates.logo = req.body.logo;
+      if (req.body.background !== undefined) updates.background = req.body.background;
 
-      assertWorkspaceMember(db, req.userId, id);
-      res.json(updateWorkspace(db, id, updates));
+      assertCanManageWorkspace(db, req.userId, id);
+      res.json(updateWorkspace(db, id, updates, req.userId));
     } catch (err) {
       next(err);
     }
@@ -141,7 +165,7 @@ defineRoute(
   (req, res, next) => {
     try {
       const { id } = req.params;
-      assertWorkspaceMember(db, req.userId, id);
+      assertIsOwner(db, req.userId, id);
       deleteWorkspace(db, id);
       auditLog('WORKSPACE_DELETED', { workspaceId: id, userId: req.userId });
       logActivity(db, {
@@ -167,7 +191,7 @@ defineRoute(
     tag: 'Workspaces',
     summary: 'List members',
     params: IdParam,
-    responses: { 200: jsonContent(z.array(User), 'Member list') },
+    responses: { 200: jsonContent(z.array(WorkspaceMember), 'Member list') },
   },
   (req, res, next) => {
     try {
@@ -182,7 +206,7 @@ defineRoute(
 
 const AddMemberBody = z.object({
   email: z.string().email(),
-  role: z.enum(['member', 'admin']).optional(),
+  role: z.enum(['member', 'admin', 'viewer']).optional(),
 });
 
 defineRoute(
@@ -195,7 +219,8 @@ defineRoute(
     params: IdParam,
     body: AddMemberBody,
     responses: {
-      201: jsonContent(User, 'Member added'),
+      201: jsonContent(WorkspaceMember, 'Member added'),
+      403: errorResponse('Insufficient role'),
       404: errorResponse('User not found'),
       409: errorResponse('Already a member'),
     },
@@ -204,7 +229,7 @@ defineRoute(
     try {
       const { id } = req.params;
       const { email, role } = req.body;
-      assertWorkspaceMember(db, req.userId, id);
+      assertCanManageWorkspace(db, req.userId, id);
       const member = addMemberByEmail(db, id, email, role || 'member');
       logActivity(db, {
         userId: req.userId,
@@ -228,23 +253,30 @@ defineRoute(
     path: '/:id/members/:userId',
     tag: 'Workspaces',
     summary: 'Remove member',
+    description: 'Owners and admins may remove other members. Any member may remove themselves (leave). The owner cannot be removed without transferring ownership first.',
     params: z.object({ id: z.string(), userId: z.string() }),
     responses: {
       200: jsonContent(z.object({ success: z.boolean() }), 'Member removed'),
+      403: errorResponse('Insufficient role'),
     },
   },
   (req, res, next) => {
     try {
       const { id, userId } = req.params;
-      assertWorkspaceMember(db, req.userId, id);
-      removeMember(db, id, userId);
+      // Self-leave is allowed for any member; otherwise must be owner/admin.
+      if (userId === req.userId) {
+        leaveWorkspace(db, id, req.userId);
+      } else {
+        assertCanManageWorkspace(db, req.userId, id);
+        removeMember(db, id, userId);
+      }
       logActivity(db, {
         userId: req.userId,
         workspaceId: id,
         event: 'MEMBER_REMOVED',
         entityType: 'workspace',
         entityId: id,
-        detail: JSON.stringify({ userId }),
+        detail: JSON.stringify({ userId, self: userId === req.userId }),
       });
       res.json({ success: true });
     } catch (err) {
@@ -260,17 +292,19 @@ defineRoute(
     path: '/:id/members/:userId',
     tag: 'Workspaces',
     summary: 'Update member role',
+    description: 'Owners may set member/admin/viewer. Admins may also set roles, but cannot promote to or change the owner.',
     params: z.object({ id: z.string(), userId: z.string() }),
-    body: z.object({ role: z.enum(['member', 'admin']) }),
+    body: z.object({ role: z.enum(['member', 'admin', 'viewer']) }),
     responses: {
       200: jsonContent(z.object({ success: z.boolean(), role: z.string() }), 'Role updated'),
+      403: errorResponse('Insufficient role'),
     },
   },
   (req, res, next) => {
     try {
       const { id, userId } = req.params;
       const { role } = req.body;
-      assertWorkspaceMember(db, req.userId, id);
+      assertCanManageWorkspace(db, req.userId, id);
       const result = updateMemberRole(db, id, userId, role);
       logActivity(db, {
         userId: req.userId,
@@ -281,6 +315,45 @@ defineRoute(
         detail: JSON.stringify({ userId, role }),
       });
       res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+defineRoute(
+  router,
+  {
+    method: 'post',
+    path: '/:id/transfer-ownership',
+    tag: 'Workspaces',
+    summary: 'Transfer ownership',
+    description: 'Move the owner role to another existing member. The current owner becomes admin.',
+    params: IdParam,
+    body: z.object({ newOwnerId: z.string() }),
+    responses: {
+      200: jsonContent(z.object({ success: z.boolean() }), 'Ownership transferred'),
+      400: errorResponse('Validation error'),
+      403: errorResponse('Only the owner can transfer ownership'),
+      404: errorResponse('New owner is not a member'),
+    },
+  },
+  (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { newOwnerId } = req.body;
+      // assertIsOwner runs inside transferOwnership but we double-check for clarity.
+      assertIsOwner(db, req.userId, id);
+      transferOwnership(db, id, req.userId, newOwnerId);
+      logActivity(db, {
+        userId: req.userId,
+        workspaceId: id,
+        event: 'OWNERSHIP_TRANSFERRED',
+        entityType: 'workspace',
+        entityId: id,
+        detail: JSON.stringify({ from: req.userId, to: newOwnerId }),
+      });
+      res.json({ success: true });
     } catch (err) {
       next(err);
     }

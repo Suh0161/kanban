@@ -9,7 +9,7 @@ const tabs = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
 ];
 
-export default function MyWorkView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask, user }) {
+export default function MyWorkView({ tasks, columns, columnOrder, onSelectTask, onMoveTask, onUpdateTask, user, canEdit = true }) {
   const [activeTab, setActiveTab] = useState('my-tasks');
 
   // Count inbox tasks for badge
@@ -49,6 +49,7 @@ export default function MyWorkView({ tasks, columns, columnOrder, onSelectTask, 
           onMoveTask={onMoveTask}
           onUpdateTask={onUpdateTask}
           user={user}
+          canEdit={canEdit}
         />
       )}
 
@@ -60,6 +61,7 @@ export default function MyWorkView({ tasks, columns, columnOrder, onSelectTask, 
           onSelectTask={onSelectTask}
           onMoveTask={onMoveTask}
           onUpdateTask={onUpdateTask}
+          canEdit={canEdit}
         />
       )}
     </div>

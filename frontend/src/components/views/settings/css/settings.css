@@ -374,7 +374,7 @@
   max-width: 320px;
 }
 
-/* Attributes - Taiga-style compact table */
+/* Attributes — compact table */
 .attr-table {
   display: flex;
   flex-direction: column;
@@ -1368,4 +1368,411 @@
   right: 7px;
   color: var(--text-tertiary);
   pointer-events: none;
+}
+
+/* ── Role badges (admin / viewer / member) ───────────────────────────────── */
+
+.settings-member-role.admin {
+  color: var(--accent-blue);
+  border-color: color-mix(in srgb, var(--accent-blue) 30%, var(--border-subtle));
+  background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+}
+
+.settings-member-role.viewer {
+  color: var(--text-tertiary);
+  border-color: var(--border-subtle);
+  background: var(--bg-hover);
+}
+
+.settings-member-role.member {
+  color: var(--text-secondary);
+}
+
+/* ── My-role badge in the page header ────────────────────────────────────── */
+
+.settings-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.settings-role-badge.role-owner {
+  color: var(--color-orange);
+  border-color: color-mix(in srgb, var(--color-orange) 30%, var(--border-subtle));
+}
+
+.settings-role-badge.role-admin {
+  color: var(--accent-blue);
+  border-color: color-mix(in srgb, var(--accent-blue) 30%, var(--border-subtle));
+}
+
+.settings-role-badge.role-viewer {
+  color: var(--text-tertiary);
+}
+
+/* ── Read-only banner (shown to non-managers) ────────────────────────────── */
+
+.settings-readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin: 0 0 16px 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.settings-readonly-banner svg {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.settings-readonly-banner strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ── Invite role select ──────────────────────────────────────────────────── */
+
+/* Cap the role picker so the email field gets the full remaining width. */
+.settings-invite-role {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+/* Per-row role picker — tight pill matching the surrounding chips. */
+.settings-member-row .settings-role-select {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.settings-member-row .settings-role-select .custom-select-trigger,
+.settings-invite-role .custom-select-trigger {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 0.78rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.settings-member-row .settings-role-select .custom-select-trigger:hover,
+.settings-invite-role .custom-select-trigger:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+/* Disabled inputs in read-only mode */
+.settings-input:disabled,
+.settings-textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+
+/* ── Workspace logo field ─────────────────────────────────────────────────── */
+
+.settings-logo-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.settings-logo-tile {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-purple), var(--accent-blue));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.settings-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-logo-fallback {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.settings-logo-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  animation: settings-spin 1s linear infinite;
+}
+
+@keyframes settings-spin {
+  to { transform: rotate(360deg); }
+}
+
+.settings-logo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.settings-logo-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-logo-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.settings-logo-error {
+  font-size: 0.75rem;
+  color: var(--color-red);
+}
+
+.settings-logo-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.settings-logo-input {
+  display: none;
+}
+
+/* Workspace meta row (replaces the old identity tile inline) */
+.settings-workspace-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  margin: 0 0 8px;
+  padding: 0 4px;
+}
+
+.settings-workspace-meta-row .settings-workspace-id {
+  font-family: var(--font-mono);
+}
+
+/* ── Form divider ─────────────────────────────────────────────────────────── */
+
+.settings-form-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 8px 0;
+}
+
+/* ── Board background field ───────────────────────────────────────────────── */
+
+.settings-bg-field {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 16px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.settings-bg-preview-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-bg-preview {
+  position: relative;
+  width: 220px;
+  height: 130px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-canvas);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.settings-bg-mock {
+  position: absolute;
+  inset: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.settings-bg-mock-col {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.settings-bg-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  animation: settings-spin 1s linear infinite;
+}
+
+.settings-bg-reset {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.settings-bg-reset:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.settings-bg-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-bg-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-bg-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-bg-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.settings-bg-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+
+.settings-bg-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.1s, border-color 0.12s, box-shadow 0.12s;
+}
+
+.settings-bg-swatch.is-default {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--bg-card) 0 4px,
+    var(--bg-hover) 4px 8px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-bg-default-glyph {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.settings-bg-swatch:hover {
+  transform: scale(1.08);
+  border-color: var(--border-strong);
+}
+
+.settings-bg-swatch.is-active {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-blue) 35%, transparent);
+}
+
+.settings-bg-swatch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-bg-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+
+.settings-logo-pending {
+  color: var(--color-orange) !important;
+}
+
+.settings-save-error {
+  margin: 4px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-red) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-red) 35%, var(--border-subtle));
+  color: var(--color-red);
+  font-size: 0.82rem;
+}
+
+.settings-save-spin {
+  animation: settings-spin 1s linear infinite;
 }

@@ -95,7 +95,21 @@ export function loginUser(db, { email, password }) {
   }
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+  if (!user || !user.password_hash) {
+    // No row, or this account was created via OAuth and has no password.
+    // Surface an actionable error in the second case.
+    if (user && !user.password_hash) {
+      recordFailedAttempt(email);
+      throw new AppError(
+        'This account was created with single sign-on. Use the social login button instead.',
+        401,
+        'OAUTH_ONLY_ACCOUNT'
+      );
+    }
+    recordFailedAttempt(email);
+    throw new AppError('Invalid credentials', 401, 'UNAUTHORIZED');
+  }
+  if (!bcrypt.compareSync(password, user.password_hash)) {
     recordFailedAttempt(email);
     throw new AppError('Invalid credentials', 401, 'UNAUTHORIZED');
   }
@@ -124,8 +138,25 @@ export function updateUser(db, userId, updates) {
   }
 
   if (updates.avatar !== undefined) {
+    // Accept either http(s) URLs (e.g. dicebear) or data URLs of common image
+    // mime types. Reject anything else early so we don't store JS, SVG, or
+    // arbitrary text.
+    const value = updates.avatar;
+    if (value !== null && value !== '') {
+      if (typeof value !== 'string') {
+        throw new AppError('Invalid avatar', 400, 'VALIDATION_ERROR');
+      }
+      const isHttps = /^https?:\/\//i.test(value);
+      const isImageDataUrl = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/i.test(value);
+      if (!isHttps && !isImageDataUrl) {
+        throw new AppError('Avatar must be an https URL or an image data URL', 400, 'VALIDATION_ERROR');
+      }
+      if (value.length > 2 * 1024 * 1024) {
+        throw new AppError('Avatar exceeds 2MB limit', 400, 'PAYLOAD_TOO_LARGE');
+      }
+    }
     fields.push('avatar = ?');
-    values.push(updates.avatar || null);
+    values.push(value || null);
   }
 
   if (updates.password !== undefined) {
@@ -136,11 +167,13 @@ export function updateUser(db, userId, updates) {
         'VALIDATION_ERROR'
       );
     }
-    if (updates.currentPassword) {
-      const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(userId);
-      if (!user || !bcrypt.compareSync(updates.currentPassword, user.password_hash)) {
+    const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(userId);
+    if (user?.password_hash) {
+      if (!updates.currentPassword || !bcrypt.compareSync(updates.currentPassword, user.password_hash)) {
         throw new AppError('Current password is incorrect', 401, 'UNAUTHORIZED');
       }
+    } else if (updates.currentPassword) {
+      throw new AppError('Current password is not available for this account', 400, 'VALIDATION_ERROR');
     }
     fields.push('password_hash = ?');
     values.push(bcrypt.hashSync(updates.password, 12));
@@ -151,4 +184,64 @@ export function updateUser(db, userId, updates) {
   values.push(userId);
   db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
   return getUserById(db, userId);
+}
+
+
+/**
+ * Resolve an OAuth profile to a local user row.
+ *
+ * Order of operations:
+ *   1. If we have an `oauth_identities` row for (provider, provider_user_id),
+ *      use that user — this is the steady-state hot path.
+ *   2. If a user row already exists for the email returned by the provider,
+ *      link the new identity onto that existing account instead of creating
+ *      a duplicate.
+ *   3. Otherwise create a fresh user row (with no password) and link the
+ *      identity to it.
+ *
+ * Returns `{ user, token }` ready to drop into the session cookie / URL hash.
+ */
+export function findOrCreateOAuthUser(db, { provider, providerUserId, email, name, avatar }) {
+  if (!provider || !providerUserId || !email) {
+    throw new AppError('Invalid OAuth profile', 400, 'VALIDATION_ERROR');
+  }
+
+  const linked = db.prepare(`
+    SELECT u.* FROM users u
+    JOIN oauth_identities i ON i.user_id = u.id
+    WHERE i.provider = ? AND i.provider_user_id = ?
+  `).get(provider, providerUserId);
+
+  if (linked) {
+    // Don't overwrite locally-edited name / avatar. The user is the source
+    // of truth once the account exists — provider values are only used to
+    // seed the row on first link, otherwise a Google login round-trip
+    // would silently revert any profile change made via /auth/me.
+    return {
+      user: sanitizeUser(linked),
+      token: generateToken(linked.id),
+    };
+  }
+
+  const existingByEmail = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  if (existingByEmail) {
+    db.prepare(
+      'INSERT OR IGNORE INTO oauth_identities (user_id, provider, provider_user_id) VALUES (?, ?, ?)'
+    ).run(existingByEmail.id, provider, providerUserId);
+    return { user: sanitizeUser(existingByEmail), token: generateToken(existingByEmail.id) };
+  }
+
+  // First time we've seen this person — create a fresh row, link it.
+  const id = uuidv4();
+  db.transaction(() => {
+    db.prepare(
+      'INSERT INTO users (id, email, name, avatar, password_hash) VALUES (?, ?, ?, ?, NULL)'
+    ).run(id, email, name, avatar || null);
+    db.prepare(
+      'INSERT INTO oauth_identities (user_id, provider, provider_user_id) VALUES (?, ?, ?)'
+    ).run(id, provider, providerUserId);
+  })();
+
+  const user = { id, email, name, avatar: avatar || null };
+  return { user: sanitizeUser(user), token: generateToken(user.id) };
 }

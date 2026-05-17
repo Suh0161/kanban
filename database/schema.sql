@@ -1,4 +1,4 @@
--- Jokel SQLite Schema
+-- Elevate SQLite Schema
 
 PRAGMA foreign_keys = ON;
 
@@ -8,10 +8,25 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   avatar TEXT,
-  password_hash TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  -- Nullable so users created via OAuth (no password) can exist. Local
+  -- email/password signup still requires it; the API enforces that path.
+  password_hash TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+
+-- OAuth identities — one user can have multiple linked providers (e.g.
+-- signed up with email, later linked Google). `provider_user_id` is the
+-- stable subject the provider returns; `(provider, provider_user_id)` is
+-- the natural key for a successful OAuth login.
+CREATE TABLE IF NOT EXISTS oauth_identities (
+  user_id          TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider         TEXT NOT NULL,
+  provider_user_id TEXT NOT NULL,
+  created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  PRIMARY KEY (provider, provider_user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_oauth_identities_user ON oauth_identities(user_id);
 
 -- Workspaces
 CREATE TABLE IF NOT EXISTS workspaces (
@@ -21,18 +36,27 @@ CREATE TABLE IF NOT EXISTS workspaces (
   custom_fields TEXT DEFAULT '[]',
   labels TEXT DEFAULT '[]',
   code_prefix TEXT NOT NULL DEFAULT 'SKY',
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  -- Branding pointers. NULL = defaults (initials avatar / canvas color).
+  -- `logo`       stores a URL (object-storage pointer or external URL).
+  -- `background` stores either a CSS color (e.g. `#0a0a0a`) or a URL.
+  logo TEXT,
+  background TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- Workspace Members
 CREATE TABLE IF NOT EXISTS workspace_members (
   workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL DEFAULT 'member',
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   PRIMARY KEY (workspace_id, user_id)
 );
+
+-- Ensure at most one owner per workspace
+CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_one_owner
+  ON workspace_members(workspace_id) WHERE role = 'owner';
 
 -- Columns (Kanban columns)
 CREATE TABLE IF NOT EXISTS columns (
@@ -41,8 +65,8 @@ CREATE TABLE IF NOT EXISTS columns (
   title TEXT NOT NULL,
   position INTEGER NOT NULL DEFAULT 0,
   deleted_at TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- Tasks
@@ -60,8 +84,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   custom_fields TEXT DEFAULT '{}',
   label_ids TEXT DEFAULT '[]',
   sprint_id TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- Task Tags
@@ -78,7 +102,7 @@ CREATE TABLE IF NOT EXISTS comments (
   text TEXT NOT NULL,
   author_name TEXT NOT NULL,
   author_avatar TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- Attachments
@@ -92,7 +116,7 @@ CREATE TABLE IF NOT EXISTS attachments (
   mime_type TEXT,
   size INTEGER,
   sha256 TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- Checklists
@@ -100,7 +124,7 @@ CREATE TABLE IF NOT EXISTS checklists (
   id TEXT PRIMARY KEY,
   task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- Checklist Items
@@ -111,7 +135,7 @@ CREATE TABLE IF NOT EXISTS checklist_items (
   done INTEGER NOT NULL DEFAULT 0,
   target_count INTEGER NOT NULL DEFAULT 1,
   current_count INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- Activity Log
@@ -123,7 +147,7 @@ CREATE TABLE IF NOT EXISTS activity_log (
   entity_type TEXT NOT NULL,
   entity_id TEXT,
   detail TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- Indexes
@@ -137,6 +161,17 @@ CREATE INDEX IF NOT EXISTS idx_checklist_items_checklist ON checklist_items(chec
 CREATE INDEX IF NOT EXISTS idx_workspaces_members_workspace ON workspace_members(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_workspaces_members_user ON workspace_members(user_id);
 
+-- Task watchers — many-to-many join. A user "watches" a task to get
+-- notified about activity (currently just a UI affordance; webhook +
+-- email fan-out can layer on top of this without schema changes).
+CREATE TABLE IF NOT EXISTS task_watchers (
+  task_id    TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  PRIMARY KEY (task_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_task_watchers_user ON task_watchers(user_id);
+
 -- API Keys
 CREATE TABLE IF NOT EXISTS api_keys (
   id TEXT PRIMARY KEY,
@@ -148,7 +183,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
   scopes TEXT NOT NULL DEFAULT 'read,write',
   last_used_at TEXT,
   expires_at TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
@@ -162,8 +197,8 @@ CREATE TABLE IF NOT EXISTS webhooks (
   events TEXT NOT NULL DEFAULT 'task.created,task.updated,task.moved,task.deleted',
   secret TEXT NOT NULL,
   active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_webhooks_workspace ON webhooks(workspace_id);

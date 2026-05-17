@@ -1,11 +1,11 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Jokel API",
+    "title": "Elevate API",
     "version": "1.0.0",
-    "description": "REST API for Jokel — a dark-themed Taiga+Trello style planning and Kanban app. Authenticate via JWT bearer tokens (from /api/v1/auth/login) or API keys (X-API-Key header or ?api_key= query param). Use workspace_id to scope all operations.",
+    "description": "REST API for Elevate, a dark-themed Kanban and planning app. Authenticate via JWT bearer tokens (from /api/v1/auth/login) or API keys (X-API-Key header or ?api_key= query param). Use workspace_id to scope all operations.",
     "contact": {
-      "name": "Jokel"
+      "name": "Elevate"
     }
   },
   "servers": [
@@ -112,6 +112,44 @@
           "name"
         ]
       },
+      "WorkspaceMember": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "user@example.com"
+          },
+          "name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member",
+              "viewer"
+            ],
+            "description": "Role within a workspace",
+            "example": "member"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "role"
+        ]
+      },
       "Workspace": {
         "type": "object",
         "properties": {
@@ -121,8 +159,25 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "type": "string"
+          },
           "memberCount": {
             "type": "integer"
+          },
+          "myRole": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member",
+              "viewer"
+            ],
+            "description": "Role within a workspace",
+            "example": "member"
+          },
+          "codePrefix": {
+            "type": "string"
           },
           "created_at": {
             "type": "string",
@@ -370,6 +425,340 @@
     "parameters": {}
   },
   "paths": {
+    "/workspaces/{workspaceId}/activity": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Get activity log",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "nullable": true,
+              "minimum": 0,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity list"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/api-keys": {
+      "get": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "List API keys",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key list"
+          },
+          "403": {
+            "description": "User session required"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Create API key",
+        "description": "The raw key value is returned only once at creation time. Viewers cannot create API keys.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "scopes": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "API key created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiKey"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "description": "Returned only once. Store securely."
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "created_at"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "User session required"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/api-keys/{keyId}": {
+      "delete": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Revoke API key",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "keyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked"
+          },
+          "403": {
+            "description": "User session required"
+          },
+          "404": {
+            "description": "API key not found"
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/attachments": {
+      "post": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Upload attachment",
+        "description": "Image upload (JPEG/PNG/GIF/WebP), max 5 MB. The response carries the public URL the client should use.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "task_id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "mime_type": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "size": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "task_id",
+                    "type",
+                    "url",
+                    "name"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid file"
+          }
+        }
+      }
+    },
+    "/attachments/{id}/file": {
+      "get": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Download attachment file",
+        "description": "Streams the attachment bytes. Authenticated via either the standard session/API-key headers, or via a signed `?token=` query parameter (used by `<img>` tags which cannot send headers). Tokens expire after 1 hour and are bound to the requesting user.",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "token",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File stream"
+          },
+          "401": {
+            "description": "Missing or invalid credentials"
+          },
+          "404": {
+            "description": "Attachment not found"
+          }
+        }
+      }
+    },
+    "/attachments/{id}": {
+      "delete": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Delete attachment",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
     "/auth/register": {
       "post": {
         "tags": [
@@ -536,7 +925,7 @@
                   "avatar": {
                     "type": "string",
                     "nullable": true,
-                    "format": "uri"
+                    "maxLength": 2097152
                   },
                   "password": {
                     "type": "string",
@@ -560,304 +949,82 @@
           },
           "401": {
             "description": "Current password incorrect"
+          },
+          "403": {
+            "description": "User session required"
           }
         }
       }
     },
-    "/workspaces": {
-      "get": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "List workspaces",
-        "description": "List all workspaces the authenticated user is a member of.",
-        "responses": {
-          "200": {
-            "description": "Workspace list"
-          }
-        }
-      },
+    "/auth/avatar": {
       "post": {
         "tags": [
-          "Workspaces"
+          "Auth"
         ],
-        "summary": "Create workspace",
+        "summary": "Upload my avatar",
+        "description": "Replaces the calling user's avatar. Bytes go to object storage; the user row only keeps a URL pointer (~tens of bytes).",
         "requestBody": {
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": {
+                  "file": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
+                    "format": "binary"
                   }
-                },
-                "required": [
-                  "name"
-                ]
+                }
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Workspace"
-                }
-              }
-            }
+          "200": {
+            "description": "Avatar saved"
           },
           "400": {
-            "description": "Validation error"
+            "description": "Invalid file"
+          },
+          "403": {
+            "description": "User session required"
           }
         }
       }
     },
-    "/workspaces/{id}": {
-      "patch": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Update workspace",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  },
-                  "description": {
-                    "type": "string",
-                    "maxLength": 500
-                  },
-                  "customFields": {
-                    "type": "array",
-                    "items": {
-                      "nullable": true
-                    }
-                  },
-                  "codePrefix": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 10
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Workspace"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Not a workspace member"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Delete workspace",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          },
-          "403": {
-            "description": "Not a workspace member"
-          }
-        }
-      }
-    },
-    "/workspaces/{id}/members": {
+    "/avatars/{userId}/{filename}": {
       "get": {
         "tags": [
-          "Workspaces"
+          "Auth"
         ],
-        "summary": "List members",
+        "summary": "Stream avatar bytes",
+        "description": "Public read endpoint so <img> tags can render avatars without an Authorization header. Same posture as Slack / GitHub user-content URLs.",
+        "security": [],
         "parameters": [
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             },
             "required": true,
-            "name": "id",
+            "name": "userId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w.-]+$"
+            },
+            "required": true,
+            "name": "filename",
             "in": "path"
           }
         ],
         "responses": {
           "200": {
-            "description": "Member list"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Add member by email",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "format": "email"
-                  },
-                  "role": {
-                    "type": "string",
-                    "enum": [
-                      "member",
-                      "admin"
-                    ]
-                  }
-                },
-                "required": [
-                  "email"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Member added"
+            "description": "Avatar bytes"
           },
           "404": {
-            "description": "User not found"
-          },
-          "409": {
-            "description": "Already a member"
-          }
-        }
-      }
-    },
-    "/workspaces/{id}/members/{userId}": {
-      "delete": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Remove member",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "userId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Member removed"
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Update member role",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "userId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "role": {
-                    "type": "string",
-                    "enum": [
-                      "member",
-                      "admin"
-                    ]
-                  }
-                },
-                "required": [
-                  "role"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Role updated"
+            "description": "Avatar not found"
           }
         }
       }
@@ -940,6 +1107,200 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/checklists": {
+      "post": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Create checklist",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checklist"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checklists/{id}": {
+      "delete": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Delete checklist",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/checklists/{id}/items": {
+      "post": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Add checklist item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "targetCount": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Item added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checklist-items/{id}": {
+      "patch": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Update checklist item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "done": {
+                    "type": "boolean"
+                  },
+                  "currentCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Delete checklist item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
           }
         }
       }
@@ -1140,6 +1501,234 @@
         "responses": {
           "200": {
             "description": "Restored"
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/comments": {
+      "post": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Add comment",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comment"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/oauth/providers": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "List configured OAuth providers",
+        "description": "The frontend uses this to render only the buttons that are actually wired up via env vars.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Configured providers"
+          }
+        }
+      }
+    },
+    "/auth/oauth/{provider}/start": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Begin OAuth flow",
+        "description": "Redirects the browser to the provider consent screen. Pass `?redirect=/some/path` to come back to a specific frontend route after success.",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "google",
+                "github"
+              ]
+            },
+            "required": true,
+            "name": "provider",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "redirect",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to provider"
+          },
+          "404": {
+            "description": "Provider not configured"
+          }
+        }
+      }
+    },
+    "/auth/oauth/{provider}/callback": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "OAuth callback",
+        "description": "Provider redirects here after consent. We exchange the code, mint a JWT, and bounce back to the frontend.",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "google",
+                "github"
+              ]
+            },
+            "required": true,
+            "name": "provider",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "code",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "error",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "error_description",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect back to frontend"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/presence/heartbeat": {
+      "post": {
+        "tags": [
+          "Presence"
+        ],
+        "summary": "Send heartbeat",
+        "description": "Call every 30 seconds to mark the user as active in a workspace.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/presence": {
+      "get": {
+        "tags": [
+          "Presence"
+        ],
+        "summary": "Get online users",
+        "description": "Returns users seen in the last 60 seconds.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Online users"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health check",
+        "description": "Returns ok=true when the API is up.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
           }
         }
       }
@@ -1489,12 +2078,12 @@
         }
       }
     },
-    "/tasks/{taskId}/comments": {
-      "post": {
+    "/tasks/{taskId}/watchers": {
+      "get": {
         "tags": [
-          "Comments"
+          "Watchers"
         ],
-        "summary": "Add comment",
+        "summary": "List task watchers",
         "parameters": [
           {
             "schema": {
@@ -1505,600 +2094,53 @@
             "in": "path"
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 5000
-                  }
-                },
-                "required": [
-                  "text"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Comment added",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Comment"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/tasks/{taskId}/attachments": {
-      "post": {
-        "tags": [
-          "Attachments"
-        ],
-        "summary": "Upload attachment",
-        "description": "Image upload (JPEG/PNG/GIF/WebP), max 5 MB. The response carries the public URL the client should use.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Uploaded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "task_id": {
-                      "type": "string"
-                    },
-                    "type": {
-                      "type": "string"
-                    },
-                    "url": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "mime_type": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "size": {
-                      "type": "number",
-                      "nullable": true
-                    },
-                    "sha256": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "task_id",
-                    "type",
-                    "url",
-                    "name"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid file"
-          }
-        }
-      }
-    },
-    "/attachments/{id}/file": {
-      "get": {
-        "tags": [
-          "Attachments"
-        ],
-        "summary": "Download attachment file",
-        "description": "Streams the attachment bytes. Authenticated via either the standard session/API-key headers, or via a signed `?token=` query parameter (used by `<img>` tags which cannot send headers). Tokens expire after 1 hour and are bound to the requesting user.",
-        "security": [],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "token",
-            "in": "query"
-          }
-        ],
         "responses": {
           "200": {
-            "description": "File stream"
-          },
-          "401": {
-            "description": "Missing or invalid credentials"
-          },
-          "404": {
-            "description": "Attachment not found"
-          }
-        }
-      }
-    },
-    "/attachments/{id}": {
-      "delete": {
-        "tags": [
-          "Attachments"
-        ],
-        "summary": "Delete attachment",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          }
-        }
-      }
-    },
-    "/tasks/{taskId}/checklists": {
-      "post": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Create checklist",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "title": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200
-                  }
-                },
-                "required": [
-                  "title"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Checklist"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/checklists/{id}": {
-      "delete": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Delete checklist",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          }
-        }
-      }
-    },
-    "/checklists/{id}/items": {
-      "post": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Add checklist item",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 500
-                  },
-                  "targetCount": {
-                    "type": "integer",
-                    "minimum": 1
-                  }
-                },
-                "required": [
-                  "text"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Item added",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChecklistItem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/checklist-items/{id}": {
-      "patch": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Update checklist item",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "done": {
-                    "type": "boolean"
-                  },
-                  "currentCount": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChecklistItem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Delete checklist item",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/activity": {
-      "get": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Get activity log",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "default": 50
-            },
-            "required": false,
-            "name": "limit",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "nullable": true,
-              "minimum": 0,
-              "default": 0
-            },
-            "required": false,
-            "name": "offset",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Activity list"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/presence/heartbeat": {
-      "post": {
-        "tags": [
-          "Presence"
-        ],
-        "summary": "Send heartbeat",
-        "description": "Call every 30 seconds to mark the user as active in a workspace.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/presence": {
-      "get": {
-        "tags": [
-          "Presence"
-        ],
-        "summary": "Get online users",
-        "description": "Returns users seen in the last 60 seconds.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Online users"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/api-keys": {
-      "get": {
-        "tags": [
-          "API Keys"
-        ],
-        "summary": "List API keys",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "API key list"
+            "description": "Watcher list + caller status"
           }
         }
       },
       "post": {
         "tags": [
-          "API Keys"
+          "Watchers"
         ],
-        "summary": "Create API key",
-        "description": "The raw key value is returned only once at creation time.",
+        "summary": "Watch task",
+        "description": "Adds the calling user as a watcher. Idempotent.",
         "parameters": [
           {
             "schema": {
               "type": "string"
             },
             "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  },
-                  "scopes": {
-                    "type": "string"
-                  },
-                  "expires_at": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "name"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "API key created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiKey"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "key": {
-                          "type": "string",
-                          "description": "Returned only once. Store securely."
-                        },
-                        "created_at": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "key",
-                        "created_at"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/api-keys/{keyId}": {
-      "delete": {
-        "tags": [
-          "API Keys"
-        ],
-        "summary": "Revoke API key",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "keyId",
+            "name": "taskId",
             "in": "path"
           }
         ],
         "responses": {
           "200": {
-            "description": "Revoked"
-          },
-          "404": {
-            "description": "API key not found"
+            "description": "Updated watcher list"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Watchers"
+        ],
+        "summary": "Unwatch task",
+        "description": "Removes the calling user from watchers. Idempotent.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated watcher list"
           }
         }
       }
@@ -2153,7 +2195,8 @@
                     "format": "uri"
                   },
                   "events": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                   },
                   "active": {
                     "type": "boolean"
@@ -2236,7 +2279,8 @@
                     "format": "uri"
                   },
                   "events": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                   },
                   "active": {
                     "type": "boolean"
@@ -2322,17 +2366,566 @@
         }
       }
     },
-    "/health": {
-      "get": {
+    "/workspaces/{workspaceId}/logo": {
+      "post": {
         "tags": [
-          "System"
+          "Workspaces"
         ],
-        "summary": "Health check",
-        "description": "Returns ok=true when the API is up.",
-        "security": [],
+        "summary": "Upload workspace logo",
+        "description": "Replaces the workspace logo. Max 2 MB. Owner / admin only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Service is healthy"
+            "description": "Logo saved"
+          },
+          "400": {
+            "description": "Invalid file"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/logos/{workspaceId}/{filename}": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Stream workspace logo",
+        "description": "Public so `<img>` tags can render without auth headers. URL changes when the logo is replaced, so a 1-week immutable cache is safe.",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w.-]+$"
+            },
+            "required": true,
+            "name": "filename",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logo bytes"
+          },
+          "404": {
+            "description": "Logo not found"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/background": {
+      "post": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Upload board background image",
+        "description": "Replaces the board background image. Max 5 MB. Owner / admin only. Set the workspace `background` field directly to clear the image or use a CSS color instead.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Background saved"
+          },
+          "400": {
+            "description": "Invalid file"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/backgrounds/{workspaceId}/{filename}": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Stream board background image",
+        "description": "Public so `<img>` tags can render without auth headers. URL changes when replaced, so a 1-week immutable cache is safe.",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w.-]+$"
+            },
+            "required": true,
+            "name": "filename",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Background bytes"
+          },
+          "404": {
+            "description": "Background not found"
+          }
+        }
+      }
+    },
+    "/workspaces": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "List workspaces",
+        "description": "List all workspaces the authenticated user is a member of.",
+        "responses": {
+          "200": {
+            "description": "Workspace list"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Create workspace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "User session required"
+          }
+        }
+      }
+    },
+    "/workspaces/{id}": {
+      "patch": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Update workspace",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "customFields": {
+                    "type": "array",
+                    "items": {
+                      "nullable": true
+                    }
+                  },
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "color": {
+                          "type": "string",
+                          "maxLength": 32
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    }
+                  },
+                  "codePrefix": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10
+                  },
+                  "logo": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2048
+                  },
+                  "background": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2048
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a workspace member"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Delete workspace",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "Not a workspace member"
+          }
+        }
+      }
+    },
+    "/workspaces/{id}/members": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "List members",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member list"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Add member by email",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "member",
+                      "admin",
+                      "viewer"
+                    ]
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Member added"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "409": {
+            "description": "Already a member"
+          }
+        }
+      }
+    },
+    "/workspaces/{id}/members/{userId}": {
+      "delete": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Remove member",
+        "description": "Owners and admins may remove other members. Any member may remove themselves (leave). The owner cannot be removed without transferring ownership first.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member removed"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Update member role",
+        "description": "Owners may set member/admin/viewer. Admins may also set roles, but cannot promote to or change the owner.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "member",
+                      "admin",
+                      "viewer"
+                    ]
+                  }
+                },
+                "required": [
+                  "role"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role updated"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/workspaces/{id}/transfer-ownership": {
+      "post": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Transfer ownership",
+        "description": "Move the owner role to another existing member. The current owner becomes admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newOwnerId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "newOwnerId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ownership transferred"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Only the owner can transfer ownership"
+          },
+          "404": {
+            "description": "New owner is not a member"
           }
         }
       }
