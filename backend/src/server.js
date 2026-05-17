@@ -109,15 +109,20 @@ app.use(rateLimit({
   message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMITED' },
 }));
 
-// Stricter rate limit for auth endpoints
-app.use('/api/v1/auth', rateLimit({
+// Stricter rate limit for password-handling endpoints. The oauth start
+// route triggers a third-party redirect (not a credential check), and
+// /auth/me / /auth/oauth/providers are read-only, so we don't burn them
+// through this bucket — they fall back to the general limit above.
+const authBruteForceLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: IS_DEV ? 100 : 10,
+  max: IS_DEV ? 100 : 30,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.ip,
   message: { error: 'Too many auth attempts, please try again later.', code: 'RATE_LIMITED' },
-}));
+});
+app.use('/api/v1/auth/login', authBruteForceLimit);
+app.use('/api/v1/auth/register', authBruteForceLimit);
 
 // Stricter rate limit for write-heavy attachment uploads (per IP)
 app.use('/api/v1/tasks/:taskId/attachments', rateLimit({
