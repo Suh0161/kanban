@@ -28,6 +28,13 @@ export function createDb(dbPath = DB_PATH) {
   // Ensure parent directory exists
   mkdirSync(dirname(resolved), { recursive: true });
 
+  // Log where we actually open SQLite so a misconfigured DB_PATH on Fly
+  // (or any container) shows up immediately in `flyctl logs` instead of
+  // silently writing to ephemeral disk and vanishing on every redeploy.
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`[db] opening SQLite at ${resolved}`);
+  }
+
   const db = new Database(resolved);
 
   // Security and durability pragmas

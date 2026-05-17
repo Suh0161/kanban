@@ -12,7 +12,15 @@ import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const UPLOADS_ROOT = resolve(__dirname, '..', '..', '..', 'uploads');
+// In production we want uploads on the persistent volume, not inside the
+// container. Honour an explicit override (`UPLOADS_DIR`) before falling
+// back to the dev-time `backend/uploads/` path. This is what keeps
+// avatars / workspace logos / attachments alive across Fly redeploys.
+const UPLOADS_ROOT = resolve(
+  process.env.UPLOADS_DIR && process.env.UPLOADS_DIR.trim()
+    ? process.env.UPLOADS_DIR.trim()
+    : resolve(__dirname, '..', '..', '..', 'uploads')
+);
 
 function pathFor(key) {
   // Defensive: storage keys must not escape the uploads root

@@ -42,3 +42,12 @@ function pickBackend() {
 
 export const storage = pickBackend();
 export const storageBackend = BACKEND;
+
+if (process.env.NODE_ENV === 'production') {
+  if (BACKEND === 'local') {
+    const where = process.env.UPLOADS_DIR || '<repo>/uploads';
+    console.log(`[storage] local disk at ${where}`);
+  } else {
+    console.log(`[storage] backend=${BACKEND} bucket=${process.env.SUPABASE_STORAGE_BUCKET || 'elevate'}`);
+  }
+}
