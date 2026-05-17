@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import { readFileSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname, join, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { mkdirSync } from 'fs';
 import { DB_PATH } from './config.js';
@@ -14,9 +14,16 @@ function migrate(db, statement) {
 /**
  * Create a new database connection. Use this for testing or
  * when you need a separate database instance.
+ *
+ * Path resolution: an absolute path (e.g. `/data/elevate.db` on Fly's
+ * persistent volume) is used verbatim. A relative path (`../database/jokel.db`
+ * in dev) is resolved against the process working directory. This matters
+ * in production — `path.join(cwd, '/data/elevate.db')` silently writes to
+ * `cwd/data/elevate.db` on some Node versions, which lands inside the
+ * ephemeral container filesystem and gets wiped on every restart.
  */
 export function createDb(dbPath = DB_PATH) {
-  const resolved = join(process.cwd(), dbPath);
+  const resolved = isAbsolute(dbPath) ? dbPath : join(process.cwd(), dbPath);
 
   // Ensure parent directory exists
   mkdirSync(dirname(resolved), { recursive: true });
