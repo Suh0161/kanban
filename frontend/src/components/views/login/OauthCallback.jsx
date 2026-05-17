@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../api/client.js';
 import { Logo } from '../../ui';
+import './css/oauth-callback.css';
 
 const TOKEN_KEY = 'Elevate-token';
 const STORAGE_KEY = 'Elevate-auth';
