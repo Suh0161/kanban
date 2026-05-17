@@ -64,6 +64,8 @@
 
 .composer-tags {
   flex: 1;
+  min-width: 0;
+  max-width: 220px;
   background-color: var(--bg-hover);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
