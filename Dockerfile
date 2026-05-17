@@ -50,6 +50,11 @@ COPY backend/src ./backend/src
 # (../../database/schema.sql when the cwd is /app/backend).
 COPY database/schema.sql ./database/schema.sql
 
+# The /api/docs portal serves the static files in /docs (HTML pages,
+# OpenAPI spec, assets). The route in backend/src/routes/docs.js resolves
+# them relative to backend/, so the layout has to mirror the dev tree.
+COPY docs ./docs
+
 # Volume mount target. Fly mounts a persistent volume here at runtime.
 RUN mkdir -p /data && chown -R app:app /data /app
 

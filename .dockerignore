@@ -22,10 +22,10 @@ database/*.db-wal
 # Backend uploads (user content, persisted on the volume instead)
 backend/uploads/
 
-# Frontend / website / docs aren't part of the API container
+# Frontend / website aren't part of the API container.
+# Docs ARE part of it — the backend serves /api/docs from there.
 frontend/
 website/
-docs/
 
 # Git + editor + OS artefacts
 .git
