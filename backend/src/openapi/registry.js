@@ -36,20 +36,33 @@ registry.registerComponent('securitySchemes', 'apiKeyAuth', {
  */
 export function buildOpenApiDocument() {
   const generator = new OpenApiGeneratorV3(registry.definitions);
+
+  // Server list. The first entry is what the docs portal's Try It panel
+  // hits when you click Send, so it has to match the deployed origin in
+  // production. Drives off PUBLIC_API_URL (set by `fly secrets set`),
+  // falls back to the local dev origin.
+  const publicApiUrl = process.env.PUBLIC_API_URL?.trim();
+  const servers = publicApiUrl
+    ? [
+        { url: `${publicApiUrl.replace(/\/$/, '')}/api/v1`, description: 'Production' },
+        { url: 'http://localhost:3001/api/v1', description: 'Local dev' },
+      ]
+    : [
+        { url: 'http://localhost:3001/api/v1', description: 'Local dev' },
+      ];
+
   return generator.generateDocument({
     openapi: '3.0.3',
     info: {
       title: 'Elevate API',
       version: '1.0.0',
       description:
-        'REST API for Elevate, a dark-themed Kanban and planning app. ' +
+        'REST API for Elevate, a planning workspace for engineering teams. ' +
         'Authenticate via JWT bearer tokens (from /api/v1/auth/login) or API keys ' +
         '(X-API-Key header or ?api_key= query param). Use workspace_id to scope all operations.',
       contact: { name: 'Elevate' },
     },
-    servers: [
-      { url: 'http://localhost:3001/api/v1', description: 'API v1' },
-    ],
+    servers,
     security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
     tags: [
       { name: 'Auth',        description: 'Register, login, and user info' },
