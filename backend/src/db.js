@@ -1,8 +1,7 @@
 import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { dirname, join, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
-import { mkdirSync } from 'fs';
 import { DB_PATH } from './config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,15 +23,25 @@ function migrate(db, statement) {
  */
 export function createDb(dbPath = DB_PATH) {
   const resolved = isAbsolute(dbPath) ? dbPath : join(process.cwd(), dbPath);
+  const parent = dirname(resolved);
 
-  // Ensure parent directory exists
-  mkdirSync(dirname(resolved), { recursive: true });
-
-  // Log where we actually open SQLite so a misconfigured DB_PATH on Fly
-  // (or any container) shows up immediately in `flyctl logs` instead of
-  // silently writing to ephemeral disk and vanishing on every redeploy.
+  // Ensure parent directory exists. In production, refuse to silently
+  // create the directory if it's missing — that's how data-loss bugs
+  // hide. If /data isn't there it means the volume isn't mounted, and
+  // we should surface that loudly instead of writing to an ephemeral
+  // container path that vanishes on every redeploy.
   if (process.env.NODE_ENV === 'production') {
+    if (!existsSync(parent)) {
+      console.error(
+        `[db] FATAL: parent directory ${parent} does not exist. The Fly ` +
+        `volume is probably not mounted. Refusing to write SQLite to an ` +
+        `ephemeral path. Check fly.toml [[mounts]] and the volume status.`
+      );
+      process.exit(1);
+    }
     console.log(`[db] opening SQLite at ${resolved}`);
+  } else {
+    mkdirSync(parent, { recursive: true });
   }
 
   const db = new Database(resolved);

@@ -27,9 +27,13 @@ primary_region = 'sin'
 [http_service]
   internal_port = 3001
   force_https = true
-  auto_stop_machines = 'stop'
+  # Stateful app with a SQLite volume — keep at least one machine warm so
+  # the proxy doesn't try to wake a stopped instance and lose first-hit
+  # latency. Also avoids the corner case where Fly reschedules a stopped
+  # machine in a way that leaves the volume unattached.
+  auto_stop_machines = 'off'
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ['app']
 
   [http_service.concurrency]

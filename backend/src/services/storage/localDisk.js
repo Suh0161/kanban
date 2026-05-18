@@ -33,6 +33,20 @@ function pathFor(key) {
 }
 
 export function localDiskStorage() {
+  // In production with an explicit UPLOADS_DIR, the parent must already
+  // exist (i.e. the Fly volume is mounted). Don't silently create the
+  // directory inside an ephemeral container — that's how avatars and
+  // attachments vanish across redeploys with no warning.
+  const isProd = process.env.NODE_ENV === 'production';
+  const explicit = !!(process.env.UPLOADS_DIR && process.env.UPLOADS_DIR.trim());
+  if (isProd && explicit && !existsSync(dirname(UPLOADS_ROOT))) {
+    console.error(
+      `[storage] FATAL: parent of UPLOADS_DIR (${UPLOADS_ROOT}) does not ` +
+      `exist. The Fly volume is probably not mounted. Refusing to write ` +
+      `uploads to an ephemeral path.`
+    );
+    process.exit(1);
+  }
   mkdirSync(UPLOADS_ROOT, { recursive: true });
 
   return {
