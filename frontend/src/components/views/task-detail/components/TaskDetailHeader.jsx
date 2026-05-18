@@ -1,4 +1,5 @@
 import { ArrowLeft, Trash2 } from 'lucide-react';
+import useDebouncedCommit from '../../../../hooks/useDebouncedCommit.js';
 
 const PRIORITY_DOT = {
   Critical: 'var(--color-red)',
@@ -8,6 +9,14 @@ const PRIORITY_DOT = {
 };
 
 export default function TaskDetailHeader({ task, columnTitle, onBack, onDelete, onUpdateTask, canEdit = true }) {
+  // Local state so every keystroke doesn't fire a PATCH + re-render the
+  // whole board. Commits after 400ms idle or on blur.
+  const { localValue: titleValue, onChange: onTitleChange, onBlur: onTitleBlur } = useDebouncedCommit({
+    value: task.title,
+    onCommit: next => onUpdateTask(task.id, { title: next }),
+    delay: 400,
+  });
+
   return (
     <header className="task-detail-header">
       <div className="task-detail-header-top">
@@ -49,8 +58,9 @@ export default function TaskDetailHeader({ task, columnTitle, onBack, onDelete, 
 
       <input
         className="task-detail-title-input"
-        value={task.title}
-        onChange={e => onUpdateTask(task.id, { title: e.target.value })}
+        value={titleValue}
+        onChange={onTitleChange}
+        onBlur={onTitleBlur}
         placeholder="Untitled task"
         aria-label="Task title"
         disabled={!canEdit}

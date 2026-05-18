@@ -76,7 +76,20 @@ app.use(helmet({
 }));
 
 // CORS: explicit allowlist. Reject everything not in FRONTEND_URLS in prod.
+//
+// We also accept the API's own public origin (PUBLIC_API_URL). The docs
+// portal at /api/docs is hosted by this same backend; when a developer
+// hits "Try it" the browser sends `Origin: <api-host>` because XHR/fetch
+// always sends one even for same-origin requests. Without this exception
+// the docs panel would 403 every Try-It call.
 const allowedOrigins = new Set(FRONTEND_URLS);
+const apiPublicOrigin = (() => {
+  const raw = process.env.PUBLIC_API_URL?.trim();
+  if (!raw) return null;
+  try { return new URL(raw).origin; } catch { return null; }
+})();
+if (apiPublicOrigin) allowedOrigins.add(apiPublicOrigin);
+
 app.use(cors({
   origin(origin, cb) {
     // Same-origin / curl / server-to-server have no Origin header.

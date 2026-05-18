@@ -8,12 +8,34 @@ import Select from '../../../ui/Select.jsx';
 import { Avatar } from '../../../ui';
 import { useAuth } from '../../../../hooks/useAuth.js';
 import { formatRelativeTime, formatAbsoluteTime } from '../../../../utils/time.js';
+import useDebouncedCommit from '../../../../hooks/useDebouncedCommit.js';
 
 // Configure marked for safe rendering
 marked.setOptions({
   breaks: true,
   gfm: true,
 });
+
+// Debounced text/number input for custom fields. Each field gets its own
+// local state so typing in one field doesn't re-render siblings.
+function CustomFieldInput({ type = 'text', value, onCommit, disabled }) {
+  const { localValue, onChange, onBlur } = useDebouncedCommit({
+    value: value || '',
+    onCommit,
+    delay: 400,
+  });
+  return (
+    <input
+      type={type}
+      className="form-input"
+      value={localValue}
+      onChange={onChange}
+      onBlur={onBlur}
+      disabled={disabled}
+      readOnly={disabled}
+    />
+  );
+}
 
 export default function TaskDetailMain({
   task,
@@ -43,6 +65,19 @@ export default function TaskDetailMain({
   const descRef = useRef(null);
   const { user: currentUser } = useAuth();
 
+  // Debounced description — local state while typing, commits 500ms after
+  // the user pauses or immediately on blur. Prevents a PATCH per keystroke.
+  const {
+    localValue: descValue,
+    onChange: onDescChange,
+    onBlur: onDescBlur,
+    setLocalValue: setDescValue,
+  } = useDebouncedCommit({
+    value: task.description || '',
+    onCommit: next => onUpdateDescription(task.id, next),
+    delay: 500,
+  });
+
   const descriptionHtml = useMemo(() => {
     if (!task.description) return '';
     return marked.parse(task.description);
@@ -52,9 +87,10 @@ export default function TaskDetailMain({
     const ta = descRef.current;
     if (!ta) return;
     const { selectionStart, selectionEnd } = ta;
-    const text = task.description || '';
+    const text = descValue;
     const selected = text.slice(selectionStart, selectionEnd);
     const newText = text.slice(0, selectionStart) + prefix + selected + suffix + text.slice(selectionEnd);
+    setDescValue(newText);
     onUpdateDescription(task.id, newText);
     setTimeout(() => {
       ta.focus();
@@ -66,9 +102,10 @@ export default function TaskDetailMain({
     const ta = descRef.current;
     if (!ta) return;
     const { selectionStart, selectionEnd } = ta;
-    const text = task.description || '';
+    const text = descValue;
     const lineStart = text.lastIndexOf('\n', selectionStart - 1) + 1;
     const newText = text.slice(0, lineStart) + prefix + text.slice(lineStart);
+    setDescValue(newText);
     onUpdateDescription(task.id, newText);
     setTimeout(() => {
       ta.focus();
@@ -144,12 +181,17 @@ export default function TaskDetailMain({
               ref={descRef}
               className="task-detail-desc-input"
               placeholder="Add a more detailed description..."
-              value={task.description || ''}
+              value={descValue}
               autoFocus={editingDesc}
               onChange={(e) => {
                 e.target.style.height = 'auto';
                 e.target.style.height = e.target.scrollHeight + 'px';
-                onUpdateDescription(task.id, e.target.value);
+                onDescChange(e);
+              }}
+              onBlur={(e) => {
+                onDescBlur();
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
               }}
               onFocus={(e) => {
                 e.target.style.height = 'auto';
@@ -178,27 +220,23 @@ export default function TaskDetailMain({
               <div key={field.name} className="custom-field">
                 <label>{field.name}</label>
                 {field.type === 'text' && (
-                  <input
+                  <CustomFieldInput
                     type="text"
-                    className="form-input"
                     value={task.customFields?.[field.name] || ''}
-                    onChange={e => onUpdateTask(task.id, {
-                      customFields: { ...task.customFields, [field.name]: e.target.value }
+                    onCommit={next => onUpdateTask(task.id, {
+                      customFields: { ...task.customFields, [field.name]: next }
                     })}
                     disabled={!canEdit}
-                    readOnly={!canEdit}
                   />
                 )}
                 {field.type === 'number' && (
-                  <input
+                  <CustomFieldInput
                     type="number"
-                    className="form-input"
                     value={task.customFields?.[field.name] || ''}
-                    onChange={e => onUpdateTask(task.id, {
-                      customFields: { ...task.customFields, [field.name]: e.target.value }
+                    onCommit={next => onUpdateTask(task.id, {
+                      customFields: { ...task.customFields, [field.name]: next }
                     })}
                     disabled={!canEdit}
-                    readOnly={!canEdit}
                   />
                 )}
                 {field.type === 'date' && (

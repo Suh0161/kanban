@@ -1,6 +1,7 @@
 import Select from '../../../ui/Select.jsx';
 import { PRIORITIES } from '../../../../constants.js';
 import WatcherControl from './WatcherControl.jsx';
+import useDebouncedCommit from '../../../../hooks/useDebouncedCommit.js';
 
 export default function TaskDetailSidebar({
   task,
@@ -21,6 +22,16 @@ export default function TaskDetailSidebar({
 
   const tags = task.tags || [];
   const tagValue = tags.join(', ');
+
+  // Debounced tag input — tags are comma-separated free text. Committing
+  // on every keystroke fired a PATCH per character.
+  const { localValue: localTagValue, onChange: onTagChange, onBlur: onTagBlur } = useDebouncedCommit({
+    value: tagValue,
+    onCommit: next => onUpdateTask(task.id, {
+      tags: next.split(',').map(t => t.trim()).filter(Boolean),
+    }),
+    delay: 400,
+  });
 
   // Look up the human-readable values used for read-only viewers below.
   const statusLabel = currentColumnId ? columns[currentColumnId]?.title : '\u2014';
@@ -96,10 +107,9 @@ export default function TaskDetailSidebar({
         <span className="property-label">Tags</span>
         <input
           className="form-input"
-          value={tagValue}
-          onChange={e => onUpdateTask(task.id, {
-            tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
-          })}
+          value={localTagValue}
+          onChange={onTagChange}
+          onBlur={onTagBlur}
           placeholder="Bug, Exploit"
           disabled={!canEdit}
           readOnly={!canEdit}

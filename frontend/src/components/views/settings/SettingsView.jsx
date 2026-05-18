@@ -12,7 +12,28 @@ import { useAuth } from '../../../hooks/useAuth.js';
 import { can } from '../../../hooks/useWorkspaces.js';
 import { apiUpload } from '../../../api/client.js';
 import { parseServerTime } from '../../../utils/time.js';
+import useDebouncedCommit from '../../../hooks/useDebouncedCommit.js';
 import './css/settings.css';
+
+// Isolated label-name input so each row has its own local state.
+// Without this, every keystroke called onUpdateLabels → apiPatch and
+// re-rendered the whole settings tree, dropping characters.
+function LabelNameInput({ value, onCommit }) {
+  const { localValue, onChange, onBlur } = useDebouncedCommit({
+    value: value || '',
+    onCommit,
+    delay: 400,
+  });
+  return (
+    <input
+      className="attr-name-input"
+      value={localValue}
+      placeholder="Label name..."
+      onChange={onChange}
+      onBlur={onBlur}
+    />
+  );
+}
 
 const LABEL_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e',
@@ -561,11 +582,9 @@ export default function SettingsView({
                               />
                             ))}
                           </div>
-                          <input
-                            className="attr-name-input"
+                          <LabelNameInput
                             value={label.name}
-                            placeholder="Label name..."
-                            onChange={e => onUpdateLabels?.(labels.map(l => l.id === label.id ? { ...l, name: e.target.value } : l))}
+                            onCommit={next => onUpdateLabels?.(labels.map(l => l.id === label.id ? { ...l, name: next } : l))}
                           />
                           <button
                             type="button"
