@@ -87,7 +87,7 @@ backend/src/
 ├── server.js                   # Middleware chain, route mounting, OpenAPI warm
 │
 ├── middleware/
-│   ├── apikey.js               # X-API-Key / ?api_key= auth
+│   ├── apikey.js               # X-API-Key auth
 │   ├── audit.js                # Audit log for 401/403/429
 │   ├── auth.js                 # JWT verification, requireAuth
 │   ├── error.js                # AppError + global handler
@@ -191,10 +191,9 @@ Authorization: Bearer <jwt>
 X-API-Key: <key>
 ```
 
-Or as a query parameter: `?api_key=<key>`.
-
 - Stored as SHA-256 hashes; raw key is shown **once** at creation.
 - Scoped (`read`, `write`) and optionally expiring (ISO timestamp).
+- Only accepted in the `X-API-Key` header; query-string keys are rejected.
 - The frontend manages key rotation in workspace Settings → Integrations.
 
 ### OAuth 2.0 (Google, GitHub)

@@ -1,0 +1,134 @@
+.tooltip-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.tooltip-bubble {
+  position: fixed;
+  z-index: 1000;
+  max-width: 220px;
+  padding: 7px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: break-word;
+  box-shadow: var(--shadow-dropdown);
+  pointer-events: none;
+  animation: tooltip-in 0.12s ease;
+}
+
+.tooltip-bubble::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-right: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-card-hover);
+}
+
+.tooltip-bubble-top::after {
+  left: var(--tooltip-arrow-x, 50%);
+  bottom: -5px;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.tooltip-bubble-bottom::after {
+  left: var(--tooltip-arrow-x, 50%);
+  top: -5px;
+  transform: translateX(-50%) rotate(225deg);
+}
+
+.tooltip-bubble-right::after {
+  left: -5px;
+  top: var(--tooltip-arrow-y, 50%);
+  transform: translateY(-50%) rotate(135deg);
+}
+
+.tooltip-bubble-left::after {
+  right: -5px;
+  top: var(--tooltip-arrow-y, 50%);
+  transform: translateY(-50%) rotate(315deg);
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.card-label-strips .tooltip-trigger {
+  flex: 1;
+  min-width: 28px;
+  max-width: 56px;
+}
+
+.card-label-strips .card-label-strip {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.card-title-row > .tooltip-trigger {
+  flex-shrink: 0;
+}
+
+.sidebar-nav .tooltip-trigger,
+.board-column.is-collapsed > .tooltip-trigger {
+  width: 100%;
+}
+
+.sidebar-toggle-tooltip {
+  position: absolute;
+  right: 12px;
+  top: 18px;
+}
+
+.sidebar-toggle-tooltip .sidebar-toggle {
+  position: static;
+}
+
+.sidebar.is-collapsed .sidebar-toggle-tooltip {
+  position: static;
+}
+
+.checklist-delete-tooltip {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.attachment-delete-tooltip {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.attachment-delete-tooltip .attachment-delete-btn {
+  position: static;
+}
+
+.task-detail-watch-pile .tooltip-trigger {
+  margin-left: -8px;
+}
+
+.task-detail-watch-pile .tooltip-trigger:first-child {
+  margin-left: 0;
+}
+
+.task-detail-watch-pile .tooltip-trigger .task-detail-watch-avatar {
+  margin-left: 0;
+}
+
+.checklist-add-item .tooltip-trigger {
+  flex-shrink: 0;
+}

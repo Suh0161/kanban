@@ -1,4 +1,5 @@
 import { UsersRound } from 'lucide-react';
+import { Avatar } from '../../../ui';
 
 export default function TeamWorkload({ members, selectedMemberId, onSelectMember }) {
   return (
@@ -27,7 +28,7 @@ export default function TeamWorkload({ members, selectedMemberId, onSelectMember
                 className="team-member-card"
                 onClick={() => onSelectMember(member.id)}
               >
-                <img src={member.avatar} alt="" className="avatar" />
+                <Avatar key={member.avatar} src={member.avatar} name={member.name} alt="" className="avatar" />
                 <div className="team-member-info">
                   <strong>{member.name}</strong>
                   <span>{member.email || member.role || ''}</span>

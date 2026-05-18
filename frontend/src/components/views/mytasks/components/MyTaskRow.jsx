@@ -1,5 +1,6 @@
 import { CheckCircle2, MessageSquare, Paperclip } from 'lucide-react';
 import Select from '../../../ui/Select.jsx';
+import { Avatar } from '../../../ui';
 import { formatDate, isOverdue } from '../../../../utils/helpers.js';
 
 export default function MyTaskRow({ task, columns, columnOrder, doneColumnId, onSelectTask, onMoveTask, onUpdateTask, canEdit = true }) {
@@ -66,7 +67,7 @@ export default function MyTaskRow({ task, columns, columnOrder, doneColumnId, on
       {/* Actions */}
       <div className="mytask-actions">
         {task.assigneeImg
-          ? <img src={task.assigneeImg} alt={task.assigneeName || ''} className="avatar mytask-avatar" title={task.assigneeName} />
+          ? <Avatar key={task.assigneeImg} src={task.assigneeImg} name={task.assigneeName} alt={task.assigneeName || ''} className="avatar mytask-avatar" title={task.assigneeName} />
           : <span className="workspace-avatar-empty mytask-avatar" />
         }
         {task.dueDate && (

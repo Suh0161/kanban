@@ -46,8 +46,14 @@ export default function useKeyboardShortcuts({
         onCreateTask?.();
       }
 
-      // / or Ctrl+K — Focus search
-      if ((key === '/' || (ctrl && key === 'k')) && activeView === 'boards') {
+      // Ctrl+K — Command palette search (workspace-wide)
+      if (ctrl && key === 'k') {
+        e.preventDefault();
+        onSearchFocus?.();
+      }
+
+      // / — Quick search while on the board canvas
+      if (key === '/' && !ctrl && activeView === 'boards') {
         e.preventDefault();
         onSearchFocus?.();
       }

@@ -1,4 +1,5 @@
 import { Calendar, MessageSquare, Paperclip } from 'lucide-react';
+import { Avatar } from '../../ui';
 
 function priorityClass(priority) {
   return `workspace-priority ${priority.toLowerCase()}`;
@@ -30,7 +31,10 @@ export default function ViewTaskRow({ task, columnTitle, onSelectTask }) {
         </span>
       </div>
       <div className="workspace-task-owner">
-        {task.assigneeImg ? <img src={task.assigneeImg} alt="" className="avatar" /> : <span className="workspace-avatar-empty" />}
+        {task.assigneeImg
+          ? <Avatar key={task.assigneeImg} src={task.assigneeImg} name={task.assigneeName} alt="" className="avatar" />
+          : <span className="workspace-avatar-empty" />
+        }
         {task.dueDate && (
           <span>
             <Calendar size={13} />

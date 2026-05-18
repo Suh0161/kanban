@@ -117,19 +117,12 @@
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span></code></pre>
     </div>
 
-    <h2 id="auth-query">Query parameter fallback</h2>
-    <p>A few environments make custom headers awkward — server-sent event clients, certain webhook test tools, embed iframes. For those cases you can pass the key as a query parameter instead:</p>
-    <div class="code">
-      <div class="code-head">
-        <div class="code-head-left"><span class="method method-get">GET</span><span>/board/{workspaceId}?api_key=…</span></div>
-        <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
-      </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-str">"http://localhost:3001/api/v1/board/trust-and-safety?api_key=Elevate_abc123def456"</span></code></pre>
-    </div>
+    <h2 id="auth-query">Header-only API keys</h2>
+    <p>API keys are only accepted in the <code>X-API-Key</code> header. The API rejects <code>api_key</code> query parameters so credentials do not end up in access logs, browser history, shared screenshots, or reverse proxy logs.</p>
 
     <div class="callout callout-warn">
       <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <div class="callout-body"><strong>Stick with the header when you can.</strong>Query parameters end up in server access logs, reverse proxy logs, browser history, and shared screenshots. The <code>X-API-Key</code> header keeps your credential out of those places. Treat the query-param form as an escape hatch, not a default.</div>
+      <div class="callout-body"><strong>Do not put keys in URLs.</strong> If a client cannot send custom headers, proxy the request through a component that can add <code>X-API-Key</code> server-side.</div>
     </div>
 
     <h2 id="auth-manage">Managing API keys</h2>

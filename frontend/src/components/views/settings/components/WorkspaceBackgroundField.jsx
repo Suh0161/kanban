@@ -22,6 +22,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Image as ImageIcon, Upload, X } from 'lucide-react';
 import { resolveServerUrl } from '../../../../api/client.js';
+import { ALLOWED_IMAGE_ACCEPT } from '../../../../utils/fileTypes.js';
 
 const PRESET_COLORS = [
   { value: '',        label: 'Default' },
@@ -150,7 +151,7 @@ export default function WorkspaceBackgroundField({
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/png,image/jpeg,image/gif,image/webp"
+                accept={ALLOWED_IMAGE_ACCEPT}
                 className="settings-logo-input"
                 onChange={handleFile}
               />

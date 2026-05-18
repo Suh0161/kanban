@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { AlertTriangle, Users, Flame } from 'lucide-react';
 import { isOverdue } from '../../utils/helpers.js';
+import { Tooltip } from '../ui';
 
 function getRiskScore(task) {
   const priorityWeight = { Critical: 4, High: 3, Medium: 2, Low: 1 };
@@ -52,14 +53,14 @@ export default function BoardStatsBar({ tasks, onSelectTask }) {
         <Flame size={12} />
         <span>Hot</span>
         {stats.hot.map(task => (
-          <span
-            key={task.id}
-            className="stat-hot"
-            onClick={() => onSelectTask(task)}
-            title={task.title}
-          >
-            {task.code}
-          </span>
+          <Tooltip key={task.id} content={task.title}>
+            <span
+              className="stat-hot"
+              onClick={() => onSelectTask(task)}
+            >
+              {task.code}
+            </span>
+          </Tooltip>
         ))}
       </div>
     </div>

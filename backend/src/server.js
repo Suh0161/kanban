@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import net from 'node:net';
 
 import { PORT, FRONTEND_URLS, IS_DEV, IS_PROD, JWT_SECRET } from './config.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
@@ -137,16 +138,16 @@ app.use((req, _res, next) => {
 const POLL_PATHS = new Set([
   '/api/health',
   '/api/v1/health',
-  '/api/v1/auth/me',
   '/api/v1/auth/oauth/providers',
 ]);
 function isPollingRequest(req) {
   if (POLL_PATHS.has(req.path)) return true;
+  if (req.path === '/api/v1/auth/me') return Boolean(req.userId);
   // Presence is the SPA's heartbeat. Skip GET/POST on heartbeat + GET on
   // /presence. These are tiny, authenticated, and called every ~45s/tab.
   if (req.path.startsWith('/api/v1/workspaces/') &&
       (req.path.endsWith('/presence') || req.path.endsWith('/presence/heartbeat'))) {
-    return true;
+    return Boolean(req.userId);
   }
   return false;
 }
@@ -156,8 +157,37 @@ function isPollingRequest(req) {
 // fan out into 30-50 reads per page on a busy dashboard. Authenticated
 // users get their own per-user bucket; anonymous traffic falls back to
 // IP. Polling endpoints (presence, /auth/me, health) are skipped.
+function expandIpv6(ip) {
+  const normalized = ip.toLowerCase();
+  if (normalized.startsWith('::ffff:')) {
+    const mapped = normalized.slice('::ffff:'.length);
+    if (net.isIP(mapped) === 4) return mapped;
+  }
+
+  const [left = '', right = ''] = normalized.split('::');
+  const leftParts = left ? left.split(':') : [];
+  const rightParts = right ? right.split(':') : [];
+  const missing = Math.max(0, 8 - leftParts.length - rightParts.length);
+  return [...leftParts, ...Array(missing).fill('0'), ...rightParts]
+    .map((part) => part.padStart(4, '0'));
+}
+
+function clientIpKey(req) {
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  const family = net.isIP(ip);
+  if (family === 4) return ip;
+  if (family === 6) {
+    const expanded = expandIpv6(ip);
+    if (typeof expanded === 'string') return expanded;
+    // Group IPv6 privacy addresses by /64 so rotating interface IDs do not
+    // bypass anonymous rate limits.
+    return `${expanded.slice(0, 4).join(':')}::/64`;
+  }
+  return ip;
+}
+
 function userOrIpKey(req) {
-  return req.userId ? `u:${req.userId}` : `ip:${req.ip}`;
+  return req.userId ? `u:${req.userId}` : `ip:${clientIpKey(req)}`;
 }
 
 app.use(rateLimit({
@@ -185,7 +215,7 @@ const authBruteForceLimit = rateLimit({
   max: IS_DEV ? 100 : 30,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
+  keyGenerator: (req) => `ip:${clientIpKey(req)}`,
   message: { error: 'Too many auth attempts, please try again later.', code: 'RATE_LIMITED' },
 });
 app.use('/api/v1/auth/login', authBruteForceLimit);

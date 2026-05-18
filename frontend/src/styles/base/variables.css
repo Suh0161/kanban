@@ -6,6 +6,8 @@
   --bg-sidebar: #0a0a0a;
   --bg-header: #0a0a0a;
   --bg-canvas: #0a0a0a;
+  /* Full-bleed marketing surfaces (pure black so layered black shadows read). */
+  --bg-plugins: var(--bg-app);
   --bg-column: transparent;
   --bg-card: #121212;
   --bg-card-hover: #1a1a1a;
@@ -40,6 +42,21 @@
   --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.5);
   --shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.7);
+  /*
+   Wide float for charcoal panels over near-black canvases — standard black shadows
+   at small blur disappear on rgb(10,10,10); layered blurs deepen the halo under a shell.
+ */
+  --shadow-float-shell: 0 28px 56px rgb(0 0 0 / 0.55),
+    0 56px 120px rgb(0 0 0 / 0.45);
+  /*
+   Integrations tray: extra depth vs --shadow-float-shell (tighter core + wide blur halos).
+   Use on #000 or near-black only; on charcoal adjacent to --bg-sidebar it reads weak.
+ */
+  --shadow-integrations-tray: 0 2px 4px rgb(0 0 0 / 0.5),
+    0 8px 24px rgb(0 0 0 / 0.55),
+    0 24px 64px rgb(0 0 0 / 0.62),
+    0 48px 120px rgb(0 0 0 / 0.5),
+    0 80px 200px rgb(0 0 0 / 0.38);
   
   color-scheme: dark;
 }

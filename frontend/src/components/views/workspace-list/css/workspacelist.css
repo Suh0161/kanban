@@ -8,7 +8,7 @@
 }
 
 .wl-nav {
-  height: 56px;
+  min-height: 58px;
   padding: 0 24px;
   display: flex;
   align-items: center;
@@ -42,6 +42,498 @@
   gap: 8px;
 }
 
+.wl-nav-actions .tooltip-trigger {
+  display: inline-flex;
+}
+
+.wl-nav-icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.wl-bell-wrap svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2;
+}
+
+.wl-nav-icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--accent-blue);
+}
+
+.wl-nav-icon-btn.is-open {
+  background: var(--bg-hover);
+  color: var(--accent-blue);
+}
+
+.wl-notifications {
+  position: relative;
+  display: inline-flex;
+}
+
+.wl-bell-wrap {
+  position: relative;
+}
+
+.wl-bell-badge {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  background: var(--accent-blue);
+  color: var(--bg-app);
+  border: 2px solid var(--bg-header);
+  pointer-events: none;
+}
+
+@keyframes wl-spin {
+  to { transform: rotate(360deg); }
+}
+
+.wl-spin {
+  animation: wl-spin 0.65s linear infinite;
+}
+
+.wl-notification-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 100;
+  width: min(360px, calc(100vw - 32px));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-dropdown);
+  overflow: hidden;
+  animation: wl-pop-in 0.14s ease-out;
+}
+
+.wl-notification-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.wl-notification-head-copy strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.wl-notification-head-copy span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-tertiary);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.wl-notification-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.wl-notification-markall {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+
+.wl-notification-markall:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.wl-notification-markall svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.wl-notification-refresh {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.wl-notification-refresh:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.wl-notification-refresh:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wl-notification-list {
+  max-height: 360px;
+  overflow: auto;
+  padding: 6px;
+}
+
+.wl-notification-state {
+  padding: 28px 16px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+.wl-notification-state.is-error {
+  color: var(--color-red);
+}
+
+.wl-invite-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  margin: 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-blue) 6%, var(--bg-card));
+}
+
+.wl-invite-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
+  color: var(--accent-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wl-invite-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wl-invite-copy strong {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.wl-invite-copy span {
+  color: var(--text-secondary);
+  font-size: 0.73rem;
+  line-height: 1.35;
+}
+
+.wl-invite-actions {
+  grid-column: 2;
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.wl-invite-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.wl-invite-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.wl-invite-btn.is-primary {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--bg-app);
+}
+
+.wl-invite-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wl-notification-item {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+  text-align: left;
+  transition: background-color 0.12s;
+}
+
+.wl-notification-item:hover {
+  background: var(--bg-hover);
+}
+
+.wl-notification-main {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 6px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wl-notification-main:focus-visible,
+.wl-notification-read-action:focus-visible {
+  outline: 1px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.wl-notification-read-action {
+  width: 28px;
+  height: 28px;
+  margin: 7px 4px 0 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none;
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s,
+    opacity 0.12s,
+    transform 0.12s;
+}
+
+.wl-notification-item:hover .wl-notification-read-action,
+.wl-notification-item:focus-within .wl-notification-read-action {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.wl-notification-read-action:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.wl-notification-read-action.is-done {
+  background: transparent;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.wl-notification-item.is-read:hover .wl-notification-read-action.is-done,
+.wl-notification-item.is-read:focus-within .wl-notification-read-action.is-done {
+  opacity: 0.6;
+}
+
+.wl-notification-item.is-unread .wl-notification-title {
+  font-weight: 600;
+}
+
+.wl-notification-item.is-read {
+  opacity: 0.88;
+}
+
+.wl-notification-item.is-read .wl-notification-ws {
+  color: var(--text-tertiary);
+}
+
+.wl-notification-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.wl-notification-avatar-img {
+  display: block;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.wl-notification-type-icon {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  width: 19px;
+  height: 19px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.wl-notification-body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 1px;
+}
+
+.wl-notification-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wl-notification-unread-dot {
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  background: var(--accent-blue);
+}
+
+.wl-notification-title {
+  margin: 0;
+  flex: 1;
+  font-size: 0.813rem;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.42;
+  color: var(--text-primary);
+}
+
+.wl-notification-meta {
+  font-size: 0.71rem;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wl-notification-ws {
+  font-weight: 500;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 55%;
+}
+
+.wl-notification-sep {
+  flex-shrink: 0;
+  opacity: 0.55;
+}
+
+.wl-notification-meta time {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-notification-updating {
+  padding: 10px 12px 12px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.wl-nav-actions .user-dropdown {
+  width: auto;
+}
+
+.wl-nav-actions .user-dropdown-trigger {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  overflow: hidden;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.wl-nav-actions .user-dropdown-trigger:hover,
+.wl-nav-actions .user-dropdown-trigger[aria-expanded="true"] {
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.wl-nav-actions .user-dropdown-trigger:hover .user-dropdown-avatar {
+  box-shadow: none;
+}
+
+.wl-nav-actions .user-dropdown-avatar {
+  border-radius: var(--radius-full);
+}
+
 .wl-nav-btn {
   width: 32px;
   height: 32px;
@@ -63,26 +555,27 @@
 
 .wl-main {
   flex: 1;
-  max-width: 1000px;
+  max-width: 1120px;
   width: 100%;
   margin: 0 auto;
-  padding: 48px 24px;
+  padding: 36px 28px 64px;
 }
 
 .wl-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 18px;
   gap: 24px;
   flex-wrap: wrap;
 }
 
 .wl-title {
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 8px;
+  letter-spacing: -0.02em;
 }
 
 .wl-subtitle {
@@ -90,14 +583,43 @@
   color: var(--text-secondary);
 }
 
+.wl-header-create {
+  height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--text-primary);
+  color: var(--bg-app);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.15s;
+}
+
+.wl-header-create:hover {
+  background: var(--accent-color-hover);
+  transform: translateY(-1px);
+}
+
+.wl-toolbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
 .wl-search {
   position: relative;
-  width: 240px;
+  width: min(420px, 100%);
 }
 
 .wl-search input {
   width: 100%;
-  padding: 8px 12px 8px 32px;
+  height: 36px;
+  padding: 0 34px 0 36px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: var(--bg-card);
@@ -119,17 +641,52 @@
 
 .wl-search-icon {
   position: absolute;
-  left: 10px;
+  left: 13px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-tertiary);
   pointer-events: none;
 }
 
+.wl-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.wl-search-clear:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.wl-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: var(--text-tertiary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .wl-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 268px));
+  justify-content: start;
+  gap: 14px;
 }
 
 .wl-card {
@@ -137,39 +694,78 @@
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 0;
   text-decoration: none;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  transition: all 0.2s ease;
+  gap: 0;
+  min-height: 164px;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .wl-card:hover {
   border-color: var(--border-strong);
   background: var(--bg-card-hover);
+  transform: translateY(-2px);
 }
 
 .wl-card-top {
+  position: relative;
+  display: block;
+  padding: 0;
+}
+
+.wl-card-identity {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+}
+
+.wl-card-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 14px 9px;
+}
+
+.wl-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.wl-card-meta-icon {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
 }
 
 .wl-card-avatar {
   position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
+  width: 100%;
+  height: 82px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 2rem;
+  letter-spacing: -0.03em;
   color: var(--text-primary);
-  background: var(--border-subtle);
+  background: radial-gradient(circle at center, var(--bg-card-hover), var(--bg-card));
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: none;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .wl-card-avatar-img {
@@ -178,7 +774,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   z-index: 1;
+  transition: transform 0.25s ease;
+}
+
+.wl-card:hover .wl-card-avatar-img {
+  transform: scale(1.04);
 }
 
 /* Initials live underneath the image; if the logo loads they're hidden,
@@ -208,43 +810,46 @@
 .wl-card-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  min-height: 0;
+  padding: 0 18px 12px;
+}
+
+.wl-card-body:empty {
+  display: none;
 }
 
 .wl-card-name {
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.98rem;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wl-card-desc {
   font-size: 0.78rem;
   color: var(--text-secondary);
-  margin: 2px 0 0;
-  line-height: 1.4;
+  margin: 0;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.wl-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
 .wl-card-footer {
   margin-top: auto;
-  padding-top: 16px;
+  padding: 10px 14px 12px;
   border-top: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 500;
   color: var(--text-secondary);
   transition: color 0.2s;
@@ -260,59 +865,39 @@
 
 .wl-card:hover .wl-card-footer svg {
   color: var(--text-primary);
-}
-
-.wl-create {
-  background: transparent;
-  border: 1px dashed var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  cursor: pointer;
-  min-height: 180px;
-  transition: all 0.2s ease;
-}
-
-.wl-create:hover {
-  background: var(--bg-hover);
-  border-style: solid;
-  border-color: var(--border-strong);
-}
-
-.wl-create-plus {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-}
-
-.wl-create:hover .wl-create-plus {
-  color: var(--text-primary);
-  border-color: var(--border-strong);
-}
-
-.wl-create-label {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.wl-create-hint {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  transform: translateX(2px);
 }
 
 .wl-create-form-card {
   border-color: var(--border-focus);
+  padding: 14px;
+}
+
+.wl-empty {
+  min-height: 160px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary);
+}
+
+.wl-empty button {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.wl-empty button:hover {
+  background: var(--bg-hover);
 }
 
 .wl-form {
@@ -455,19 +1040,21 @@
 /* ── Three-dot card menu ─────────────────────────────────────────────────── */
 
 .wl-card-menu-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  background: transparent;
-  border: 1px solid transparent;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   color: var(--text-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  /* Hide until the user hovers the card or opens the menu, so it stays
-     clean on a list of many workspaces. */
-  opacity: 0;
+  opacity: 0.86;
   transition: opacity 0.15s, color 0.12s, background-color 0.12s, border-color 0.12s;
 }
 

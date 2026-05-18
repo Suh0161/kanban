@@ -153,6 +153,7 @@ export function createDb(dbPath = DB_PATH) {
     const tableInfo = db.prepare("PRAGMA table_info('users')").all();
     const pwCol = tableInfo.find((c) => c.name === 'password_hash');
     if (pwCol && pwCol.notnull === 1) {
+      db.pragma('foreign_keys = OFF');
       db.exec('BEGIN');
       try {
         db.exec(`
@@ -171,9 +172,15 @@ export function createDb(dbPath = DB_PATH) {
           ALTER TABLE users__new RENAME TO users;
         `);
         db.exec('COMMIT');
+        const violations = db.prepare('PRAGMA foreign_key_check').all();
+        if (violations.length > 0) {
+          throw new Error(`foreign_key_check failed after users rebuild (${violations.length} violations)`);
+        }
       } catch (err) {
-        db.exec('ROLLBACK');
+        if (db.inTransaction) db.exec('ROLLBACK');
         throw err;
+      } finally {
+        db.pragma('foreign_keys = ON');
       }
     }
   } catch (err) {
@@ -192,6 +199,30 @@ export function createDb(dbPath = DB_PATH) {
     db,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_one_owner
        ON workspace_members(workspace_id) WHERE role = 'owner'`
+  );
+
+  // Workspace invites: pending membership requests accepted/rejected in-app.
+  migrate(db, `
+    CREATE TABLE IF NOT EXISTS workspace_invites (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      invitee_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      invited_by_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member', 'viewer')),
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'cancelled')),
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      responded_at TEXT
+    )
+  `);
+  migrate(
+    db,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_invites_pending
+       ON workspace_invites(workspace_id, invitee_user_id) WHERE status = 'pending'`
+  );
+  migrate(
+    db,
+    `CREATE INDEX IF NOT EXISTS idx_workspace_invites_invitee_status
+       ON workspace_invites(invitee_user_id, status, created_at)`
   );
 
   // Normalize legacy timestamp rows. Older inserts used SQLite's
@@ -215,6 +246,7 @@ export function createDb(dbPath = DB_PATH) {
     ['checklists', 'created_at'],
     ['checklist_items', 'created_at'],
     ['activity_log', 'created_at'],
+    ['workspace_invites', 'created_at'], ['workspace_invites', 'responded_at'],
     ['api_keys', 'created_at'], ['api_keys', 'last_used_at'], ['api_keys', 'expires_at'],
     ['webhooks', 'created_at'], ['webhooks', 'updated_at'],
   ]) {

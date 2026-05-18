@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, Trash2, Crown, User, Lock, LogOut, Shield, Eye } from 'lucide-react';
+import { UserPlus, Trash2, Crown, User, Lock, LogOut, Shield, Eye, Clock, X } from 'lucide-react';
 import { apiGet, apiPost, apiDelete, apiPatch, resolveServerUrl } from '../../../../api/client.js';
 import Select from '../../../ui/Select.jsx';
 import { Avatar } from '../../../ui';
@@ -11,8 +11,16 @@ const ROLE_OPTIONS = [
   { value: 'viewer', label: 'Viewer' },
 ];
 
+const ROLE_LABEL = {
+  owner: 'Owner',
+  admin: 'Admin',
+  member: 'Member',
+  viewer: 'Viewer',
+};
+
 export default function SettingsMembers({ workspaceId, currentUserId, myRole = 'member' }) {
   const [members, setMembers] = useState([]);
+  const [pendingInvites, setPendingInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -21,6 +29,7 @@ export default function SettingsMembers({ workspaceId, currentUserId, myRole = '
   const [inviteError, setInviteError] = useState(null);
   const [inviting, setInviting] = useState(false);
   const [removing, setRemoving] = useState(null);
+  const [cancellingInvite, setCancellingInvite] = useState(null);
   const [actionError, setActionError] = useState(null);
 
   const isOwnerRole = myRole === 'owner';
@@ -32,12 +41,20 @@ export default function SettingsMembers({ workspaceId, currentUserId, myRole = '
     async function load() {
       if (!workspaceId) return;
       try {
-        const data = await apiGet(`/workspaces/${workspaceId}/members`);
+        const [data, inviteData] = await Promise.all([
+          apiGet(`/workspaces/${workspaceId}/members`),
+          canManage ? apiGet(`/workspaces/${workspaceId}/invites`) : Promise.resolve({ invites: [] }),
+        ]);
         const list = Array.isArray(data)
           ? data.map((m) => ({ ...m, avatar: resolveServerUrl(m.avatar) }))
           : [];
+        const invites = (inviteData?.invites || []).map((invite) => ({
+          ...invite,
+          inviteeAvatar: resolveServerUrl(invite.inviteeAvatar),
+        }));
         if (!cancelled) {
           setMembers(list);
+          setPendingInvites(invites);
           setLoadError(null);
           setLoading(false);
         }
@@ -50,7 +67,7 @@ export default function SettingsMembers({ workspaceId, currentUserId, myRole = '
     }
     load();
     return () => { cancelled = true; };
-  }, [workspaceId, reloadKey]);
+  }, [workspaceId, reloadKey, canManage]);
 
   const retryLoad = () => {
     setLoading(true);
@@ -70,11 +87,30 @@ export default function SettingsMembers({ workspaceId, currentUserId, myRole = '
       });
       setInviteEmail('');
       setInviteRole('member');
-      setMembers(prev => [...prev, { ...newMember, avatar: resolveServerUrl(newMember.avatar) }]);
+      setPendingInvites(prev => [
+        {
+          ...newMember,
+          inviteeAvatar: resolveServerUrl(newMember.inviteeAvatar),
+        },
+        ...prev,
+      ]);
     } catch (err) {
-      setInviteError(err.message || 'Failed to add member');
+      setInviteError(err.message || 'Failed to send invite');
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleCancelInvite = async (inviteId) => {
+    setCancellingInvite(inviteId);
+    setActionError(null);
+    try {
+      await apiDelete(`/workspaces/${workspaceId}/invites/${inviteId}`);
+      setPendingInvites(prev => prev.filter(invite => invite.id !== inviteId));
+    } catch (err) {
+      setActionError(err.message || 'Failed to cancel invite');
+    } finally {
+      setCancellingInvite(null);
     }
   };
 
@@ -108,7 +144,10 @@ export default function SettingsMembers({ workspaceId, currentUserId, myRole = '
           <h2 className="settings-panel-title">Members</h2>
           <p className="settings-panel-desc">Manage who has access to this workspace</p>
         </div>
-        <span className="settings-member-count">{members.length} member{members.length !== 1 ? 's' : ''}</span>
+        <span className="settings-member-count">
+          {members.length} member{members.length !== 1 ? 's' : ''}
+          {pendingInvites.length > 0 ? ` · ${pendingInvites.length} pending` : ''}
+        </span>
       </div>
 
       <div className="settings-form">
@@ -134,11 +173,11 @@ export default function SettingsMembers({ workspaceId, currentUserId, myRole = '
                 className="settings-invite-role"
               />
               <button type="submit" className="btn btn-primary btn-sm" disabled={!inviteEmail.trim() || inviting}>
-                {inviting ? 'Adding...' : 'Add member'}
+                {inviting ? 'Sending...' : 'Send invite'}
               </button>
             </form>
             {inviteError && <p className="settings-invite-error">{inviteError}</p>}
-            <p className="settings-invite-hint">The user must already have an Elevate account.</p>
+            <p className="settings-invite-hint">The user must already have an Elevate account and accept the invite.</p>
           </>
         ) : (
           <div className="settings-readonly-banner">
@@ -160,6 +199,40 @@ export default function SettingsMembers({ workspaceId, currentUserId, myRole = '
           <div className="settings-activity-empty">Loading members...</div>
         ) : (
           <div className="settings-member-list">
+            {pendingInvites.map(invite => (
+              <div key={invite.id} className="settings-member-row settings-member-row-pending">
+                <Avatar
+                  src={invite.inviteeAvatar}
+                  name={invite.inviteeName || invite.inviteeEmail}
+                  alt=""
+                  className="avatar settings-member-avatar"
+                />
+                <div className="settings-member-info">
+                  <span className="settings-member-name">
+                    {invite.inviteeName || invite.inviteeEmail}
+                    <span className="settings-member-pending">pending</span>
+                  </span>
+                  <span className="settings-member-email">{invite.inviteeEmail}</span>
+                </div>
+                <span className="settings-member-role pending">
+                  <Clock size={11} />
+                  {ROLE_LABEL[invite.role] || 'Member'}
+                </span>
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="btn-icon-small danger-hover"
+                    onClick={() => handleCancelInvite(invite.id)}
+                    disabled={cancellingInvite === invite.id}
+                    title="Cancel invite"
+                  >
+                    <X size={14} />
+                  </button>
+                ) : (
+                  <span className="settings-member-spacer" />
+                )}
+              </div>
+            ))}
             {members.map(member => {
               const isOwner = member.role === 'owner';
               const isSelf = member.id === currentUserId;

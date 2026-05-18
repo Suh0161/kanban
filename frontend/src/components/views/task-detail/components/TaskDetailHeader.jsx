@@ -1,5 +1,6 @@
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import useDebouncedCommit from '../../../../hooks/useDebouncedCommit.js';
+import { Tooltip } from '../../../ui';
 
 const PRIORITY_DOT = {
   Critical: 'var(--color-red)',
@@ -30,12 +31,13 @@ export default function TaskDetailHeader({ task, columnTitle, onBack, onDelete, 
             <>
               <span className="task-detail-divider" aria-hidden="true" />
               <span className="task-detail-status-pill">
-                <span
-                  className="task-detail-priority-dot"
-                  style={{ background: PRIORITY_DOT[task.priority] || 'var(--text-tertiary)' }}
-                  title={`${task.priority || 'No'} priority`}
-                  aria-hidden="true"
-                />
+                <Tooltip content={`${task.priority || 'No'} priority`}>
+                  <span
+                    className="task-detail-priority-dot"
+                    style={{ background: PRIORITY_DOT[task.priority] || 'var(--text-tertiary)' }}
+                    aria-hidden="true"
+                  />
+                </Tooltip>
                 {columnTitle}
               </span>
             </>
@@ -44,14 +46,16 @@ export default function TaskDetailHeader({ task, columnTitle, onBack, onDelete, 
 
         {canEdit && (
           <div className="task-detail-header-actions">
-            <button
-              type="button"
-              className="btn-icon-small danger-hover"
-              onClick={() => onDelete(task.id)}
-              title="Delete task"
-            >
-              <Trash2 size={16} />
-            </button>
+            <Tooltip content="Delete task">
+              <button
+                type="button"
+                className="btn-icon-small danger-hover"
+                onClick={() => onDelete(task.id)}
+                aria-label="Delete task"
+              >
+                <Trash2 size={16} />
+              </button>
+            </Tooltip>
           </div>
         )}
       </div>

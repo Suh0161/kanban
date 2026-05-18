@@ -14,7 +14,12 @@ import {
   updateWorkspace,
   deleteWorkspace,
   getMembers,
-  addMemberByEmail,
+  createWorkspaceInviteByEmail,
+  getWorkspaceInvites,
+  getInvitesForUser,
+  cancelWorkspaceInvite,
+  acceptWorkspaceInvite,
+  rejectWorkspaceInvite,
   removeMember,
   updateMemberRole,
   transferOwnership,
@@ -168,14 +173,6 @@ defineRoute(
       assertIsOwner(db, req.userId, id);
       deleteWorkspace(db, id);
       auditLog('WORKSPACE_DELETED', { workspaceId: id, userId: req.userId });
-      logActivity(db, {
-        userId: req.userId,
-        workspaceId: id,
-        event: 'WORKSPACE_DELETED',
-        entityType: 'workspace',
-        entityId: id,
-        detail: JSON.stringify({ name: id }),
-      });
       res.json({ success: true });
     } catch (err) {
       next(err);
@@ -209,20 +206,59 @@ const AddMemberBody = z.object({
   role: z.enum(['member', 'admin', 'viewer']).optional(),
 });
 
+const WorkspaceInvite = z.object({
+  id: z.string(),
+  workspaceId: z.string(),
+  workspaceName: z.string().optional(),
+  inviteeUserId: z.string(),
+  inviteeName: z.string().optional(),
+  inviteeEmail: z.string().email().optional(),
+  inviteeAvatar: z.string().nullable().optional(),
+  invitedByUserId: z.string(),
+  invitedByName: z.string().optional(),
+  invitedByEmail: z.string().email().optional(),
+  invitedByAvatar: z.string().nullable().optional(),
+  role: z.enum(['admin', 'member', 'viewer']),
+  status: z.enum(['pending', 'accepted', 'rejected', 'cancelled']),
+  createdAt: z.string(),
+  respondedAt: z.string().nullable().optional(),
+});
+
+const InviteIdParam = z.object({ inviteId: z.string() });
+const WorkspaceInviteIdParam = z.object({ id: z.string(), inviteId: z.string() });
+
+defineRoute(
+  router,
+  {
+    method: 'get',
+    path: '/invites',
+    tag: 'Workspaces',
+    summary: 'List pending workspace invites for current user',
+    responses: { 200: jsonContent(z.object({ invites: z.array(WorkspaceInvite) }), 'Invite list') },
+  },
+  (req, res, next) => {
+    try {
+      res.json({ invites: getInvitesForUser(db, req.userId) });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 defineRoute(
   router,
   {
     method: 'post',
     path: '/:id/members',
     tag: 'Workspaces',
-    summary: 'Add member by email',
+    summary: 'Invite member by email',
     params: IdParam,
     body: AddMemberBody,
     responses: {
-      201: jsonContent(WorkspaceMember, 'Member added'),
+      201: jsonContent(WorkspaceInvite, 'Invite sent'),
       403: errorResponse('Insufficient role'),
       404: errorResponse('User not found'),
-      409: errorResponse('Already a member'),
+      409: errorResponse('Already a member or invite already pending'),
     },
   },
   (req, res, next) => {
@@ -230,16 +266,135 @@ defineRoute(
       const { id } = req.params;
       const { email, role } = req.body;
       assertCanManageWorkspace(db, req.userId, id);
-      const member = addMemberByEmail(db, id, email, role || 'member');
+      const invite = createWorkspaceInviteByEmail(db, id, email, role || 'member', req.userId);
       logActivity(db, {
         userId: req.userId,
         workspaceId: id,
-        event: 'MEMBER_ADDED',
-        entityType: 'workspace',
-        entityId: id,
-        detail: JSON.stringify({ email, role: role || 'member' }),
+        event: 'INVITE_SENT',
+        entityType: 'workspace_invite',
+        entityId: invite.id,
+        detail: JSON.stringify({ email, role: role || 'member', inviteeUserId: invite.inviteeUserId }),
       });
-      res.status(201).json(member);
+      res.status(201).json(invite);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+defineRoute(
+  router,
+  {
+    method: 'get',
+    path: '/:id/invites',
+    tag: 'Workspaces',
+    summary: 'List pending workspace invites',
+    params: IdParam,
+    responses: {
+      200: jsonContent(z.object({ invites: z.array(WorkspaceInvite) }), 'Invite list'),
+      403: errorResponse('Insufficient role'),
+    },
+  },
+  (req, res, next) => {
+    try {
+      const { id } = req.params;
+      assertCanManageWorkspace(db, req.userId, id);
+      res.json({ invites: getWorkspaceInvites(db, id) });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+defineRoute(
+  router,
+  {
+    method: 'delete',
+    path: '/:id/invites/:inviteId',
+    tag: 'Workspaces',
+    summary: 'Cancel pending workspace invite',
+    params: WorkspaceInviteIdParam,
+    responses: {
+      200: jsonContent(z.object({ success: z.boolean() }), 'Invite cancelled'),
+      403: errorResponse('Insufficient role'),
+      404: errorResponse('Invite not found'),
+    },
+  },
+  (req, res, next) => {
+    try {
+      const { id, inviteId } = req.params;
+      assertCanManageWorkspace(db, req.userId, id);
+      const result = cancelWorkspaceInvite(db, id, inviteId);
+      logActivity(db, {
+        userId: req.userId,
+        workspaceId: id,
+        event: 'INVITE_CANCELLED',
+        entityType: 'workspace_invite',
+        entityId: inviteId,
+      });
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+defineRoute(
+  router,
+  {
+    method: 'post',
+    path: '/invites/:inviteId/accept',
+    tag: 'Workspaces',
+    summary: 'Accept workspace invite',
+    params: InviteIdParam,
+    responses: {
+      200: jsonContent(WorkspaceInvite, 'Invite accepted'),
+      404: errorResponse('Invite not found'),
+    },
+  },
+  (req, res, next) => {
+    try {
+      const invite = acceptWorkspaceInvite(db, req.params.inviteId, req.userId);
+      logActivity(db, {
+        userId: req.userId,
+        workspaceId: invite.workspaceId,
+        event: 'INVITE_ACCEPTED',
+        entityType: 'workspace_invite',
+        entityId: invite.id,
+        detail: JSON.stringify({ role: invite.role }),
+      });
+      res.json(invite);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+defineRoute(
+  router,
+  {
+    method: 'post',
+    path: '/invites/:inviteId/reject',
+    tag: 'Workspaces',
+    summary: 'Reject workspace invite',
+    params: InviteIdParam,
+    responses: {
+      200: jsonContent(WorkspaceInvite, 'Invite rejected'),
+      404: errorResponse('Invite not found'),
+    },
+  },
+  (req, res, next) => {
+    try {
+      const invite = rejectWorkspaceInvite(db, req.params.inviteId, req.userId);
+      logActivity(db, {
+        userId: req.userId,
+        workspaceId: invite.workspaceId,
+        event: 'INVITE_REJECTED',
+        entityType: 'workspace_invite',
+        entityId: invite.id,
+        detail: JSON.stringify({ role: invite.role }),
+      });
+      res.json(invite);
     } catch (err) {
       next(err);
     }

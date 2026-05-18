@@ -13,6 +13,7 @@ import { can } from '../../../hooks/useWorkspaces.js';
 import { apiUpload } from '../../../api/client.js';
 import { parseServerTime } from '../../../utils/time.js';
 import useDebouncedCommit from '../../../hooks/useDebouncedCommit.js';
+import { ALLOWED_IMAGE_LABEL, isAllowedImageFile } from '../../../utils/fileTypes.js';
 import './css/settings.css';
 
 // Isolated label-name input so each row has its own local state.
@@ -159,6 +160,14 @@ export default function SettingsView({
       await onUpdateWorkspace?.(patch);
 
       clearStagedFiles();
+      // Clear staging placeholders so the preview uses real URLs. `pending://logo`
+      // is not loadable; `resolveServerUrl` only fixes paths starting with `/`.
+      if (logoFile) {
+        setDraft((prev) => ({ ...prev, logo: logoUrl ?? '' }));
+      }
+      if (bgFile) {
+        setDraft((prev) => ({ ...prev, background: bgUrl ?? '' }));
+      }
       setHasChanges(false);
     } catch (err) {
       setSaveError(err?.message || 'Could not save settings');
@@ -265,6 +274,10 @@ export default function SettingsView({
                     onPickFile={(file) => {
                       // Validate locally so the user gets immediate feedback
                       // even though the actual upload waits for Save.
+                      if (!isAllowedImageFile(file)) {
+                        setLogoError(`Logo must be ${ALLOWED_IMAGE_LABEL}`);
+                        return;
+                      }
                       if (file.size > 2 * 1024 * 1024) {
                         setLogoError('Logo must be under 2 MB');
                         return;
@@ -359,6 +372,10 @@ export default function SettingsView({
                       setHasChanges(true);
                     }}
                     onPickFile={(file) => {
+                      if (!isAllowedImageFile(file)) {
+                        setBgError(`Background must be ${ALLOWED_IMAGE_LABEL}`);
+                        return;
+                      }
                       if (file.size > 5 * 1024 * 1024) {
                         setBgError('Background must be under 5 MB');
                         return;

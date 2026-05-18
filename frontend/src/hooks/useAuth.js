@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { apiFetch, apiUpload, resolveServerUrl } from '../api/client.js';
+import { ALLOWED_IMAGE_LABEL, isAllowedImageFile } from '../utils/fileTypes.js';
 
 const STORAGE_KEY = 'Elevate-auth';
 const TOKEN_KEY = 'Elevate-token';
@@ -108,7 +109,7 @@ export function useAuth() {
   const uploadAvatar = useCallback(async (file) => {
     if (!file) throw new Error('No file selected');
     if (file.size > 2 * 1024 * 1024) throw new Error('Image must be under 2MB');
-    if (!file.type.startsWith('image/')) throw new Error('File must be an image');
+    if (!isAllowedImageFile(file)) throw new Error(`File must be ${ALLOWED_IMAGE_LABEL}`);
 
     const fd = new FormData();
     fd.append('file', file);

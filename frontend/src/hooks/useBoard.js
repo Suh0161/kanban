@@ -1,10 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { apiGetBoard, apiPost, apiPatch, apiDelete, getApiBase, resolveServerUrl } from '../api/client.js';
+import { apiGetBoard, apiPost, apiPatch, apiDelete, apiUpload, resolveServerUrl } from '../api/client.js';
 import { recordQuickStartDrag } from '../components/board/quickStartStorage.js';
-
-function getToken() {
-  return localStorage.getItem('Elevate-token');
-}
+import { filterAllowedImageFiles } from '../utils/fileTypes.js';
 
 /**
  * Resolve every avatar/url field on the board so consumers can render
@@ -439,30 +436,14 @@ export function useBoard(workspaceId) {
 
   const handleFileSelect = async (files, taskId) => {
     if (!files || !files.length) return;
-    const fileArray = Array.from(files).filter(file => file.type.startsWith('image/'));
+    const fileArray = filterAllowedImageFiles(files);
     for (const file of fileArray) {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(`${getApiBase()}/tasks/${taskId}/attachments`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
-        body: formData
-      });
-      if (!res.ok) continue;
-      const attachment = await res.json();
-      setData(prev => {
-        const task = prev.tasks[taskId];
-        return {
-          ...prev,
-          tasks: {
-            ...prev.tasks,
-            [taskId]: {
-              ...task,
-              attachments: [...(task.attachments || []), attachment],
-              metrics: { ...task.metrics, attachments: (task.metrics.attachments || 0) + 1 }
-            }
-          }
-        };
+      const attachment = await apiUpload(`/tasks/${taskId}/attachments`, formData);
+      addAttachment(taskId, {
+        ...attachment,
+        url: resolveServerUrl(attachment.url),
       });
     }
   };

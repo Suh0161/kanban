@@ -70,9 +70,10 @@ function mergeDetails(existingRaw, newRaw) {
 export function getActivityLog(db, workspaceId, { limit = 50, offset = 0 } = {}) {
   const rows = db
     .prepare(
-      `SELECT al.*, u.name as user_name, u.avatar as user_avatar
+      `SELECT al.*, u.name as user_name, u.avatar as user_avatar, t.code as task_code
        FROM activity_log al
        LEFT JOIN users u ON al.user_id = u.id
+       LEFT JOIN tasks t ON al.entity_type = 'task' AND al.entity_id = t.id
        WHERE al.workspace_id = ?
        ORDER BY al.created_at DESC
        LIMIT ? OFFSET ?`
@@ -88,6 +89,7 @@ export function getActivityLog(db, workspaceId, { limit = 50, offset = 0 } = {})
     event: row.event,
     entityType: row.entity_type,
     entityId: row.entity_id,
+    taskCode: row.task_code || undefined,
     detail: row.detail,
     createdAt: row.created_at,
   }));

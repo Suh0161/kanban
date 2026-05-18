@@ -18,6 +18,7 @@ import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { assertWorkspaceMember } from '../services/workspaceService.js';
 import { getTaskWorkspaceId } from '../services/taskService.js';
+import { logActivity } from '../services/activityService.js';
 import {
   listWatchers,
   watchTask,
@@ -84,7 +85,19 @@ defineRoute(
       const { taskId } = req.params;
       const workspaceId = getTaskWorkspaceId(db, taskId);
       assertWorkspaceMember(db, req.userId, workspaceId);
+      const wasWatching = isWatching(db, taskId, req.userId);
       watchTask(db, taskId, req.userId);
+      if (!wasWatching) {
+        const task = db.prepare('SELECT title FROM tasks WHERE id = ?').get(taskId);
+        logActivity(db, {
+          userId: req.userId,
+          workspaceId,
+          event: 'TASK_WATCHED',
+          entityType: 'task',
+          entityId: taskId,
+          detail: JSON.stringify({ title: task?.title }),
+        });
+      }
       res.json({
         watchers: listWatchers(db, taskId),
         watching: true,
@@ -111,7 +124,19 @@ defineRoute(
       const { taskId } = req.params;
       const workspaceId = getTaskWorkspaceId(db, taskId);
       assertWorkspaceMember(db, req.userId, workspaceId);
+      const wasWatching = isWatching(db, taskId, req.userId);
       unwatchTask(db, taskId, req.userId);
+      if (wasWatching) {
+        const task = db.prepare('SELECT title FROM tasks WHERE id = ?').get(taskId);
+        logActivity(db, {
+          userId: req.userId,
+          workspaceId,
+          event: 'TASK_UNWATCHED',
+          entityType: 'task',
+          entityId: taskId,
+          detail: JSON.stringify({ title: task?.title }),
+        });
+      }
       res.json({
         watchers: listWatchers(db, taskId),
         watching: false,

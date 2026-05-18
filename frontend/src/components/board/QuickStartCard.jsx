@@ -32,6 +32,7 @@ import {
   saveQuickStartState,
   subscribeQuickStart,
 } from './quickStartStorage.js';
+import { Tooltip } from '../ui';
 import './css/quickstart.css';
 
 export default function QuickStartCard({
@@ -171,24 +172,26 @@ export default function QuickStartCard({
         </div>
 
         <div className="quickstart-actions">
-          <button
-            type="button"
-            className="quickstart-icon-btn"
-            onClick={handleToggleCollapse}
-            aria-label={state.collapsed ? 'Expand' : 'Collapse'}
-            title={state.collapsed ? 'Expand' : 'Collapse'}
-          >
-            {state.collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-          </button>
-          <button
-            type="button"
-            className="quickstart-icon-btn"
-            onClick={handleDismiss}
-            aria-label="Dismiss"
-            title="Dismiss"
-          >
-            <X size={14} />
-          </button>
+          <Tooltip content={state.collapsed ? 'Expand' : 'Collapse'}>
+            <button
+              type="button"
+              className="quickstart-icon-btn"
+              onClick={handleToggleCollapse}
+              aria-label={state.collapsed ? 'Expand' : 'Collapse'}
+            >
+              {state.collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            </button>
+          </Tooltip>
+          <Tooltip content="Dismiss">
+            <button
+              type="button"
+              className="quickstart-icon-btn"
+              onClick={handleDismiss}
+              aria-label="Dismiss"
+            >
+              <X size={14} />
+            </button>
+          </Tooltip>
         </div>
       </header>
 

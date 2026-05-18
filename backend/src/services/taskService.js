@@ -88,6 +88,29 @@ function getWorkspaceIdByColumnId(db, columnId) {
   return column.workspace_id;
 }
 
+function getWorkspaceByColumnId(db, columnId) {
+  const workspace = db.prepare(
+    `SELECT w.id, w.code_prefix
+     FROM workspaces w
+     JOIN columns c ON c.workspace_id = w.id
+     WHERE c.id = ?`
+  ).get(columnId);
+  if (!workspace) throw new AppError('Column not found', 404, 'NOT_FOUND');
+  return workspace;
+}
+
+function assertAssigneeWorkspaceMember(db, workspaceId, assigneeId) {
+  if (!assigneeId) return null;
+
+  const member = db.prepare(
+    'SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).get(workspaceId, assigneeId);
+  if (!member) {
+    throw new AppError('Assignee must be a workspace member', 400, 'VALIDATION_ERROR');
+  }
+  return assigneeId;
+}
+
 export function getTaskWorkspaceId(db, taskId) {
   const task = db.prepare('SELECT column_id FROM tasks WHERE id = ?').get(taskId);
   if (!task) throw new AppError('Task not found', 404, 'NOT_FOUND');
@@ -101,12 +124,9 @@ export function createTask(db, { columnId, title, priority, tags, description, d
   const position = (maxRow?.maxPos ?? -1) + 1;
   const id = `task-${uuidv4()}`;
 
-  // Get workspace prefix for issue code
-  const workspace = db.prepare(
-    `SELECT w.code_prefix FROM workspaces w
-     JOIN columns c ON c.workspace_id = w.id
-     WHERE c.id = ?`
-  ).get(columnId);
+  // Get workspace prefix for issue code and validate assignee membership.
+  const workspace = getWorkspaceByColumnId(db, columnId);
+  const storedAssigneeId = assertAssigneeWorkspaceMember(db, workspace.id, assigneeId);
   const prefix = workspace?.code_prefix || 'SKY';
 
   const maxCodeRow = db
@@ -118,7 +138,7 @@ export function createTask(db, { columnId, title, priority, tags, description, d
   db.prepare(
     `INSERT INTO tasks (id, column_id, title, priority, code, description, assignee_id, due_date, position)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, columnId, title, priority || 'Medium', code, description || '', assigneeId || null, dueDate || null, position);
+  ).run(id, columnId, title, priority || 'Medium', code, description || '', storedAssigneeId, dueDate || null, position);
 
   if (Array.isArray(tags) && tags.length > 0) {
     const insertTag = db.prepare('INSERT INTO task_tags (task_id, tag) VALUES (?, ?)');
@@ -165,8 +185,10 @@ export function updateTask(db, taskId, updates) {
     values.push(dueDate);
   }
   if (assigneeId !== undefined) {
+    const workspaceId = getTaskWorkspaceId(db, taskId);
+    const storedAssigneeId = assertAssigneeWorkspaceMember(db, workspaceId, assigneeId);
     fields.push('assignee_id = ?');
-    values.push(assigneeId);
+    values.push(storedAssigneeId);
   }
   if (updates.customFields !== undefined) {
     fields.push('custom_fields = ?');

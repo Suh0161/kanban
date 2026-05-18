@@ -5,6 +5,7 @@
 @import './layout/topbar.css';
 @import './layout/buttons.css';
 @import './layout/workspace.css';
+@import './ui/tooltip.css';
 @import './board/canvas.css';
 @import './board/column.css';
 @import './board/card.css';

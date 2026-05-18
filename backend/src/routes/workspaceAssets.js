@@ -62,9 +62,10 @@ const uploadBackground = makeUploader(5 * 1024 * 1024, 'background');
 
 const router = Router();
 
-const WorkspaceIdParam = z.object({ workspaceId: z.string().uuid() });
+// Workspace ids are slug-style (e.g. "aed-129b" from createWorkspace) or UUIDs — not always UUIDs.
+const WorkspaceIdParam = z.object({ workspaceId: z.string().min(1).max(200) });
 const AssetParams = z.object({
-  workspaceId: z.string().uuid(),
+  workspaceId: z.string().min(1).max(200),
   filename: z.string().regex(/^[\w.-]+$/, 'invalid filename'),
 });
 const AssetUploadForm = z.object({

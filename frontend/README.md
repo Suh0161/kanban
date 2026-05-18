@@ -32,14 +32,14 @@ Run `npm run lint` after any change and `npm run build` before finishing.
 
 ## Environment
 
-The dev server proxies API calls to `http://localhost:3001` by default. Override with:
+The API client uses `VITE_API_BASE` as its versioned backend API base. Override it with:
 
 ```bash
 # frontend/.env.local
-VITE_API_URL=https://api.your-domain.example
+VITE_API_BASE=https://kanban-elevate.fly.dev/api/v1
 ```
 
-If unset, requests go to a same-origin `/api` path (good for production deployments behind a reverse proxy).
+If unset, local development requests go to `http://localhost:3001/api/v1`.
 
 ---
 
@@ -190,7 +190,7 @@ The project enforces a couple of strict rules worth knowing:
 
 ## Deployment
 
-- **Vercel** is the intended target. `frontend/vercel.json` sets HSTS, CSP, and Permissions-Policy headers. Set `VITE_API_URL` in the project environment.
+- **Vercel** is the intended target. `frontend/vercel.json` sets HSTS, CSP, and Permissions-Policy headers. Set `VITE_API_BASE` in the project environment, for example `https://kanban-elevate.fly.dev/api/v1`.
 - Run `npm run build` to produce `dist/`.
 
 ---

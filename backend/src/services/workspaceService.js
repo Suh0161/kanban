@@ -277,6 +277,153 @@ export function addMemberByEmail(db, workspaceId, email, role = 'member') {
   return { ...user, role };
 }
 
+function assertInviteRole(role) {
+  if (!VALID_ROLES.includes(role) || role === ROLES.OWNER) {
+    throw new AppError('Invalid role', 400, 'VALIDATION_ERROR');
+  }
+}
+
+function mapInviteRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    workspaceName: row.workspace_name,
+    inviteeUserId: row.invitee_user_id,
+    inviteeName: row.invitee_name,
+    inviteeEmail: row.invitee_email,
+    inviteeAvatar: row.invitee_avatar,
+    invitedByUserId: row.invited_by_user_id,
+    invitedByName: row.invited_by_name,
+    invitedByEmail: row.invited_by_email,
+    invitedByAvatar: row.invited_by_avatar,
+    role: row.role,
+    status: row.status,
+    createdAt: row.created_at,
+    respondedAt: row.responded_at,
+  };
+}
+
+const INVITE_SELECT = `
+  SELECT wi.*,
+         w.name AS workspace_name,
+         invitee.name AS invitee_name,
+         invitee.email AS invitee_email,
+         invitee.avatar AS invitee_avatar,
+         inviter.name AS invited_by_name,
+         inviter.email AS invited_by_email,
+         inviter.avatar AS invited_by_avatar
+  FROM workspace_invites wi
+  JOIN workspaces w ON w.id = wi.workspace_id
+  JOIN users invitee ON invitee.id = wi.invitee_user_id
+  JOIN users inviter ON inviter.id = wi.invited_by_user_id
+`;
+
+export function createWorkspaceInviteByEmail(db, workspaceId, email, role = 'member', invitedByUserId) {
+  assertInviteRole(role);
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const user = db.prepare('SELECT id, name, email, avatar FROM users WHERE email = ?').get(normalizedEmail);
+  if (!user) {
+    throw new AppError('No user with that email exists', 404, 'USER_NOT_FOUND');
+  }
+  if (user.id === invitedByUserId) {
+    throw new AppError('You are already a member of this workspace', 409, 'ALREADY_MEMBER');
+  }
+  const existing = db.prepare(
+    'SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+  ).get(workspaceId, user.id);
+  if (existing) {
+    throw new AppError('User is already a member', 409, 'ALREADY_MEMBER');
+  }
+  const pending = db.prepare(
+    `SELECT 1 FROM workspace_invites
+     WHERE workspace_id = ? AND invitee_user_id = ? AND status = 'pending'`
+  ).get(workspaceId, user.id);
+  if (pending) {
+    throw new AppError('An invite is already pending for this user', 409, 'INVITE_PENDING');
+  }
+
+  const inviteId = `invite-${uuidv4()}`;
+  db.prepare(
+    `INSERT INTO workspace_invites (id, workspace_id, invitee_user_id, invited_by_user_id, role)
+     VALUES (?, ?, ?, ?, ?)`
+  ).run(inviteId, workspaceId, user.id, invitedByUserId, role);
+  return getWorkspaceInviteById(db, inviteId);
+}
+
+export function getWorkspaceInviteById(db, inviteId) {
+  return mapInviteRow(db.prepare(`${INVITE_SELECT} WHERE wi.id = ?`).get(inviteId));
+}
+
+export function getWorkspaceInvites(db, workspaceId, { status = 'pending' } = {}) {
+  return db
+    .prepare(`${INVITE_SELECT} WHERE wi.workspace_id = ? AND wi.status = ? ORDER BY wi.created_at DESC`)
+    .all(workspaceId, status)
+    .map(mapInviteRow);
+}
+
+export function getInvitesForUser(db, userId, { status = 'pending' } = {}) {
+  return db
+    .prepare(`${INVITE_SELECT} WHERE wi.invitee_user_id = ? AND wi.status = ? ORDER BY wi.created_at DESC`)
+    .all(userId, status)
+    .map(mapInviteRow);
+}
+
+export function cancelWorkspaceInvite(db, workspaceId, inviteId) {
+  const invite = db.prepare(
+    `SELECT status FROM workspace_invites WHERE id = ? AND workspace_id = ?`
+  ).get(inviteId, workspaceId);
+  if (!invite || invite.status !== 'pending') {
+    throw new AppError('Pending invite not found', 404, 'NOT_FOUND');
+  }
+  db.prepare(
+    `UPDATE workspace_invites
+     SET status = 'cancelled', responded_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+     WHERE id = ?`
+  ).run(inviteId);
+  return { success: true };
+}
+
+export function acceptWorkspaceInvite(db, inviteId, userId) {
+  const invite = db.prepare(
+    `SELECT * FROM workspace_invites
+     WHERE id = ? AND invitee_user_id = ? AND status = 'pending'`
+  ).get(inviteId, userId);
+  if (!invite) {
+    throw new AppError('Pending invite not found', 404, 'NOT_FOUND');
+  }
+
+  db.transaction(() => {
+    db.prepare(
+      `UPDATE workspace_invites
+       SET status = 'accepted', responded_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+       WHERE id = ?`
+    ).run(inviteId);
+    db.prepare(
+      `INSERT OR IGNORE INTO workspace_members (workspace_id, user_id, role)
+       VALUES (?, ?, ?)`
+    ).run(invite.workspace_id, userId, invite.role);
+  })();
+
+  return getWorkspaceInviteById(db, inviteId);
+}
+
+export function rejectWorkspaceInvite(db, inviteId, userId) {
+  const invite = db.prepare(
+    `SELECT * FROM workspace_invites
+     WHERE id = ? AND invitee_user_id = ? AND status = 'pending'`
+  ).get(inviteId, userId);
+  if (!invite) {
+    throw new AppError('Pending invite not found', 404, 'NOT_FOUND');
+  }
+  db.prepare(
+    `UPDATE workspace_invites
+     SET status = 'rejected', responded_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+     WHERE id = ?`
+  ).run(inviteId);
+  return getWorkspaceInviteById(db, inviteId);
+}
+
 export function removeMember(db, workspaceId, userId) {
   const target = db.prepare(
     'SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?'

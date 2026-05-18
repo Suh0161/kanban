@@ -29,7 +29,9 @@ const KINDS = {
   background: { column: 'background', prefix: 'backgrounds', publicPath: 'backgrounds' },
 };
 
-const SAFE_WORKSPACE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// Matches slug ids (see workspaceService.createWorkspace) and legacy UUID-shaped ids. Path-safe only.
+const SAFE_WORKSPACE_ID =
+  /^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,198}[a-zA-Z0-9])$/;
 const SAFE_ASSET_FILENAME = /^[\w.-]+$/;
 
 function publicUrl(kind, key) {

@@ -1,4 +1,5 @@
 import { AUDIT_LOG_ENABLED } from '../config.js';
+import { redactSensitiveFields, redactUrl } from './redaction.js';
 
 const SECURITY_EVENTS = new Set([
   // Auth events
@@ -30,6 +31,8 @@ const SECURITY_EVENTS = new Set([
   // Checklist events
   'CHECKLIST_ADDED',
   'CHECKLIST_DELETED',
+  // Server events
+  'SERVER_ERROR',
 ]);
 
 export function auditLog(event, details = {}) {
@@ -37,11 +40,7 @@ export function auditLog(event, details = {}) {
   if (!SECURITY_EVENTS.has(event)) return;
 
   const timestamp = new Date().toISOString();
-  const safeDetails = { ...details };
-  // Never log passwords or tokens
-  delete safeDetails.password;
-  delete safeDetails.token;
-  delete safeDetails.password_hash;
+  const safeDetails = redactSensitiveFields(details);
 
   console.log(`[AUDIT] ${timestamp} ${event} ${JSON.stringify(safeDetails)}`);
 }
@@ -51,11 +50,11 @@ export function auditMiddleware(req, res, next) {
   res.json = function(body) {
     const status = res.statusCode;
     if (status === 401) {
-      auditLog('UNAUTHORIZED', { path: req.originalUrl, method: req.method, ip: req.ip });
+      auditLog('UNAUTHORIZED', { path: redactUrl(req.originalUrl), method: req.method, ip: req.ip });
     } else if (status === 403) {
-      auditLog('FORBIDDEN', { path: req.originalUrl, method: req.method, ip: req.ip, userId: req.userId });
+      auditLog('FORBIDDEN', { path: redactUrl(req.originalUrl), method: req.method, ip: req.ip, userId: req.userId });
     } else if (status === 429) {
-      auditLog('RATE_LIMITED', { path: req.originalUrl, method: req.method, ip: req.ip });
+      auditLog('RATE_LIMITED', { path: redactUrl(req.originalUrl), method: req.method, ip: req.ip });
     }
     return originalJson.call(this, body);
   };

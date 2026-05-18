@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Tooltip } from '../ui';
 import TaskCard from './TaskCard.jsx';
 import AddCardComposer from './AddCardComposer.jsx';
 import ColumnMenu from './ColumnMenu.jsx';
@@ -54,17 +55,19 @@ export default function BoardColumn({
           {...colProvided.draggableProps}
         >
           {isCollapsed ? (
-            <button
-              type="button"
-              className="column-collapsed"
-              onClick={() => onToggleCollapse(column.id)}
-              title={`Expand ${column.title}`}
-              {...colProvided.dragHandleProps}
-            >
-              <ChevronRight size={14} className="column-collapsed-chevron" />
-              <span className="column-collapsed-title">{column.title}</span>
-              <span className="column-collapsed-count">{count}</span>
-            </button>
+            <Tooltip content={`Expand ${column.title}`} position="right">
+              <button
+                type="button"
+                className="column-collapsed"
+                onClick={() => onToggleCollapse(column.id)}
+                aria-label={`Expand ${column.title}`}
+                {...colProvided.dragHandleProps}
+              >
+                <ChevronRight size={14} className="column-collapsed-chevron" />
+                <span className="column-collapsed-title">{column.title}</span>
+                <span className="column-collapsed-count">{count}</span>
+              </button>
+            </Tooltip>
           ) : (
             <>
               <div className="column-header" {...colProvided.dragHandleProps}>
@@ -88,15 +91,16 @@ export default function BoardColumn({
                   </div>
                 )}
                 <div className="column-header-actions">
-                  <button
-                    type="button"
-                    className="column-collapse-btn"
-                    onClick={() => onToggleCollapse(column.id)}
-                    title="Collapse column"
-                    aria-label="Collapse column"
-                  >
-                    <ChevronLeft size={14} />
-                  </button>
+                  <Tooltip content="Collapse column">
+                    <button
+                      type="button"
+                      className="column-collapse-btn"
+                      onClick={() => onToggleCollapse(column.id)}
+                      aria-label="Collapse column"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                  </Tooltip>
                   {canEdit && (
                     <ColumnMenu
                       columnId={column.id}

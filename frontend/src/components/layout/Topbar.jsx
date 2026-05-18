@@ -1,10 +1,13 @@
 import { Search, X, Plus, ChevronRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { resolveServerUrl } from '../../api/client.js';
 import FilterPanel from '../ui/FilterPanel.jsx';
 import Avatar from '../ui/Avatar.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 export default function Topbar({
   activeViewTitle,
+  breadcrumbTail,
   workspaceName,
   workspaceLogo,
   isBoardView,
@@ -26,14 +29,16 @@ export default function Topbar({
           <ChevronRight size={14} className="breadcrumb-sep" />
           <span className="breadcrumb-current breadcrumb-workspace">
             {workspaceLogo ? (
-              <img src={workspaceLogo} alt="" className="breadcrumb-workspace-logo" />
+              <img src={resolveServerUrl(workspaceLogo)} alt="" className="breadcrumb-workspace-logo" />
             ) : null}
             {workspaceName}
           </span>
           {!isBoardView && (
             <>
               <ChevronRight size={14} className="breadcrumb-sep" />
-              <span className="breadcrumb-current">{activeViewTitle}</span>
+              {breadcrumbTail ?? (
+                <span className="breadcrumb-current">{activeViewTitle}</span>
+              )}
             </>
           )}
         </div>
@@ -84,14 +89,14 @@ export default function Topbar({
         {onlineUsers && onlineUsers.length > 0 && (
           <div className="topbar-presence">
             {onlineUsers.slice(0, 3).map(user => (
-              <Avatar
-                key={user.userId}
-                src={user.avatar}
-                name={user.name || user.userId}
-                alt={user.name || user.userId}
-                className="topbar-presence-avatar"
-                title={user.name || user.userId}
-              />
+              <Tooltip key={user.userId} content={user.name || user.userId}>
+                <Avatar
+                  src={user.avatar}
+                  name={user.name || user.userId}
+                  alt={user.name || user.userId}
+                  className="topbar-presence-avatar"
+                />
+              </Tooltip>
             ))}
             {onlineUsers.length > 3 && (
               <span className="topbar-presence-count">+{onlineUsers.length - 3}</span>

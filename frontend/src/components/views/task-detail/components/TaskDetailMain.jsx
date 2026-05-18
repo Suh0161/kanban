@@ -3,18 +3,13 @@ import {
   AlignLeft, Paperclip, MessageSquare, Upload, CheckSquare, Plus, Trash,
   SendHorizontal, Activity, X, Pencil,
 } from 'lucide-react';
-import { marked } from 'marked';
 import Select from '../../../ui/Select.jsx';
-import { Avatar } from '../../../ui';
+import { Avatar, Tooltip } from '../../../ui';
 import { useAuth } from '../../../../hooks/useAuth.js';
 import { formatRelativeTime, formatAbsoluteTime } from '../../../../utils/time.js';
 import useDebouncedCommit from '../../../../hooks/useDebouncedCommit.js';
-
-// Configure marked for safe rendering
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
+import { renderSafeMarkdown } from '../../../../utils/markdown.js';
+import { ALLOWED_IMAGE_ACCEPT } from '../../../../utils/fileTypes.js';
 
 // Debounced text/number input for custom fields. Each field gets its own
 // local state so typing in one field doesn't re-render siblings.
@@ -80,7 +75,7 @@ export default function TaskDetailMain({
 
   const descriptionHtml = useMemo(() => {
     if (!task.description) return '';
-    return marked.parse(task.description);
+    return renderSafeMarkdown(task.description);
   }, [task.description]);
 
   const applyFormat = (prefix, suffix = prefix) => {
@@ -159,12 +154,24 @@ export default function TaskDetailMain({
         {canEdit && (editingDesc || !task.description) ? (
           <div className="task-detail-desc-wrap">
             <div className="desc-format-toolbar-static">
-              <button type="button" title="Bold (Ctrl+B)" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('**')}><strong>B</strong></button>
-              <button type="button" title="Italic (Ctrl+I)" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('_')}><em>I</em></button>
-              <button type="button" title="Heading" onMouseDown={(e) => e.preventDefault()} onClick={() => applyLinePrefix('## ')}>H</button>
-              <button type="button" title="Code" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('`')}>{'<>'}</button>
-              <button type="button" title="Link" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('[', '](url)')}>🔗</button>
-              <button type="button" title="Bullet list" onMouseDown={(e) => e.preventDefault()} onClick={() => applyLinePrefix('- ')}>•</button>
+              <Tooltip content="Bold (Ctrl+B)">
+                <button type="button" aria-label="Bold" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('**')}><strong>B</strong></button>
+              </Tooltip>
+              <Tooltip content="Italic (Ctrl+I)">
+                <button type="button" aria-label="Italic" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('_')}><em>I</em></button>
+              </Tooltip>
+              <Tooltip content="Heading">
+                <button type="button" aria-label="Heading" onMouseDown={(e) => e.preventDefault()} onClick={() => applyLinePrefix('## ')}>H</button>
+              </Tooltip>
+              <Tooltip content="Code">
+                <button type="button" aria-label="Code" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('`')}>{'<>'}</button>
+              </Tooltip>
+              <Tooltip content="Link">
+                <button type="button" aria-label="Link" onMouseDown={(e) => e.preventDefault()} onClick={() => applyFormat('[', '](url)')}>🔗</button>
+              </Tooltip>
+              <Tooltip content="Bullet list">
+                <button type="button" aria-label="Bullet list" onMouseDown={(e) => e.preventDefault()} onClick={() => applyLinePrefix('- ')}>•</button>
+              </Tooltip>
               <span className="desc-toolbar-divider" />
               <span className="desc-toolbar-hint">Markdown supported</span>
               {task.description && (
@@ -313,9 +320,11 @@ export default function TaskDetailMain({
                 <div className="checklist-actions">
                   <span className="checklist-progress-text">{doneCount}/{cl.items.length}</span>
                   {canEdit && (
-                    <button className="btn-icon-small" onClick={() => onDeleteChecklist(task.id, cl.id)} title="Delete checklist">
-                      <Trash size={14} />
-                    </button>
+                    <Tooltip content="Delete checklist" className="checklist-delete-tooltip">
+                      <button className="btn-icon-small" onClick={() => onDeleteChecklist(task.id, cl.id)} aria-label="Delete checklist">
+                        <Trash size={14} />
+                      </button>
+                    </Tooltip>
                   )}
                 </div>
               </div>
@@ -345,12 +354,14 @@ export default function TaskDetailMain({
                       >+</button>
                     </div>
                     {canEdit && (
-                      <button
-                        type="button"
-                        className="checklist-item-delete"
-                        title="Delete item"
-                        onClick={() => onDeleteChecklistItem(task.id, cl.id, item.id)}
-                      ><X size={12} /></button>
+                      <Tooltip content="Delete item" className="checklist-delete-tooltip">
+                        <button
+                          type="button"
+                          className="checklist-item-delete"
+                          aria-label="Delete item"
+                          onClick={() => onDeleteChecklistItem(task.id, cl.id, item.id)}
+                        ><X size={12} /></button>
+                      </Tooltip>
                     )}
                   </div>
                 ) : (
@@ -363,12 +374,14 @@ export default function TaskDetailMain({
                     />
                     <span className={item.done ? 'item-done' : ''}>{item.text}</span>
                     {canEdit && (
-                      <button
-                        type="button"
-                        className="checklist-item-delete"
-                        title="Delete item"
-                        onClick={(e) => { e.preventDefault(); onDeleteChecklistItem(task.id, cl.id, item.id); }}
-                      ><X size={12} /></button>
+                      <Tooltip content="Delete item" className="checklist-delete-tooltip">
+                        <button
+                          type="button"
+                          className="checklist-item-delete"
+                          aria-label="Delete item"
+                          onClick={(e) => { e.preventDefault(); onDeleteChecklistItem(task.id, cl.id, item.id); }}
+                        ><X size={12} /></button>
+                      </Tooltip>
                     )}
                   </label>
                 );
@@ -384,15 +397,17 @@ export default function TaskDetailMain({
                       if (e.key === 'Enter') { e.preventDefault(); handleAddItem(cl.id); }
                     }}
                   />
-                  <input
-                    type="number"
-                    className="checklist-count-input"
-                    placeholder="×"
-                    min="1"
-                    title="Target count (leave empty for checkbox)"
-                    value={newItemTexts[`${cl.id}-count`] || ''}
-                    onChange={e => setNewItemTexts(prev => ({ ...prev, [`${cl.id}-count`]: e.target.value }))}
-                  />
+                  <Tooltip content="Target count (leave empty for checkbox)">
+                    <input
+                      type="number"
+                      className="checklist-count-input"
+                      placeholder="×"
+                      min="1"
+                      aria-label="Target count"
+                      value={newItemTexts[`${cl.id}-count`] || ''}
+                      onChange={e => setNewItemTexts(prev => ({ ...prev, [`${cl.id}-count`]: e.target.value }))}
+                    />
+                  </Tooltip>
                   <button className="btn btn-outline btn-sm" onClick={() => handleAddItem(cl.id)}>Add</button>
                 </div>
               )}
@@ -410,13 +425,15 @@ export default function TaskDetailMain({
               <img src={att.url} alt={att.name} onClick={() => onLightboxOpen(att.url)} />
               <span className="attachment-name" onClick={() => onLightboxOpen(att.url)}>{att.name}</span>
               {canEdit && (
-                <button
-                  className="attachment-delete-btn"
-                  onClick={(e) => { e.stopPropagation(); onDeleteAttachment(task.id, att.id); }}
-                  title="Delete attachment"
-                >
-                  <X size={14} />
-                </button>
+                <Tooltip content="Delete attachment" className="attachment-delete-tooltip">
+                  <button
+                    className="attachment-delete-btn"
+                    onClick={(e) => { e.stopPropagation(); onDeleteAttachment(task.id, att.id); }}
+                    aria-label="Delete attachment"
+                  >
+                    <X size={14} />
+                  </button>
+                </Tooltip>
               )}
             </div>
           ))}
@@ -433,9 +450,12 @@ export default function TaskDetailMain({
               type="file"
               ref={fileInputRef}
               style={{ display: 'none' }}
-              accept="image/*"
+              accept={ALLOWED_IMAGE_ACCEPT}
               multiple
-              onChange={(e) => onFileSelect(e.target.files, task.id)}
+              onChange={(e) => {
+                onFileSelect(e.target.files, task.id);
+                e.target.value = '';
+              }}
             />
             <Upload size={18} />
             <span>Drop images here or click to browse</span>
@@ -553,9 +573,11 @@ function ActivityFeed({ activities }) {
           </div>
           <div className="activity-content">
             <ActivityDescription activity={activity} />
-            <span className="activity-time" title={formatAbsoluteTime(activity.time)}>
-              {formatRelativeTime(activity.time)}
-            </span>
+            <Tooltip content={formatAbsoluteTime(activity.time)}>
+              <span className="activity-time">
+                {formatRelativeTime(activity.time)}
+              </span>
+            </Tooltip>
           </div>
         </div>
       ))}

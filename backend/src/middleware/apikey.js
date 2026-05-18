@@ -6,7 +6,11 @@ import { AppError } from './error.js';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 export function requireApiKey(req, res, next) {
-  const apiKey = req.headers['x-api-key'] || req.query.api_key;
+  if (req.query.api_key !== undefined) {
+    throw new AppError('API keys must be sent in the X-API-Key header', 401, 'INVALID_API_KEY_LOCATION');
+  }
+
+  const apiKey = req.get('X-API-Key');
 
   if (!apiKey || typeof apiKey !== 'string') {
     return next();

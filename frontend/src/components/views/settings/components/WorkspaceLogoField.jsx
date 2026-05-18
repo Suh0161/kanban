@@ -18,6 +18,7 @@
 import { useEffect, useMemo } from 'react';
 import { Image as ImageIcon, Trash2, Upload } from 'lucide-react';
 import { resolveServerUrl } from '../../../../api/client.js';
+import { ALLOWED_IMAGE_ACCEPT } from '../../../../utils/fileTypes.js';
 import { useRef } from 'react';
 
 function initials(name) {
@@ -110,7 +111,7 @@ export default function WorkspaceLogoField({
             <input
               ref={fileRef}
               type="file"
-              accept="image/png,image/jpeg,image/gif,image/webp"
+              accept={ALLOWED_IMAGE_ACCEPT}
               className="settings-logo-input"
               onChange={handleFile}
             />

@@ -4,7 +4,7 @@ export { default as InboxView } from './inbox';
 export { default as AnalyticsView } from './analytics';
 export { default as TeamView } from './team';
 export { default as SettingsView } from './settings';
-export { default as WorkspaceList } from './workspace-list';
+export { default as PluginsView } from './plugins';
 export { default as LoginPage } from './login';
 export { default as MyWorkView } from './mywork';
 export { default as TaskDetailView } from './task-detail';

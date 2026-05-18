@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { MessageSquare, Paperclip, Calendar, Pencil, CheckSquare } from 'lucide-react';
 import { formatDate, isOverdue, isDueToday } from '../../utils/helpers.js';
+import { Avatar, Tooltip } from '../ui';
 import TaskCardContextMenu from './TaskCardContextMenu';
 
 const PRIORITY_DOT = {
@@ -56,7 +57,9 @@ export default function TaskCard({
             {taskLabels.length > 0 && (
               <div className="card-label-strips">
                 {taskLabels.map(label => (
-                  <span key={label.id} className="card-label-strip" style={{ background: label.color }} title={label.name} />
+                  <Tooltip key={label.id} content={label.name}>
+                    <span className="card-label-strip" style={{ background: label.color }} />
+                  </Tooltip>
                 ))}
               </div>
             )}
@@ -64,10 +67,11 @@ export default function TaskCard({
             <div className="card-header">
               <span className="card-id" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 {task.priority && (
-                  <span
-                    style={{ width: 7, height: 7, borderRadius: '50%', background: PRIORITY_DOT[task.priority] || 'var(--text-tertiary)', flexShrink: 0 }}
-                    title={`${task.priority} priority`}
-                  />
+                  <Tooltip content={`${task.priority} priority`}>
+                    <span
+                      style={{ width: 7, height: 7, borderRadius: '50%', background: PRIORITY_DOT[task.priority] || 'var(--text-tertiary)', flexShrink: 0 }}
+                    />
+                  </Tooltip>
                 )}
                 {task.code}
               </span>
@@ -80,21 +84,26 @@ export default function TaskCard({
 
             <div className="card-title-row">
               <h4 className="card-title">{task.title}</h4>
-              <button
-                className={`card-quick-edit ${hovered && canEdit ? 'visible' : ''}`}
-                title="Quick edit"
-                onClick={e => { e.stopPropagation(); onQuickEdit(task); }}
-                style={canEdit ? undefined : { display: 'none' }}
-              >
-                <Pencil size={13} />
-              </button>
+              {canEdit && (
+                <Tooltip content="Quick edit">
+                  <button
+                    className={`card-quick-edit ${hovered ? 'visible' : ''}`}
+                    onClick={e => { e.stopPropagation(); onQuickEdit(task); }}
+                    aria-label="Quick edit"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                </Tooltip>
+              )}
             </div>
 
             {visibleTags.length > 0 && (
               <div className="tags">
                 {visibleTags.map(tag => <span key={tag} className="tag type-label">{tag}</span>)}
                 {hiddenTagCount > 0 && (
-                  <span className="tag type-label" title={(task.tags || []).slice(MAX_VISIBLE_TAGS).join(', ')}>+{hiddenTagCount}</span>
+                  <Tooltip content={(task.tags || []).slice(MAX_VISIBLE_TAGS).join(', ')}>
+                    <span className="tag type-label">+{hiddenTagCount}</span>
+                  </Tooltip>
                 )}
               </div>
             )}
@@ -102,16 +111,36 @@ export default function TaskCard({
             {(commentCount > 0 || attachmentCount > 0 || hasChecklists || task.assigneeImg) && (
               <div className="card-footer">
                 <div className="card-metrics">
-                  {commentCount > 0 && <span className="metric active" title={`${commentCount} comments`}><MessageSquare size={12} /> {commentCount}</span>}
-                  {attachmentCount > 0 && <span className="metric active" title={`${attachmentCount} attachments`}><Paperclip size={12} /> {attachmentCount}</span>}
+                  {commentCount > 0 && (
+                    <Tooltip content={`${commentCount} comments`}>
+                      <span className="metric active"><MessageSquare size={12} /> {commentCount}</span>
+                    </Tooltip>
+                  )}
+                  {attachmentCount > 0 && (
+                    <Tooltip content={`${attachmentCount} attachments`}>
+                      <span className="metric active"><Paperclip size={12} /> {attachmentCount}</span>
+                    </Tooltip>
+                  )}
                   {hasChecklists && (
-                    <span className={`metric active ${doneChecks === totalChecks ? 'done' : ''}`} title={`${doneChecks}/${totalChecks} done`}>
-                      <CheckSquare size={12} /> {doneChecks}/{totalChecks}
-                    </span>
+                    <Tooltip content={`${doneChecks}/${totalChecks} done`}>
+                      <span className={`metric active ${doneChecks === totalChecks ? 'done' : ''}`}>
+                        <CheckSquare size={12} /> {doneChecks}/{totalChecks}
+                      </span>
+                    </Tooltip>
                   )}
                 </div>
                 <div className="card-assignees">
-                  {task.assigneeImg && <img src={task.assigneeImg} alt="" className="avatar tiny" title={task.assigneeName || 'Assignee'} />}
+                  {task.assigneeImg && (
+                    <Tooltip content={task.assigneeName || 'Assignee'}>
+                      <Avatar
+                        key={task.assigneeImg}
+                        src={task.assigneeImg}
+                        name={task.assigneeName}
+                        alt=""
+                        className="avatar tiny"
+                      />
+                    </Tooltip>
+                  )}
                 </div>
               </div>
             )}

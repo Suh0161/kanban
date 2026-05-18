@@ -59,7 +59,7 @@ export function buildOpenApiDocument() {
       description:
         'REST API for Elevate, a planning workspace for engineering teams. ' +
         'Authenticate via JWT bearer tokens (from /api/v1/auth/login) or API keys ' +
-        '(X-API-Key header or ?api_key= query param). Use workspace_id to scope all operations.',
+        '(X-API-Key header). Use workspace_id to scope all operations.',
       contact: { name: 'Elevate' },
     },
     servers,

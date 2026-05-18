@@ -16,32 +16,21 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../api/client.js';
 import { Logo } from '../../ui';
+import { parseOauthFragment } from '../../../utils/oauth.js';
 import './css/oauth-callback.css';
 
 const TOKEN_KEY = 'Elevate-token';
 const STORAGE_KEY = 'Elevate-auth';
-
-function parseHash() {
-  const raw = (window.location.hash || '').replace(/^#/, '');
-  if (!raw) return {};
-  const out = {};
-  for (const piece of raw.split('&')) {
-    const [k, v] = piece.split('=', 2);
-    if (!k) continue;
-    out[decodeURIComponent(k)] = decodeURIComponent(v || '');
-  }
-  return out;
-}
 
 export default function OauthCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const { token, next } = parseHash();
+    const { token, next } = parseOauthFragment();
     // Clear the fragment so refresh / back-button don't re-run this.
     if (window.history.replaceState) {
-      window.history.replaceState(null, '', window.location.pathname);
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
     }
 
     if (!token) {
@@ -57,7 +46,7 @@ export default function OauthCallback() {
         if (cancelled) return;
         if (me?.user) localStorage.setItem(STORAGE_KEY, JSON.stringify(me.user));
         sessionStorage.setItem('Elevate-welcome', '1');
-        navigate(next || '/workspace', { replace: true });
+        navigate(next, { replace: true });
       } catch (err) {
         if (cancelled) return;
         // Token was bad / network down — clear and bounce to login.

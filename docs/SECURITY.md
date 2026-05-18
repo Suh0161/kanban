@@ -1,7 +1,8 @@
 # Elevate Security & Deployment Audit
 
 A review of data handling, auth, transport, dependencies, and what it
-takes to deploy on Vercel + Supabase.
+takes to deploy on Vercel + Fly, with optional Supabase Storage or a
+future Supabase Postgres migration.
 
 ---
 
@@ -25,6 +26,9 @@ takes to deploy on Vercel + Supabase.
 - Documented and shipped a Postgres / Supabase migration plan
   (`database/supabase/schema.sql`) that mirrors the SQLite schema and
   layers on Row Level Security. See §6.
+- Documented that Supabase Storage is optional upload storage only. It
+  does not make Supabase the main database unless the backend DB layer is
+  migrated from SQLite to `DATABASE_URL`.
 
 ---
 
@@ -124,11 +128,22 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 
 ---
 
-## 6. Migration to Supabase / Postgres
+## 6. Supabase Storage and Postgres migration
 
-The backend currently talks to SQLite directly. Two paths forward:
+The backend currently talks to SQLite directly. Supabase Storage can be
+used independently for upload bytes, but the app database remains SQLite
+until the query layer is migrated.
 
-### Path A: keep the Express API, swap the storage driver
+### Optional: Supabase Storage for uploads
+
+Supabase Storage only stores avatars, workspace assets, and task
+attachments. The API still authenticates requests, records metadata in
+SQLite, and streams private bytes back through signed URLs. Configure it
+with `STORAGE_BACKEND=supabase`, `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET`.
+
+### Path A: keep the Express API, migrate DB to Postgres
+
 1. Provision a Supabase project; copy the connection string into
    `DATABASE_URL`.
 2. Run `database/supabase/schema.sql` in the Supabase SQL editor.
@@ -136,9 +151,8 @@ The backend currently talks to SQLite directly. Two paths forward:
    to expose the same `prepare(...).get()/.all()/.run()` shape, OR adopt
    a thin query helper. The route/service layer is parameterized
    throughout so the change stays local.
-4. Replace `services/storage/localDisk.js` with a Supabase Storage
-   implementation. The HTTP layer already uses opaque storage keys so
-   the change is one file.
+4. Keep local upload storage or switch upload bytes to Supabase Storage.
+   This choice is independent from the database migration.
 5. Continue minting JWTs server-side (no Supabase Auth required).
 
 ### Path B: let Supabase own auth + RLS
@@ -151,8 +165,8 @@ The backend currently talks to SQLite directly. Two paths forward:
    `requireAuth` with a verifier that consumes the Supabase JWT
    (`supabase.auth.getUser(token)` or local JWKS verification with the
    project's JWT secret).
-5. Storage moves to Supabase Storage with the bucket policies sketched at
-   the bottom of `schema.sql`.
+5. If upload bytes also move to Supabase Storage, use the bucket policies
+   sketched at the bottom of `schema.sql`.
 
 Either way, RLS in the schema is your safety net: even if a route forgets
 to call `assertCanEdit`, the database will still refuse the write because
@@ -169,8 +183,11 @@ the policy ties every row to `workspace_members`.
   a short-lived access token + refresh token pair if compliance demands
   it (SOC 2 typically wants ≤ 1h access tokens).
 - **MFA**: route through Supabase Auth (Path B above).
-- **Backups**: Supabase auto-snapshots; for SQLite, schedule
-  `sqlite3 jokel.db ".backup /backups/$(date +%F).db"`.
+- **Backups**: for SQLite on Fly, keep volume snapshots enabled and also
+  schedule an off-volume backup such as
+  `sqlite3 /data/elevate.db ".backup /backups/$(date +%F).db"` followed
+  by a copy to separate storage. Supabase Postgres has its own snapshots
+  after a database migration.
 - **Anomaly alerts**: pipe the `[AUDIT]` lines into a log sink (Logtail,
   Datadog, Better Stack) and alert on `LOGIN_FAILURE` spikes /
   `WORKSPACE_DELETED` events.

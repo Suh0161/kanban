@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, Check, Eye, EyeOff, Lock, Upload, User, X, Link } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { Avatar } from '../../ui';
+import { ALLOWED_IMAGE_ACCEPT, ALLOWED_IMAGE_LABEL, isAllowedImageFile } from '../../../utils/fileTypes.js';
 import './css/profile.css';
 
 const AVATAR_SEEDS = [
@@ -46,7 +48,7 @@ export default function ProfileModal({ onClose }) {
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { setProfileError('Please select an image file'); return; }
+    if (!isAllowedImageFile(file)) { setProfileError(`Please select a ${ALLOWED_IMAGE_LABEL} image`); return; }
     if (file.size > 2 * 1024 * 1024) { setProfileError('Image must be under 2MB'); return; }
     setProfileError(null);
     setPendingFile(file);
@@ -153,7 +155,14 @@ export default function ProfileModal({ onClose }) {
             {/* Avatar preview + upload actions */}
             <div className="profile-avatar-section">
               <div className="profile-avatar-current">
-                <img src={avatarPreview} alt="" className="profile-avatar-img" onError={e => { e.target.src = presetUrl('DemoUser'); }} />
+                <Avatar
+                  key={avatarPreview}
+                  src={avatarPreview}
+                  name={name || user?.name || 'DemoUser'}
+                  seed="DemoUser"
+                  alt=""
+                  className="profile-avatar-img"
+                />
                 <button
                   type="button"
                   className="profile-avatar-badge"
@@ -165,7 +174,7 @@ export default function ProfileModal({ onClose }) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept={ALLOWED_IMAGE_ACCEPT}
                   className="profile-file-input"
                   onChange={handleFileChange}
                 />
@@ -175,7 +184,7 @@ export default function ProfileModal({ onClose }) {
                 <button type="button" className="profile-upload-btn" onClick={() => fileInputRef.current?.click()}>
                   <Upload size={13} /> Upload photo
                 </button>
-                <span className="profile-avatar-hint">JPG, PNG, GIF · max 2MB</span>
+                <span className="profile-avatar-hint">{ALLOWED_IMAGE_LABEL} · max 2MB</span>
               </div>
             </div>
 

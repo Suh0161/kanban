@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { apiGet, apiPost, apiDelete, resolveServerUrl } from '../../../../api/client.js';
-import { Avatar } from '../../../ui';
+import { Avatar, Tooltip } from '../../../ui';
 
 const VISIBLE_AVATARS = 4;
 
@@ -79,45 +79,48 @@ export default function WatcherControl({ taskId }) {
   const overflow = Math.max(0, watchers.length - VISIBLE_AVATARS);
   const Icon = watching ? EyeOff : Eye;
   const label = watching ? 'Watching' : 'Watch';
+  const tooltip =
+    state === 'error'
+      ? 'Couldn\u2019t load watchers'
+      : watching
+        ? 'Stop watching this task'
+        : 'Get notified about activity on this task';
 
   return (
     <div className="task-detail-watch-row">
-      <button
-        type="button"
-        className={`task-detail-watch-btn ${watching ? 'is-watching' : ''}`}
-        onClick={toggle}
-        disabled={busy || state === 'loading' || state === 'error'}
-        title={
-          state === 'error'
-            ? 'Couldn\u2019t load watchers'
-            : watching
-              ? 'Stop watching this task'
-              : 'Get notified about activity on this task'
-        }
-        aria-pressed={watching}
-      >
-        <Icon size={13} /> {label}
-        {watchers.length > 0 && (
-          <span className="task-detail-watch-count">{watchers.length}</span>
-        )}
-      </button>
+      <Tooltip content={tooltip}>
+        <button
+          type="button"
+          className={`task-detail-watch-btn ${watching ? 'is-watching' : ''}`}
+          onClick={toggle}
+          disabled={busy || state === 'loading' || state === 'error'}
+          aria-pressed={watching}
+        >
+          <Icon size={13} /> {label}
+          {watchers.length > 0 && (
+            <span className="task-detail-watch-count">{watchers.length}</span>
+          )}
+        </button>
+      </Tooltip>
 
       {watchers.length > 0 && (
         <div className="task-detail-watch-pile" aria-label={`${watchers.length} watcher${watchers.length === 1 ? '' : 's'}`}>
           {visible.map((w) => (
-            <Avatar
-              key={w.id}
-              src={w.avatar}
-              name={w.name || w.email}
-              alt={w.name || w.email}
-              title={w.name || w.email}
-              className="task-detail-watch-avatar"
-            />
+            <Tooltip key={w.id} content={w.name || w.email}>
+              <Avatar
+                src={w.avatar}
+                name={w.name || w.email}
+                alt={w.name || w.email}
+                className="task-detail-watch-avatar"
+              />
+            </Tooltip>
           ))}
           {overflow > 0 && (
-            <span className="task-detail-watch-avatar task-detail-watch-overflow" title={`${overflow} more`}>
-              +{overflow}
-            </span>
+            <Tooltip content={`${overflow} more`}>
+              <span className="task-detail-watch-avatar task-detail-watch-overflow">
+                +{overflow}
+              </span>
+            </Tooltip>
           )}
         </div>
       )}

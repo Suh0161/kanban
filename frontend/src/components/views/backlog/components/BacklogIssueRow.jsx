@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleAlert, MessageSquare, Paperclip, Plus, TriangleAlert, X } from 'lucide-react';
 import Select from '../../../ui/Select.jsx';
+import { Avatar } from '../../../ui';
 import { PRIORITIES } from '../../../../constants.js';
 import { isOverdue } from '../backlogUtils.js';
 
@@ -122,7 +123,7 @@ export default function BacklogIssueRow({ task, columns, columnOrder, onSelectTa
         </div>
         <div className="backlog-row-footer">
           {task.assigneeImg
-            ? <img src={task.assigneeImg} alt={task.assigneeName || ''} className="avatar backlog-avatar" title={task.assigneeName} />
+            ? <Avatar key={task.assigneeImg} src={task.assigneeImg} name={task.assigneeName} alt={task.assigneeName || ''} className="avatar backlog-avatar" title={task.assigneeName} />
             : <span className="workspace-avatar-empty backlog-avatar" title="Unassigned" />
           }
           {canEdit && (

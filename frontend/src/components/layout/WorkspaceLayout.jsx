@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
-import { useParams, Navigate, Routes, Route, useNavigate, useMatch } from 'react-router-dom';
+import { Link, useParams, Navigate, Routes, Route, useNavigate, useMatch, useLocation } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import { Sidebar, Topbar, NewIssueModal, TaskDetailView } from '../index.js';
 import { ErrorBoundary } from '../ui';
 import SearchPalette from '../ui/SearchPalette.jsx';
@@ -11,6 +12,8 @@ const BacklogView = lazy(() => import('../views/backlog/BacklogView'));
 const MyWorkView = lazy(() => import('../views/mywork/MyWorkView'));
 const TeamView = lazy(() => import('../views/team/TeamView'));
 const SettingsView = lazy(() => import('../views/settings/SettingsView'));
+const PluginsView = lazy(() => import('../views/plugins/PluginsView'));
+const PluginsConnectView = lazy(() => import('../views/plugins/PluginsConnectView'));
 import { useWorkspaces } from '../../hooks/useWorkspaces.js';
 import { useBoard } from '../../hooks/useBoard.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -29,7 +32,7 @@ const WORKSPACE_ONBOARDING_STEPS = [
   {
     targetSelector: '[data-onboarding="nav-boards"]',
     title: 'Move around fast',
-    body: 'The sidebar connects the board, backlog, personal queue, planning views, people, and workspace settings.',
+    body: 'The sidebar connects the board, backlog, personal queue, planning views, people, plugins, and workspace settings.',
     placement: 'right',
     align: 'start',
     pad: 6,
@@ -89,6 +92,27 @@ const WORKSPACE_ONBOARDING_STEPS = [
   },
 ];
 
+const HASH_ROUTE_VIEWS = new Set([
+  'boards',
+  'backlog',
+  'my-work',
+  'team',
+  'plugins',
+  'settings',
+]);
+
+function readWorkspaceRouteHashView() {
+  const slug = (typeof window !== 'undefined'
+    ? window.location.hash.replace(/^#/, '').trim().toLowerCase()
+    : '');
+  return HASH_ROUTE_VIEWS.has(slug) ? slug : null;
+}
+
+function pathnameIsTaskDetailWithinWorkspace(workspaceIdArg, pathname) {
+  const base = `/workspace/${workspaceIdArg}/tasks/`;
+  return pathname.startsWith(base) && pathname.slice(base.length).length > 0;
+}
+
 const ViewFallback = () => (
   <div style={{
     display: 'flex',
@@ -130,13 +154,21 @@ export default function WorkspaceLayout() {
   const canEdit = myRole === 'owner' || myRole === 'admin' || myRole === 'member';
 
   const navigate = useNavigate();
+  const location = useLocation();
   const taskRouteMatch = useMatch('/workspace/:workspaceId/tasks/:taskCode');
+  const pluginsConnectMatch = useMatch('/workspace/:workspaceId/plugins/connect');
   const isTaskRoute = !!taskRouteMatch;
 
   const openTask = useCallback((task) => {
     if (!task?.code) return;
     navigate(`/workspace/${workspaceId}/tasks/${task.code}`);
   }, [navigate, workspaceId]);
+
+  const leavePluginsConnectIfNeeded = useCallback(() => {
+    if (location.pathname.endsWith('/plugins/connect')) {
+      navigate(`/workspace/${workspaceId}`);
+    }
+  }, [location.pathname, navigate, workspaceId]);
 
   const [newIssueOpen, setNewIssueOpen] = useState(false);
   const [newIssue, setNewIssue] = useState({
@@ -157,7 +189,18 @@ export default function WorkspaceLayout() {
   const [newColumnTitle, setNewColumnTitle] = useState('');
 
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('Elevate-sidebar-open') !== 'false');
-  const [activeView, setActiveView] = useState(() => localStorage.getItem(`Elevate-active-view-${workspaceId}`) || 'boards');
+  const [activeView, setActiveView] = useState(() => {
+    const fromHash = readWorkspaceRouteHashView();
+    if (fromHash) return fromHash;
+    try {
+      return localStorage.getItem(`Elevate-active-view-${workspaceId}`) || 'boards';
+    } catch {
+      return 'boards';
+    }
+  });
+
+  /** URL sub-routes (e.g. plugins/connect) keep shell chrome aligned without syncing React state in an effect. */
+  const navigationActiveView = pluginsConnectMatch ? 'plugins' : activeView;
 
   const [menuOpenCol, setMenuOpenCol] = useState(null);
   const [editingCol, setEditingCol] = useState(null);
@@ -179,26 +222,39 @@ export default function WorkspaceLayout() {
 
   const activeFilterCount = filterPriorities.length + filterTags.length;
   const isFiltered = !!(searchQuery || filterPriorities.length > 0 || filterTags.length > 0);
-  const isBoardView = activeView === 'boards';
+  const isBoardView = navigationActiveView === 'boards';
 
   useEffect(() => {
     localStorage.setItem('Elevate-sidebar-open', sidebarOpen ? 'true' : 'false');
   }, [sidebarOpen]);
 
   useEffect(() => {
-    const handler = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setSearchPaletteOpen(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
-  useEffect(() => {
     localStorage.setItem(`Elevate-active-view-${workspaceId}`, activeView);
   }, [activeView, workspaceId]);
+
+  /** Deep-link hashes like `#plugins` (path-based router ignores the fragment). */
+  useEffect(() => {
+    const applyRouteHashIfPresent = () => {
+      const v = readWorkspaceRouteHashView();
+      if (!v) return;
+      if (window.location.pathname.endsWith('/plugins/connect')) {
+        navigate(`/workspace/${workspaceId}`, { replace: true });
+      }
+      setActiveView(v);
+      if (pathnameIsTaskDetailWithinWorkspace(workspaceId, window.location.pathname)) {
+        navigate(`/workspace/${workspaceId}`, { replace: true });
+      }
+    };
+
+    window.addEventListener('hashchange', applyRouteHashIfPresent);
+
+    const rafId = requestAnimationFrame(() => applyRouteHashIfPresent());
+
+    return () => {
+      window.removeEventListener('hashchange', applyRouteHashIfPresent);
+      cancelAnimationFrame(rafId);
+    };
+  }, [workspaceId, navigate]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -219,11 +275,14 @@ export default function WorkspaceLayout() {
   const beginOnboarding = useCallback((options = {}) => {
     const { forceBoards = false } = options;
     tourSnapshotViewRef.current = activeView;
-    if (forceBoards) setActiveView('boards');
+    if (forceBoards) {
+      leavePluginsConnectIfNeeded();
+      setActiveView('boards');
+    }
     setSidebarOpen(true);
     setOnboardingMountKey(k => k + 1);
     setOnboardingOpen(true);
-  }, [activeView]);
+  }, [activeView, leavePluginsConnectIfNeeded]);
 
   useEffect(() => {
     if (!workspaceId || !user || isOnboardingComplete(user)) return;
@@ -239,23 +298,28 @@ export default function WorkspaceLayout() {
 
   const skipOnboarding = useCallback(() => {
     setOnboardingOpen(false);
+    leavePluginsConnectIfNeeded();
     setActiveView(tourSnapshotViewRef.current);
     if (user) setOnboardingComplete(user);
-  }, [user]);
+  }, [user, leavePluginsConnectIfNeeded]);
 
   const handleTourStepChange = useCallback((step) => {
-    if (step?.activeView) setActiveView(step.activeView);
-  }, []);
+    if (step?.activeView) {
+      leavePluginsConnectIfNeeded();
+      setActiveView(step.activeView);
+    }
+  }, [leavePluginsConnectIfNeeded]);
 
   const replayGuidedTour = useCallback(() => {
     beginOnboarding({ forceBoards: true });
   }, [beginOnboarding]);
 
   const viewTitles = {
-    boards: 'Boards',
+    boards: 'Board',
     backlog: 'Backlog',
     'my-work': 'My Work',
     team: 'Team',
+    plugins: 'Plugins',
     settings: 'Settings'
   };
 
@@ -339,7 +403,8 @@ export default function WorkspaceLayout() {
       }
     },
     onSearchFocus: () => {
-      setFilterOpen(true);
+      setFilterOpen(false);
+      setSearchPaletteOpen(true);
     },
     selectedTask: null,
     onOpenTask: (task) => openTask(task),
@@ -351,18 +416,24 @@ export default function WorkspaceLayout() {
       handleDeleteTask(taskId);
     },
     onNextView: () => {
-      const views = ['boards', 'backlog', 'my-work', 'team', 'settings'];
-      const idx = views.indexOf(activeView);
-      if (idx < views.length - 1) setActiveView(views[idx + 1]);
+      const views = ['boards', 'backlog', 'my-work', 'team', 'plugins', 'settings'];
+      const idx = views.indexOf(navigationActiveView);
+      if (idx < views.length - 1) {
+        leavePluginsConnectIfNeeded();
+        setActiveView(views[idx + 1]);
+      }
     },
     onPrevView: () => {
-      const views = ['boards', 'backlog', 'my-work', 'team', 'settings'];
-      const idx = views.indexOf(activeView);
-      if (idx > 0) setActiveView(views[idx - 1]);
+      const views = ['boards', 'backlog', 'my-work', 'team', 'plugins', 'settings'];
+      const idx = views.indexOf(navigationActiveView);
+      if (idx > 0) {
+        leavePluginsConnectIfNeeded();
+        setActiveView(views[idx - 1]);
+      }
     },
     isModalOpen: isTaskRoute,
     isComposerOpen: !!addingToCol,
-    activeView,
+    activeView: navigationActiveView,
   });
 
   const renderActiveView = () => {
@@ -406,6 +477,15 @@ export default function WorkspaceLayout() {
         <ErrorBoundary key="team">
           <Suspense fallback={<ViewFallback />}>
             <TeamView tasks={allTasks} onSelectTask={openTask} />
+          </Suspense>
+        </ErrorBoundary>
+      );
+    }
+    if (activeView === 'plugins') {
+      return (
+        <ErrorBoundary key="plugins">
+          <Suspense fallback={<ViewFallback />}>
+            <PluginsView workspaceId={workspaceId} workspaceName={currentWorkspace?.name} />
           </Suspense>
         </ErrorBoundary>
       );
@@ -459,10 +539,12 @@ export default function WorkspaceLayout() {
                   }
                 }}
                 onOpenLabels={() => {
+                  leavePluginsConnectIfNeeded();
                   setSettingsInitialSection('labels');
                   setActiveView('settings');
                 }}
                 onOpenMembers={() => {
+                  leavePluginsConnectIfNeeded();
                   setSettingsInitialSection('members');
                   setActiveView('settings');
                 }}
@@ -550,19 +632,34 @@ export default function WorkspaceLayout() {
   return (
     <div className={`app-container ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
       <Sidebar
+        key={workspaceId}
+        workspaceId={workspaceId}
         isOpen={sidebarOpen}
-        activeView={activeView}
+        activeView={navigationActiveView}
         onSelectView={(view) => {
           setActiveView(view);
           if (isTaskRoute) navigate(`/workspace/${workspaceId}`);
+          else leavePluginsConnectIfNeeded();
         }}
         onToggle={() => setSidebarOpen(v => !v)}
-        onOpenSettings={() => setActiveView('settings')}
+        onOpenSettings={() => {
+          leavePluginsConnectIfNeeded();
+          setActiveView('settings');
+        }}
       />
 
       <main className="main-content">
         <Topbar
-          activeViewTitle={isTaskRoute ? (taskRouteMatch?.params?.taskCode || 'Task') : viewTitles[activeView]}
+          activeViewTitle={isTaskRoute ? (taskRouteMatch?.params?.taskCode || 'Task') : viewTitles[navigationActiveView]}
+          breadcrumbTail={
+            pluginsConnectMatch && !isTaskRoute ? (
+              <>
+                <Link to={`/workspace/${workspaceId}`} className="breadcrumb-link">Plugins</Link>
+                <ChevronRight size={14} className="breadcrumb-sep" />
+                <span className="breadcrumb-current">Connect</span>
+              </>
+            ) : undefined
+          }
           workspaceName={currentWorkspace.name}
           workspaceLogo={currentWorkspace.logo || null}
           isBoardView={isBoardView && !isTaskRoute}
@@ -610,6 +707,16 @@ export default function WorkspaceLayout() {
                   canEdit={canEdit}
                 />
               }
+            />
+            <Route
+              path="plugins/connect"
+              element={(
+                <ErrorBoundary key="plugins-connect">
+                  <Suspense fallback={<ViewFallback />}>
+                    <PluginsConnectView workspaceId={workspaceId} />
+                  </Suspense>
+                </ErrorBoundary>
+              )}
             />
             {/* Only the bare workspace path renders the active view; anything
                 else nested under /workspace/:id/... that we don't recognise

@@ -58,6 +58,22 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_one_owner
   ON workspace_members(workspace_id) WHERE role = 'owner';
 
+-- Workspace Invites
+CREATE TABLE IF NOT EXISTS workspace_invites (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  invitee_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  invited_by_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member', 'viewer')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'cancelled')),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  responded_at TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_invites_pending
+  ON workspace_invites(workspace_id, invitee_user_id) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_workspace_invites_invitee_status
+  ON workspace_invites(invitee_user_id, status, created_at);
+
 -- Columns (Kanban columns)
 CREATE TABLE IF NOT EXISTS columns (
   id TEXT PRIMARY KEY,

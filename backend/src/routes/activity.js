@@ -18,13 +18,16 @@ const Query = z.object({
 
 const ActivityEntry = z.object({
   id: z.string(),
-  userId: z.string(),
+  userId: z.string().nullable(),
+  userName: z.string().optional(),
+  userAvatar: z.string().nullable().optional(),
   workspaceId: z.string(),
   event: z.string(),
   entityType: z.string().optional(),
   entityId: z.string().optional(),
+  taskCode: z.string().optional(),
   detail: z.string().optional(),
-  created_at: z.string(),
+  createdAt: z.string(),
 });
 
 defineRoute(

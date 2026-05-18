@@ -34,7 +34,7 @@ const CreateTaskBody = z.object({
   tags: z.array(z.string()).optional(),
   description: z.string().max(10000).optional(),
   dueDate: z.string().optional(),
-  assigneeId: z.string().optional(),
+  assigneeId: z.string().nullable().optional(),
 });
 
 const UpdateTaskBody = z.object({
@@ -43,7 +43,7 @@ const UpdateTaskBody = z.object({
   tags: z.array(z.string()).optional(),
   description: z.string().max(10000).optional(),
   dueDate: z.string().optional(),
-  assigneeId: z.string().optional(),
+  assigneeId: z.string().nullable().optional(),
   customFields: z.record(z.string(), z.any()).optional(),
   labelIds: z.array(z.string()).optional(),
   sprintId: z.string().nullable().optional(),

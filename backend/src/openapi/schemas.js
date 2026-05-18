@@ -169,6 +169,7 @@ export const ErrorResponse = registry.register(
     .object({
       error: z.string(),
       code: z.string(),
+      requestId: z.string().optional(),
     })
     .openapi('Error')
 );
