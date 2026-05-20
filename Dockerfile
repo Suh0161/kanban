@@ -2,9 +2,7 @@
 #
 # Elevate backend container.
 #
-# Built from the REPO ROOT so the image can include both backend/ and
-# database/ (schema.sql sits outside backend/). Fly's `fly deploy` runs
-# from this directory; `fly.toml` lives next to this file.
+# Built from the REPO ROOT (Railway, Fly legacy, or local `docker build`).
 #
 # Two-stage build:
 #   1. `build` — installs prod deps with the toolchain needed to compile
@@ -55,7 +53,7 @@ COPY database/schema.sql ./database/schema.sql
 # them relative to backend/, so the layout has to mirror the dev tree.
 COPY docs ./docs
 
-# Volume mount target. Fly mounts a persistent volume here at runtime.
+# Volume mount target. Railway / Fly mount a persistent volume here at runtime.
 RUN mkdir -p /data && chown -R app:app /data /app
 
 USER app

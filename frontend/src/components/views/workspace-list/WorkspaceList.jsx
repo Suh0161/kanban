@@ -35,6 +35,7 @@ import {
   markNotificationsReadAll,
 } from '../../../utils/notificationReadState.js';
 import { ErrorState } from '../error';
+import { LOGIN_PATH } from '../../../config/urls.js';
 import './css/workspacelist.css';
 
 const ACTIVITY_PER_WORKSPACE = 6;
@@ -98,7 +99,7 @@ async function fetchNotificationBundle(workspaceList) {
 
 export default function WorkspaceList() {
   const { workspaces, addWorkspace, updateWorkspace, deleteWorkspace, error: listError, refetch: refetchWorkspaces } = useWorkspaces();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [query, setQuery] = useState('');
@@ -129,6 +130,11 @@ export default function WorkspaceList() {
   const [deleteError, setDeleteError] = useState(null);
 
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate(LOGIN_PATH);
+  };
 
   useEffect(() => {
     if (welcome) {
@@ -382,8 +388,7 @@ export default function WorkspaceList() {
       {/* Top navigation */}
       <nav className="wl-nav">
         <div className="wl-nav-brand">
-          <Logo size={22} className="wl-brand-icon" />
-          <span className="wl-brand-text">Elevate</span>
+          <Logo variant="wordmark" className="wl-brand-wordmark" />
         </div>
 
         <div className="wl-nav-actions">
@@ -563,7 +568,7 @@ export default function WorkspaceList() {
               </div>
             )}
           </div>
-          <UserDropdown user={user} onLogout={() => navigate('/')} />
+          <UserDropdown user={user} onLogout={handleLogout} />
         </div>
       </nav>
 

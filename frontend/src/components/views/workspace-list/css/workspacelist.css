@@ -23,17 +23,8 @@
   gap: 12px;
 }
 
-.wl-brand-icon {
-  width: 22px;
-  height: auto;
+.wl-brand-wordmark {
   flex: 0 0 auto;
-  display: block;
-}
-
-.wl-brand-text {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-primary);
 }
 
 .wl-nav-actions {

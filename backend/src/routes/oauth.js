@@ -17,7 +17,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import { z } from 'zod';
 import db from '../db.js';
-import { FRONTEND_URLS, IS_PROD } from '../config.js';
+import { FRONTEND_URLS, IS_PROD, PUBLIC_API_URL } from '../config.js';
 import { auditLog } from '../middleware/audit.js';
 import { findOrCreateOAuthUser } from '../services/authService.js';
 import { getProvider, listConfiguredProviders, signState, verifyState } from '../services/oauthService.js';
@@ -42,17 +42,46 @@ function frontendBase() {
   return FRONTEND_URLS[0] || '/';
 }
 
+const DEFAULT_NEXT_PATH = '/workspace';
+// Dummy origin for path parsing — must match frontend `getSafeOauthNextPath`.
+const REDIRECT_URL_BASE = 'https://elevate.local';
+
 function callbackUrl(req, providerId) {
+  const path = `/api/v1/auth/oauth/${providerId}/callback`;
+
+  if (IS_PROD && PUBLIC_API_URL) {
+    try {
+      const base = new URL(PUBLIC_API_URL);
+      return `${base.origin}${path}`;
+    } catch {
+      // fall through to request-derived origin
+    }
+  }
+
   const proto = req.headers['x-forwarded-proto'] || req.protocol;
   const host = req.get('host');
-  return `${proto}://${host}/api/v1/auth/oauth/${providerId}/callback`;
+  return `${proto}://${host}${path}`;
 }
 
 function safeRedirectPath(value) {
-  // Only allow same-origin paths. Reject absolute URLs / protocol-relative.
-  if (typeof value !== 'string') return '/workspace';
-  if (!value.startsWith('/') || value.startsWith('//')) return '/workspace';
-  return value;
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) {
+    return DEFAULT_NEXT_PATH;
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(raw, REDIRECT_URL_BASE);
+  } catch {
+    return DEFAULT_NEXT_PATH;
+  }
+
+  if (parsed.origin !== REDIRECT_URL_BASE) return DEFAULT_NEXT_PATH;
+  if (parsed.pathname !== '/workspace' && !parsed.pathname.startsWith('/workspace/')) {
+    return DEFAULT_NEXT_PATH;
+  }
+
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
 }
 
 function parseCookies(header) {
@@ -168,7 +197,7 @@ defineRoute(
     const fail = (reason) => {
       clearOauthNonceCookie(res);
       auditLog('LOGIN_FAILURE', { provider: req.params.provider, reason });
-      const url = new URL('/', base);
+      const url = new URL('/login', base);
       url.searchParams.set('oauth_error', reason);
       res.redirect(url.toString());
     };

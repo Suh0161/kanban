@@ -87,7 +87,10 @@ future Supabase Postgres migration.
 
 ## 3. Transport & deployment headers (Vercel)
 
-`frontend/vercel.json` sets these for every response:
+Both `frontend/vercel.json` and `website/vercel.json` set these for every
+response on their respective Vercel projects:
+
+`frontend/vercel.json` (app SPA):
 
 | Header | Value |
 | ------ | ----- |
@@ -100,6 +103,11 @@ future Supabase Postgres migration.
 
 The SPA rewrite (`/(.*) -> /index.html`) keeps client-side routing working.
 Long-cache headers on `/assets/*` keep Vite's hashed bundle fast.
+
+`website/vercel.json` (marketing site) ships the same header set with a
+tighter `connect-src 'self'` (no API or third-party fetch targets in the
+static bundle). Deploy it as a separate Vercel project with root directory
+`website/`.
 
 ---
 

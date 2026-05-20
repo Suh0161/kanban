@@ -220,7 +220,7 @@
   }
 
   // ---------- Operation card ----------
-  function renderOperation(method, path, op, baseUrl) {
+  function renderOperation(method, path, op, displayBaseUrl, tryItBaseUrl) {
     const id = opId(method, path);
     const card = el('section', { class: 'op-card', id });
 
@@ -374,7 +374,7 @@
     // --- RIGHT: example request & response ---
 
     // Build curl
-    const curl = buildCurl(method, path, op, baseUrl, params);
+    const curl = buildCurl(method, path, op, displayBaseUrl, params);
     right.append(
       el(
         'div',
@@ -384,7 +384,7 @@
     );
 
     // Try It panel — actually hits the live API
-    right.append(buildTryItPanel(method, path, op, baseUrl, params));
+    right.append(buildTryItPanel(method, path, op, tryItBaseUrl, params));
 
     body.append(left, right);
     card.append(body);
@@ -1078,7 +1078,14 @@
 
   // ---------- Main render ----------
   function render() {
-    const baseUrl = (spec.servers && spec.servers[0] && spec.servers[0].url) || '';
+    const urls = window.ElevateDocsUrls || {};
+    const displayBaseUrl =
+      urls.CANONICAL_API_BASE ||
+      (urls.resolveDisplayBaseUrl && urls.resolveDisplayBaseUrl(spec)) ||
+      'https://app.arcnvd.com/api/v1';
+    const tryItBaseUrl =
+      (urls.resolveTryItBaseUrl && urls.resolveTryItBaseUrl(spec)) ||
+      displayBaseUrl;
     const tags = spec.tags || [];
 
     // Group operations by tag, preserving spec tag order
@@ -1118,7 +1125,7 @@
         el(
           'div',
           { class: 'ref-meta' },
-          el('div', { class: 'ref-meta-item' }, el('span', { class: 'ref-meta-label' }, 'Base URL'), el('span', { class: 'ref-meta-value' }, baseUrl)),
+          el('div', { class: 'ref-meta-item' }, el('span', { class: 'ref-meta-label' }, 'Base URL'), el('span', { class: 'ref-meta-value' }, displayBaseUrl)),
           el('div', { class: 'ref-meta-item' }, el('span', { class: 'ref-meta-label' }, 'Version'), el('span', { class: 'ref-meta-value' }, info.version || '1.0')),
           el('div', { class: 'ref-meta-item' }, el('span', { class: 'ref-meta-label' }, 'Format'), el('span', { class: 'ref-meta-value' }, 'application/json'))
         )
@@ -1138,7 +1145,7 @@
       );
 
       ops.forEach(({ method, path, op }) => {
-        content.append(renderOperation(method, path, op, baseUrl));
+        content.append(renderOperation(method, path, op, displayBaseUrl, tryItBaseUrl));
       });
     });
 

@@ -2,7 +2,7 @@
 
 > Workspace-wide rules for AI agents working on Elevate. **Workspace rules
 > override global rules.** Anything in the per-folder `AGENTS.md`
-> (`backend/AGENTS.md`, `docs/AGENTS.md`) takes precedence inside that
+> (`backend/AGENTS.md`, `docs/AGENTS.md`, `website/AGENTS.md`) takes precedence inside that
 > folder.
 
 ## Persona
@@ -50,7 +50,8 @@ npm run openapi:check        # CI guard. Fails if openapi.json is stale.
 
 ```
 elevate/
-├── frontend/                 # React 19 SPA
+├── frontend/                 # React 19 SPA (app)
+├── website/                  # Marketing site SPA (arcnvd.com)
 ├── backend/                  # Express API + OpenAPI generator
 ├── database/
 │   ├── schema.sql            # SQLite DDL (applied at startup)

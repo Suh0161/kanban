@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { apiFetch, apiUpload, resolveServerUrl } from '../api/client.js';
+import { apiFetch, apiUpload, resolveServerUrl, setSessionClearHandler } from '../api/client.js';
 import { ALLOWED_IMAGE_LABEL, isAllowedImageFile } from '../utils/fileTypes.js';
 
 const STORAGE_KEY = 'Elevate-auth';
@@ -36,6 +36,15 @@ function setSharedUser(user) {
 
 // Initialize from storage
 sharedUser = normalizeUser(getStoredUser());
+
+/** Sync shared auth state after OAuth or other out-of-band token writes. */
+export function applyAuthSession(user, { token } = {}) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  setSharedUser(user ?? null);
+  if (!user) localStorage.removeItem(TOKEN_KEY);
+}
+
+setSessionClearHandler(() => setSharedUser(null));
 
 export function useAuth() {
   const [user, setUser] = useState(() => sharedUser ?? getStoredUser());

@@ -5,21 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Quickstart · Elevate API</title>
   <meta name="description" content="Make your first Elevate API request in under a minute." />
+  <link rel="icon" type="image/png" href="/api/docs/assets/elevate-favicon-pixel.png" />
   <link rel="icon" type="image/svg+xml" href="/api/docs/assets/elevate.svg" />
-  <link rel="apple-touch-icon" href="/api/docs/assets/elevate.svg" />
-  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="apple-touch-icon" href="/api/docs/assets/elevate-logo-pixel.png" />
+  <meta name="theme-color" content="#000000" />
+  <script src="/api/docs/assets/theme-boot.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/api/docs/assets/style.css" />
 </head>
 <body>
 
 <header class="header">
   <div class="header-left">
-    <a href="/api/docs" class="brand">
-      <img src="/api/docs/assets/elevate.svg" alt="" width="22" height="22" />
-      Elevate API
+    <a href="/api/docs" class="brand" aria-label="Elevate API home">
+      <img class="brand-logo brand-logo--wordmark" src="/api/docs/assets/elevate-v1.svg" alt="" width="172"
+        height="19" />
     </a>
     <nav class="nav-tabs" aria-label="Primary">
       <a href="/api/docs" class="nav-tab">Overview</a>
@@ -28,6 +30,10 @@
     </nav>
   </div>
   <div class="header-right">
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme" title="Toggle theme">
+      <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
   </div>
 </header>
 
@@ -81,7 +87,7 @@
         <div class="code-head-left"><span class="method method-get">GET</span><span>/board/{workspaceId}</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> http://localhost:3001/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> https://app.arcnvd.com/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span></code></pre>
     </div>
 
@@ -95,7 +101,7 @@
         <div class="code-head-left"><span class="method method-post">POST</span><span>/tasks</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST http://localhost:3001/api/v1/tasks <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://app.arcnvd.com/api/v1/tasks <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"columnId":"col-1","title":"Fix login bug","priority":"High","tags":["bug"]}'</span></code></pre>
@@ -112,7 +118,7 @@
         <div class="code-head-left"><span class="method method-patch">PATCH</span><span>/tasks/{taskId}/move</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH http://localhost:3001/api/v1/tasks/task-1/move <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH https://app.arcnvd.com/api/v1/tasks/task-1/move <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"targetColumnId":"col-2"}'</span></code></pre>
@@ -135,6 +141,10 @@
       </a>
     </div>
   </article>
+
+  <footer class="docs-footer" aria-label="Site footer">
+    <figure class="docs-footer-art" aria-hidden="true"></figure>
+  </footer>
 
 </div>
 

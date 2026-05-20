@@ -13,10 +13,16 @@ docs/
 │   ├── authentication.html
 │   └── webhooks.html
 ├── assets/
-│   ├── style.css                 # Shared stylesheet
-│   ├── docs.js                   # Shared JS (copy buttons, scroll-spy)
+│   ├── style.css                 # Shared stylesheet (light + dark)
+│   ├── theme-boot.js             # FOUC-free theme init
+│   ├── api-urls.js               # API base URL helpers
+│   ├── docs.js                   # Theme toggle, copy buttons, scroll-spy
 │   ├── reference.js              # OpenAPI renderer (fetches /api/spec)
-│   └── hero.png                  # Hero background (pixel art)
+│   ├── elevate-v1.svg            # Header wordmark
+│   ├── elevate.svg               # Favicon SVG (icon mark)
+│   ├── elevate-favicon-pixel.png
+│   ├── elevate-logo-pixel.png
+│   └── hero-dark.png / hero-light.png
 ├── openapi.json                  # Generated artifact (committed)
 └── README.md
 ```

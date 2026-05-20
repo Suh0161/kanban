@@ -46,6 +46,10 @@ export const FRONTEND_URLS = RAW_FRONTEND_URL
 // Back-compat alias for code that expects a single string.
 export const FRONTEND_URL = FRONTEND_URLS[0];
 
+// Public API origin (e.g. https://app.arcnvd.com). Optional locally;
+// set in production so OAuth callback URLs pin to the canonical host.
+export const PUBLIC_API_URL = process.env.PUBLIC_API_URL?.trim() || null;
+
 // Audit logging config
 export const AUDIT_LOG_ENABLED = requireEnv('AUDIT_LOG_ENABLED', 'true') === 'true';
 

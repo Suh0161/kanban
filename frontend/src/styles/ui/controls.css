@@ -1,0 +1,78 @@
+/* ============================================================
+   Board / modal / palette controls — premium minimal chrome
+   ============================================================ */
+
+.filter-popover .btn,
+.filter-actions .btn,
+.modal-actions .btn,
+.composer-actions .btn,
+.add-card-composer .btn,
+.add-column-composer .btn {
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+}
+
+.filter-popover .btn:focus-visible,
+.filter-actions .btn:focus-visible,
+.modal-actions .btn:focus-visible,
+.composer-actions .btn:focus-visible,
+.add-card-composer .btn:focus-visible,
+.add-column-composer .btn:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.filter-popover .btn-primary,
+.filter-actions .btn-primary,
+.modal-actions .btn-primary,
+.composer-actions .btn-primary {
+  background-color: var(--accent-color);
+  color: var(--text-on-accent);
+  border-color: transparent;
+}
+
+.filter-popover .btn-primary:hover,
+.filter-actions .btn-primary:hover,
+.modal-actions .btn-primary:hover,
+.composer-actions .btn-primary:hover {
+  background-color: var(--accent-color-hover);
+}
+
+.filter-popover .btn-outline,
+.filter-actions .btn-outline,
+.modal-actions .btn-outline,
+.composer-actions .btn-outline {
+  border-color: var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.filter-popover .btn-outline:hover:not(:disabled),
+.filter-actions .btn-outline:hover:not(:disabled),
+.modal-actions .btn-outline:hover:not(:disabled),
+.composer-actions .btn-outline:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.filter-popover .btn.is-active,
+.filter-popover .btn.btn-active {
+  border-color: var(--border-strong);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.filter-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background-color: var(--accent-color);
+  color: var(--text-on-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-none);
+}

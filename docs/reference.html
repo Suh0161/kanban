@@ -6,22 +6,24 @@
   <title>API Reference · Elevate API</title>
   <meta name="description" content="Complete REST API reference for Elevate." />
 
+  <link rel="icon" type="image/png" href="/api/docs/assets/elevate-favicon-pixel.png" />
   <link rel="icon" type="image/svg+xml" href="/api/docs/assets/elevate.svg" />
-  <link rel="apple-touch-icon" href="/api/docs/assets/elevate.svg" />
-  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="apple-touch-icon" href="/api/docs/assets/elevate-logo-pixel.png" />
+  <meta name="theme-color" content="#000000" />
+  <script src="/api/docs/assets/theme-boot.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/api/docs/assets/style.css" />
 </head>
 <body>
 
 <header class="header">
   <div class="header-left">
-    <a href="/api/docs" class="brand">
-      <img src="/api/docs/assets/elevate.svg" alt="" width="22" height="22" />
-      Elevate API
+    <a href="/api/docs" class="brand" aria-label="Elevate API home">
+      <img class="brand-logo brand-logo--wordmark" src="/api/docs/assets/elevate-v1.svg" alt="" width="172"
+        height="19" />
     </a>
     <nav class="nav-tabs" aria-label="Primary">
       <a href="/api/docs" class="nav-tab">Overview</a>
@@ -30,6 +32,10 @@
     </nav>
   </div>
   <div class="header-right">
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme" title="Toggle theme">
+      <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
   </div>
 </header>
 
@@ -49,8 +55,13 @@
     <div class="ref-loading-page">Loading API reference…</div>
   </article>
 
+  <footer class="docs-footer" aria-label="Site footer">
+    <figure class="docs-footer-art" aria-hidden="true"></figure>
+  </footer>
+
 </div>
 
+<script src="/api/docs/assets/api-urls.js"></script>
 <script src="/api/docs/assets/docs.js"></script>
 <script src="/api/docs/assets/reference.js"></script>
 </body>

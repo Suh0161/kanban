@@ -1,55 +1,64 @@
-import { UserPlus, LayoutDashboard, Webhook, Code2 } from 'lucide-react';
-
 const STEPS = [
   {
-    icon: UserPlus,
-    step: '01',
-    title: 'Create a workspace',
-    desc: 'Sign up, create a workspace, and invite your team. Roles are assigned per workspace so one person can be an owner in one and a viewer in another.',
+    num: '01',
+    kana: '室',
+    title: 'Open a workspace',
+    desc: 'Sign in, create a space, invite the team. Roles are per workspace.',
   },
   {
-    icon: LayoutDashboard,
-    step: '02',
-    title: 'Build your board',
-    desc: 'Add columns that match your workflow. Create tasks from the board, the backlog, or the inbox. Drag to move, click to open the full detail view.',
+    num: '02',
+    kana: '段',
+    title: 'Shape columns',
+    desc: 'Tasks from board, backlog, or inbox. Detail view when you need depth.',
   },
   {
-    icon: Webhook,
-    step: '03',
-    title: 'Connect your tools',
-    desc: 'Register a webhook to get notified on task events. Generate an API key for your CI pipeline. The OpenAPI spec is generated from code so it\'s always accurate.',
+    num: '03',
+    kana: '繋',
+    title: 'Wire integrations',
+    desc: 'Webhooks for lifecycle events. API keys for pipelines. OpenAPI from routes.',
   },
   {
-    icon: Code2,
-    step: '04',
-    title: 'Automate with the API',
-    desc: 'Every action in the UI has a corresponding REST endpoint. Read the docs at /api/docs, try requests live in the built-in API console, and build on top of Elevate.',
+    num: '04',
+    kana: '自',
+    title: 'Automate via REST',
+    desc: 'Every UI action maps to an endpoint. Extend in your own tools.',
   },
 ];
 
 export default function HowItWorks() {
   return (
-    <section className="how section" id="how-it-works" aria-labelledby="how-heading">
-      <div className="container">
-        <div className="section-header">
-          <div className="kicker">How it works</div>
-          <h2 id="how-heading" className="section-heading">
-            Up and running in minutes.
+    <section className="home-flow section" id="how-it-works" aria-labelledby="home-flow-heading">
+      <div className="container home-flow-layout">
+        <header className="home-section-head home-section-head--flow">
+          <p className="home-section-eyebrow font-pixel-sm">
+            <span lang="ja" className="home-section-kana" aria-hidden="true">
+              手順
+            </span>
+            Flow
+          </p>
+          <h2 id="home-flow-heading" className="home-section-title">
+            Signup to automation in four steps.
           </h2>
-        </div>
+        </header>
 
-        <div className="how-steps">
-          {STEPS.map(({ icon: Icon, step, title, desc }) => (
-            <div key={step} className="how-step">
-              <div className="how-step-icon">
-                <Icon size={18} />
+        <ol className="home-flow-list">
+          {STEPS.map(({ num, kana, title, desc }) => (
+            <li key={num} className="home-flow-row">
+              <div className="home-flow-index">
+                <span className="home-flow-kana" lang="ja" aria-hidden="true">
+                  {kana}
+                </span>
+                <span className="home-flow-num font-pixel-sm" aria-hidden="true">
+                  {num}
+                </span>
               </div>
-              <div className="how-step-num">{step}</div>
-              <h3 className="how-step-title">{title}</h3>
-              <p className="how-step-desc">{desc}</p>
-            </div>
+              <div className="home-flow-content">
+                <h3 className="home-flow-title">{title}</h3>
+                <p className="home-flow-desc">{desc}</p>
+              </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

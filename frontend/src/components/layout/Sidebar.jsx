@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
+import { LOGIN_PATH } from '../../config/urls.js';
 import { UserDropdown, Avatar, Logo, Tooltip } from '../ui';
 
 const STORAGE_PREFIX = 'Elevate-sidebar-groups-';
@@ -87,7 +88,7 @@ export default function Sidebar({
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate(LOGIN_PATH);
   };
 
   const toggleGroup = useCallback(
@@ -129,8 +130,7 @@ export default function Sidebar({
     <aside className={`sidebar ${isOpen ? 'is-open' : 'is-collapsed'}`}>
       <div className="sidebar-header">
         <div className="logo">
-          <Logo size={20} className="logo-icon" />
-          <span className="logo-text">Elevate</span>
+          <Logo variant="wordmark" className="logo-wordmark" />
         </div>
         <Tooltip content={isOpen ? 'Collapse sidebar' : 'Expand sidebar'} position="right" className="sidebar-toggle-tooltip">
           <button

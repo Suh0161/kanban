@@ -1,0 +1,12 @@
+# Railway backend deploy — uses the repo-root Dockerfile (same image as Fly).
+# Attach a Railway Volume mounted at /data and set DB_PATH / UPLOADS_DIR (see docs/DEPLOYMENT.md).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

@@ -1,0 +1,421 @@
+/*
+  Elevate view shell — shared page chrome for workspace views.
+  Import from each feature css/ file. Uses tokens from variables.css only.
+*/
+
+@import './view-task-row.css';
+
+/* ---- Layout shell ---- */
+
+.view-shell {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px 32px 40px;
+}
+
+.view-page {
+  width: 100%;
+  display: grid;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .view-shell {
+    padding: 20px 16px 32px;
+  }
+}
+
+/* ---- Page header ---- */
+
+.view-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+
+.view-header-copy {
+  min-width: 0;
+}
+
+.view-kicker {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.view-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.view-desc {
+  margin: 8px 0 0;
+  max-width: 62ch;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.view-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ---- Panels ---- */
+
+.view-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.view-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.view-panel-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.view-panel-desc {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.view-panel-body {
+  padding: 18px 20px 22px;
+}
+
+.view-panel-body--flush {
+  padding: 0;
+}
+
+/* ---- Forms ---- */
+
+.view-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.view-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.view-form-row > label,
+.view-form-row > span {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.view-input,
+.view-textarea,
+.view-select {
+  width: 100%;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  transition: border-color 0.12s, background-color 0.12s;
+}
+
+.view-input,
+.view-select {
+  height: 38px;
+  padding: 0 12px;
+}
+
+.view-textarea {
+  min-height: 80px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.view-input:hover,
+.view-textarea:hover,
+.view-select:hover {
+  border-color: var(--border-strong);
+}
+
+.view-input:focus,
+.view-textarea:focus,
+.view-select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background: var(--bg-hover);
+}
+
+.view-input::placeholder,
+.view-textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.view-input:disabled,
+.view-textarea:disabled,
+.view-select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ---- Tables ---- */
+
+.view-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.view-table-header {
+  display: grid;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.view-table-header span {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.view-table-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.view-table-row {
+  display: grid;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.12s;
+}
+
+.view-table-row:last-child {
+  border-bottom: none;
+}
+
+.view-table-row:hover {
+  background: var(--bg-hover);
+}
+
+/* ---- Filter pills ---- */
+
+.view-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.view-pill:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.view-pill.is-active {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ---- CTAs ---- */
+
+.view-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--text-primary);
+  background: var(--text-primary);
+  color: var(--bg-app);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+
+.view-cta-primary:hover {
+  background: var(--accent-color-hover);
+  border-color: var(--accent-color-hover);
+}
+
+.view-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+
+.view-cta-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.view-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 20px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+
+.view-back-link:hover {
+  color: var(--text-primary);
+}
+
+/* ---- Empty states ---- */
+
+.view-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  text-align: center;
+}
+
+.view-empty-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-tertiary);
+}
+
+.view-empty-title {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.view-empty-desc {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.view-empty-inline {
+  margin: 0;
+  padding: 12px 0;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* ---- Callouts & banners ---- */
+
+.view-callout {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+}
+
+.view-callout-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.view-callout-body {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-tertiary);
+}
+
+.view-banner-error {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--color-red) 30%, var(--border-subtle));
+  background: color-mix(in srgb, var(--color-red) 10%, transparent);
+  color: var(--color-red);
+  font-size: 0.8125rem;
+}
+
+/* ---- Popovers (border-only, no shadow) ---- */
+
+.view-popover {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  overflow: hidden;
+}

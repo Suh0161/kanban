@@ -10,6 +10,10 @@
   },
   "servers": [
     {
+      "url": "https://app.arcnvd.com/api/v1",
+      "description": "Production"
+    },
+    {
       "url": "http://localhost:3001/api/v1",
       "description": "Local dev"
     }

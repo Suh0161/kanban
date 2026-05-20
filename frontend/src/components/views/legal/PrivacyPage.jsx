@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Logo } from '../../ui';
+import { LOGIN_PATH } from '../../../config/urls.js';
 import './css/legal.css';
 
 const TOC = [
@@ -42,11 +43,10 @@ export default function PrivacyPage() {
   return (
     <div className="legal-root">
       <nav className="legal-nav">
-        <Link to="/" className="legal-nav-brand">
-          <Logo size={20} className="legal-nav-brand-icon" />
-          <span>Elevate</span>
+        <Link to={LOGIN_PATH} className="legal-nav-brand">
+          <Logo variant="wordmark" className="legal-nav-brand-wordmark" />
         </Link>
-        <Link to="/" className="legal-nav-back">
+        <Link to={LOGIN_PATH} className="legal-nav-back">
           <ArrowLeft size={13} /> Back to sign in
         </Link>
       </nav>
@@ -246,7 +246,7 @@ export default function PrivacyPage() {
         <div className="legal-footer-links">
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
-          <Link to="/">Sign in</Link>
+          <Link to={LOGIN_PATH}>Sign in</Link>
         </div>
       </footer>
     </div>

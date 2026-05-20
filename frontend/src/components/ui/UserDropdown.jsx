@@ -79,8 +79,6 @@ export default function UserDropdown({ user, onLogout, onOpenSettings, placement
 
   if (!user) return null;
 
-  if (!user) return null;
-
   return (
     <>
       <div

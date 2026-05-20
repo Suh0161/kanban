@@ -37,19 +37,17 @@ registry.registerComponent('securitySchemes', 'apiKeyAuth', {
 export function buildOpenApiDocument() {
   const generator = new OpenApiGeneratorV3(registry.definitions);
 
-  // Server list. The first entry is what the docs portal's Try It panel
-  // hits when you click Send, so it has to match the deployed origin in
-  // production. Drives off PUBLIC_API_URL (set by `fly secrets set`),
-  // falls back to the local dev origin.
+  // Server list. Production is always first so committed openapi.json and the
+  // docs portal show the public base URL for copy/examples. PUBLIC_API_URL
+  // overrides the default app host when set (e.g. Fly). Try It uses the
+  // page origin at runtime (see docs/assets/api-urls.js), not servers[0].
+  const CANONICAL_API_ORIGIN = 'https://app.arcnvd.com';
   const publicApiUrl = process.env.PUBLIC_API_URL?.trim();
-  const servers = publicApiUrl
-    ? [
-        { url: `${publicApiUrl.replace(/\/$/, '')}/api/v1`, description: 'Production' },
-        { url: 'http://localhost:3001/api/v1', description: 'Local dev' },
-      ]
-    : [
-        { url: 'http://localhost:3001/api/v1', description: 'Local dev' },
-      ];
+  const productionOrigin = (publicApiUrl || CANONICAL_API_ORIGIN).replace(/\/$/, '');
+  const servers = [
+    { url: `${productionOrigin}/api/v1`, description: 'Production' },
+    { url: 'http://localhost:3001/api/v1', description: 'Local dev' },
+  ];
 
   return generator.generateDocument({
     openapi: '3.0.3',

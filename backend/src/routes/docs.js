@@ -59,9 +59,18 @@ router.get('/docs/guides/webhooks',       (_req, res) => sendFile(res, 'guides/w
 // ---------- Assets ----------
 router.get('/docs/assets/style.css',    (_req, res) => sendFile(res, 'assets/style.css'));
 router.get('/docs/assets/docs.js',      (_req, res) => sendFile(res, 'assets/docs.js'));
+router.get('/docs/assets/api-urls.js',  (_req, res) => sendFile(res, 'assets/api-urls.js'));
+router.get('/docs/assets/theme-boot.js', (_req, res) => sendFile(res, 'assets/theme-boot.js'));
 router.get('/docs/assets/reference.js', (_req, res) => sendFile(res, 'assets/reference.js'));
 router.get('/docs/assets/hero.png',     (_req, res) => sendFile(res, 'assets/hero.png'));
+router.get('/docs/assets/hero-dark.png', (_req, res) => sendFile(res, 'assets/hero-dark.png'));
+router.get('/docs/assets/hero-light.png', (_req, res) => sendFile(res, 'assets/hero-light.png'));
+router.get('/docs/assets/footer-accent-dark.png', (_req, res) => sendFile(res, 'assets/footer-accent-dark.png'));
+router.get('/docs/assets/footer-accent-light.png', (_req, res) => sendFile(res, 'assets/footer-accent-light.png'));
+router.get('/docs/assets/elevate-favicon-pixel.png', (_req, res) => sendFile(res, 'assets/elevate-favicon-pixel.png'));
+router.get('/docs/assets/elevate-logo-pixel.png', (_req, res) => sendFile(res, 'assets/elevate-logo-pixel.png'));
 router.get('/docs/assets/elevate.svg',  (_req, res) => sendFile(res, 'assets/elevate.svg'));
+router.get('/docs/assets/elevate-v1.svg', (_req, res) => sendFile(res, 'assets/elevate-v1.svg'));
 
 // ---------- OpenAPI spec (generated from code) ----------
 let specCache = null;

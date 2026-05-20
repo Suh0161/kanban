@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck, User } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { useOauthProviders } from '../../../hooks/useOauthProviders.js';
 import { apiFetch, getOauthStartUrl } from '../../../api/client.js';
 import { Logo } from '../../ui';
+import { LOGIN_FRESH_PARAM, SITE_URL } from '../../../config/urls.js';
 import './css/login.css';
 
 // SVG Icons for social logins
@@ -42,7 +43,7 @@ const OAUTH_ERROR_MESSAGES = {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout, isLoggedIn, loading: authLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { providers } = useOauthProviders();
   const [mode, setMode] = useState('login');
@@ -67,6 +68,20 @@ export default function LoginPage() {
     ? (OAUTH_ERROR_MESSAGES[oauthErrorCode] || 'Sign-in failed. Please try again.')
     : '';
   const visibleError = error || oauthErrorMessage;
+
+  // Marketing sign-in uses ?fresh=1 so a cached JWT does not skip the form.
+  useEffect(() => {
+    if (searchParams.get(LOGIN_FRESH_PARAM) === '1') {
+      logout();
+      const next = new URLSearchParams(searchParams);
+      next.delete(LOGIN_FRESH_PARAM);
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    if (!authLoading && isLoggedIn) {
+      navigate('/workspace', { replace: true });
+    }
+  }, [authLoading, isLoggedIn, logout, navigate, searchParams, setSearchParams]);
 
   const dismissError = () => {
     setError('');
@@ -120,28 +135,39 @@ export default function LoginPage() {
     <div className="lp-split">
       {/* ── LEFT SIDE SHOWCASE ── */}
       <div className="lp-left">
-        <div className="lp-left-content">
-          <div className="lp-logo-top">
-            <Logo size={26} className="lp-logo-icon-top" />
-            <span>Elevate</span>
+        <div className="lp-copy">
+          <div className="lp-brand-lockup">
+            <Logo variant="wordmark" className="lp-brand-wordmark" />
           </div>
 
-          <h1 className="lp-brand-title">Welcome back<br/>to Elevate</h1>
-          <div className="lp-brand-divider" />
-          <p className="lp-brand-subtitle">Sign in to continue your journey and<br/>achieve more every day.</p>
-          
-          <div className="lp-brand-badge">
-            <div className="lp-badge-icon">
-              <ShieldCheck size={18} strokeWidth={1.5} />
-            </div>
-            <span>Your data is protected<br/>with enterprise-grade security</span>
+          <div className="lp-brand-meta">
+            <span className="lp-kana" lang="ja" aria-hidden="true">昇</span>
+            <span className="lp-eyebrow">Kanban workspace</span>
           </div>
+
+          <h1 className="lp-headline">Welcome back to Elevate</h1>
+
+          <p className="lp-lead">
+            Sign in to continue your journey and achieve more every day.
+          </p>
         </div>
+
+        <p className="lp-trust">
+          <ShieldCheck size={20} strokeWidth={2} aria-hidden="true" />
+          <span>
+            Your data is protected
+            <br />
+            Enterprise-grade security
+          </span>
+        </p>
       </div>
 
       {/* ── RIGHT SIDE AUTH ── */}
       <div className="lp-right">
-        <div className="lp-auth-box">
+        <div className="lp-glass lp-mobile-brand" aria-label="Elevate">
+          <Logo variant="wordmark" className="lp-brand-wordmark" />
+        </div>
+        <div className="lp-glass lp-auth-box">
           <div className="lp-header-right">
             <h2>{mode === 'login' ? 'Login' : 'Sign up'}</h2>
             <p>{mode === 'login' ? 'Glad to see you again!' : 'Create your free account today.'}</p>
@@ -249,6 +275,10 @@ export default function LoginPage() {
                 <>Already have an account? <button onClick={() => switchMode('login')}>Login</button></>
              )}
           </div>
+
+          <p className="lp-marketing-link">
+            <a href={SITE_URL}>← Back to site</a>
+          </p>
         </div>
       </div>
     </div>

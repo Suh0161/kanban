@@ -1,6 +1,6 @@
 # Elevate Website
 
-> TBD — marketing site content and copy are not finalised yet.
+Marketing site for Elevate — home, pricing, try demo, changelog, and legal pages.
 
 ## Stack
 
@@ -13,7 +13,7 @@
 ```bash
 cd website
 npm install
-npm run dev      # http://localhost:5174 (Vite picks the next free port)
+npm run dev      # http://localhost:5174 (strictPort in vite.config.js)
 npm run lint
 npm run build    # output in dist/
 npm run preview
@@ -23,28 +23,17 @@ npm run preview
 
 ```
 website/
-├── public/
-│   └── favicon.svg          # Elevate logo mark
+├── public/                  # Static assets (illustrations, robots.txt, og-image)
 ├── src/
 │   ├── App.jsx              # Router + layout shell
 │   ├── main.jsx             # React entry
 │   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Navbar.jsx   # Fixed top nav with mobile drawer
-│   │   │   └── Footer.jsx   # Multi-column footer
-│   │   └── ui/
-│   │       └── Logo.jsx     # Inline SVG logo (gradient-safe)
-│   ├── pages/
-│   │   ├── home/            # HomePage + Hero, Features, HowItWorks, CTA
-│   │   ├── pricing/         # PricingPage (stub)
-│   │   ├── changelog/       # ChangelogPage (stub)
-│   │   ├── legal/           # PrivacyPage, TermsPage (stubs)
-│   │   └── not-found/       # 404
-│   └── styles/
-│       ├── variables.css    # Design tokens (mirrors app variables)
-│       ├── reset.css        # Box-sizing, base resets
-│       └── index.css        # Utilities, buttons, section helpers
-├── .env.example             # VITE_APP_URL, VITE_DOCS_URL
+│   │   ├── layout/          # Navbar, Footer
+│   │   └── ui/              # Logo
+│   ├── pages/               # home, pricing, try, changelog, legal, not-found
+│   ├── config/urls.js       # VITE_* URL helpers
+│   └── styles/              # variables, reset, index
+├── .env.example             # VITE_SITE_URL, VITE_APP_URL, VITE_DOCS_URL
 ├── vercel.json              # Security headers + SPA rewrite
 └── vite.config.js
 ```
@@ -53,14 +42,17 @@ website/
 
 Copy `.env.example` to `.env.local` and fill in:
 
-| Variable        | Purpose                                      | Default                          |
-| --------------- | -------------------------------------------- | -------------------------------- |
-| `VITE_APP_URL`  | URL of the deployed Elevate app              | `http://localhost:5173`          |
-| `VITE_DOCS_URL` | URL of the API docs portal                   | `http://localhost:3001/api/docs` |
+| Variable         | Purpose                                      | Default (dev)                    |
+| ---------------- | -------------------------------------------- | -------------------------------- |
+| `VITE_SITE_URL`  | Marketing site origin (legal, canonical)     | `http://localhost:5174`          |
+| `VITE_APP_URL`   | URL of the deployed Elevate app              | `http://localhost:5173`          |
+| `VITE_DOCS_URL`  | URL of the API docs portal                   | `http://localhost:3001/api/docs` |
 
 ## Deployment
 
-Deploy to Vercel as a separate project pointing at the `website/` subdirectory. The `vercel.json` ships the same security headers as the app frontend.
+Deploy to Vercel as a separate project pointing at the `website/` subdirectory. The `vercel.json` ships the same security headers as the app frontend. Set `VITE_SITE_URL` to the apex domain (e.g. `https://elevate.com`).
+
+CI runs `npm ci`, `npm run lint`, and `npm run build` on changes under `website/` (see `.github/workflows/website.yml`).
 
 ## Adding a new page
 

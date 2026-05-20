@@ -1,5 +1,39 @@
 // Elevate docs — shared interactions
 
+const DOCS_THEME_STORAGE_KEY = 'elevate-docs-theme';
+
+(function initApiBaseQuickRef() {
+  const node = document.querySelector('[data-elevate-api-base]');
+  const base =
+    (window.ElevateDocsUrls && window.ElevateDocsUrls.CANONICAL_API_BASE) ||
+    'https://app.arcnvd.com/api/v1';
+  if (node) node.textContent = base;
+})();
+
+function applyDocsTheme(theme) {
+  const root = document.documentElement;
+  if (theme === 'light' || theme === 'dark') {
+    root.setAttribute('data-theme', theme);
+    root.style.colorScheme = theme;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#000000');
+  }
+}
+
+(function initDocsThemeToggle() {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    try {
+      localStorage.setItem(DOCS_THEME_STORAGE_KEY, next);
+    } catch (_) {}
+    applyDocsTheme(next);
+  });
+})();
+
 // ---------- Copy buttons on code blocks ----------
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('.copy-btn');

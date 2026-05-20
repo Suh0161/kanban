@@ -40,7 +40,7 @@ elevate/
 | Auth     | JWT (HS256, 7d), bcrypt (cost 12), API keys (SHA-256 hashed), OAuth 2.0 (Google, GitHub) |
 | Storage  | Object storage abstraction (`services/storage/`); local disk today, S3 backend can drop in |
 | Spec     | OpenAPI 3.0 generated from Zod schemas via `defineRoute()` |
-| Deploy   | Vercel frontend + Fly/Node backend on SQLite; Supabase Postgres is a migration target |
+| Deploy   | Vercel frontend + **Railway** backend (Docker + volume); Fly legacy in `fly.toml` |
 
 ---
 
@@ -346,9 +346,9 @@ All uploads do magic-byte sniffing, store SHA-256 + size + mime metadata in the 
 
 ## Deployment notes
 
-- **Frontend on Vercel.** `frontend/vercel.json` sets HSTS, CSP, and Permissions-Policy headers on every response. Set `VITE_API_BASE` to the versioned backend API base, for example `https://kanban-elevate.fly.dev/api/v1`.
-- **Backend on Fly or any Node host.** Requires `JWT_SECRET` (>=32 chars), `FRONTEND_URL`, `PUBLIC_API_URL`, and `DB_PATH` (or `DATABASE_URL` after a Postgres migration). Run `npm run prebuild && npm start`.
-- **SQLite on Fly.** Keep a single backend machine while SQLite and local uploads share one Fly volume. Use `DB_PATH=/data/elevate.db` and `UPLOADS_DIR=/data/uploads`, and schedule Fly volume snapshots plus an off-volume backup.
+- **Frontend on Vercel.** Set `VITE_API_BASE` to `https://app.arcnvd.com/api/v1`.
+- **Backend on Railway.** Docker + volume at `/data`. Set `JWT_SECRET`, `FRONTEND_URL`, `PUBLIC_API_URL`, `DB_PATH=/data/elevate.db`, `UPLOADS_DIR=/data/uploads`. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+- **SQLite on Railway volume.** Single replica; backup `/data/elevate.db` periodically.
 - **Postgres / Supabase.** `database/supabase/schema.sql` is a migration target, not the current runtime DB path. Supabase Storage can be used for uploads only; it does not make the main database Supabase unless the DB layer is migrated to `DATABASE_URL`. Migration notes are in `docs/SECURITY.md`.
 
 ---

@@ -1,4 +1,15 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api/v1';
+const DEV_API_BASE = 'http://localhost:3001/api/v1';
+
+function resolveApiBase() {
+  const configured = import.meta.env.VITE_API_BASE?.trim();
+  if (configured) return configured;
+  if (import.meta.env.DEV) return DEV_API_BASE;
+  throw new Error(
+    'VITE_API_BASE is required in production. Set it at build time (see frontend/.env.example).',
+  );
+}
+
+const API_BASE = resolveApiBase();
 const TOKEN_KEY = 'Elevate-token';
 
 // API_ORIGIN is API_BASE without the /api/v1 suffix, used to resolve
@@ -45,6 +56,13 @@ function getToken() {
   }
 }
 
+let sessionClearHandler = null;
+
+/** Called by useAuth so 401 responses also clear in-memory session state. */
+export function setSessionClearHandler(fn) {
+  sessionClearHandler = typeof fn === 'function' ? fn : null;
+}
+
 function clearToken() {
   try {
     localStorage.removeItem(TOKEN_KEY);
@@ -52,6 +70,7 @@ function clearToken() {
   } catch {
     // localStorage unavailable — ignore.
   }
+  if (sessionClearHandler) sessionClearHandler();
 }
 
 /**

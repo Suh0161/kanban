@@ -1,74 +1,51 @@
-import { ArrowRight, Zap } from 'lucide-react';
-
-const APP_URL = import.meta.env.VITE_APP_URL || 'http://localhost:5173';
+import { Link } from 'react-router-dom';
+import { ArrowRight, BookOpen, LayoutGrid } from 'lucide-react';
+import Logo from '../../../components/ui/Logo.jsx';
+import { TRY_PATH } from '../../../config/nav.js';
+import { DOCS_URL, LOGIN_URL } from './constants.js';
+import HeroCopy from './HeroCopy.jsx';
+import HeroIllustration from './HeroIllustration.jsx';
 
 export default function Hero() {
   return (
-    <section className="hero section" aria-labelledby="hero-heading">
-      {/* Ambient glow */}
-      <div className="hero-glow" aria-hidden="true" />
+    <section className="home-hero pixel-tile-bg" aria-labelledby="home-hero-heading">
+      <div className="container home-hero-grid">
+        <div className="home-hero-copy">
+          <header className="home-hero-brand animate-fade-in-up">
+            <Logo variant="wordmark" size={18} className="home-hero-logo logo-wordmark" />
+            <div className="home-hero-meta">
+              <span className="home-hero-kana" lang="ja" aria-hidden="true">
+                昇
+              </span>
+              <p className="home-hero-eyebrow font-pixel-sm">Planning workspace</p>
+            </div>
+          </header>
 
-      <div className="container hero-inner">
-        {/* Kicker */}
-        <div className="kicker">
-          <Zap size={12} />
-          Kanban and planning for focused teams
+          <HeroCopy />
+
+          <div className="home-hero-cta animate-fade-in-up delay-300">
+            <a href={LOGIN_URL} className="btn btn-primary btn-lg btn-pixel">
+              Open workspace
+              <ArrowRight size={16} aria-hidden="true" />
+            </a>
+            <Link to={TRY_PATH} className="btn btn-outline btn-lg btn-pixel">
+              <LayoutGrid size={16} aria-hidden="true" />
+              Try the board
+            </Link>
+            <a
+              href={DOCS_URL}
+              className="btn btn-outline btn-lg btn-pixel"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <BookOpen size={16} aria-hidden="true" />
+              API docs
+            </a>
+          </div>
         </div>
 
-        {/* Headline */}
-        <h1 id="hero-heading" className="hero-heading">
-          Plan less.<br />
-          <span className="gradient-text">Ship more.</span>
-        </h1>
-
-        <p className="hero-sub">
-          Elevate brings your board, backlog, personal task queue, and team
-          workload into one dark-themed workspace. Built for developers who
-          want a real API, not just a pretty UI.
-        </p>
-
-        {/* CTAs */}
-        <div className="hero-actions">
-          <a href={`${APP_URL}/login`} className="btn btn-primary btn-lg">
-            Get started free
-            <ArrowRight size={16} />
-          </a>
-          <a href={`${APP_URL}/login`} className="btn btn-outline btn-lg">
-            Sign in
-          </a>
-        </div>
-
-        {/* Social proof strip */}
-        <p className="hero-note">
-          No credit card required · Self-host ready · Full REST API
-        </p>
-
-        {/* App preview */}
-        <div className="hero-preview" aria-hidden="true">
-          <div className="hero-preview-bar">
-            <span /><span /><span />
-          </div>
-          <div className="hero-preview-body">
-            <div className="hero-mock-sidebar">
-              {['Boards', 'Backlog', 'My Work', 'Team', 'Settings'].map(l => (
-                <div key={l} className="hero-mock-nav-item">{l}</div>
-              ))}
-            </div>
-            <div className="hero-mock-board">
-              {[
-                { col: 'To Do', cards: ['Design system audit', 'API rate limiting'] },
-                { col: 'In Progress', cards: ['OAuth integration', 'Webhook SSRF guard'] },
-                { col: 'Done', cards: ['JWT auth', 'SQLite schema'] },
-              ].map(({ col, cards }) => (
-                <div key={col} className="hero-mock-col">
-                  <div className="hero-mock-col-head">{col}</div>
-                  {cards.map(c => (
-                    <div key={c} className="hero-mock-card">{c}</div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="home-hero-visual">
+          <HeroIllustration />
         </div>
       </div>
     </section>

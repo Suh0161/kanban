@@ -1,7 +1,8 @@
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth.js';
 import { setUnauthorizedHandler } from './api/client.js';
+import { isPublicAuthPath, LOGIN_PATH } from './config/urls.js';
 import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
 import {
   NotFoundPage,
@@ -20,6 +21,12 @@ const TermsPage = lazy(() => import('./components/views/legal/TermsPage.jsx'));
 
 const Fallback = () => <div className="app-loading"><div className="app-loading-spinner" /></div>;
 
+/** Preserve query (e.g. ?oauth_error=) when backend redirects to `/`. */
+function RootRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: LOGIN_PATH, search }} replace />;
+}
+
 export default function App() {
   const { loading } = useAuth();
   const navigate = useNavigate();
@@ -32,8 +39,8 @@ export default function App() {
     setUnauthorizedHandler(() => {
       // Don't redirect if we're already on a public page.
       const path = window.location.pathname;
-      if (path === '/' || path === '/privacy' || path === '/terms') return;
-      navigate('/', { replace: true });
+      if (isPublicAuthPath(path)) return;
+      navigate(LOGIN_PATH, { replace: true });
     });
     return () => setUnauthorizedHandler(null);
   }, [navigate]);
@@ -44,7 +51,8 @@ export default function App() {
     <ErrorBoundary>
       <OfflineBanner />
       <Routes>
-        <Route path="/" element={<Suspense fallback={<Fallback />}><LoginPage /></Suspense>} />
+        <Route path="/" element={<RootRedirect />} />
+        <Route path={LOGIN_PATH} element={<Suspense fallback={<Fallback />}><LoginPage /></Suspense>} />
         <Route path="/oauth/callback" element={<Suspense fallback={<Fallback />}><OauthCallback /></Suspense>} />
         <Route path="/privacy" element={<Suspense fallback={<Fallback />}><PrivacyPage /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={<Fallback />}><TermsPage /></Suspense>} />

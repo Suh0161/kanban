@@ -1,0 +1,6 @@
+# Allow all crawlers on the marketing site.
+# Set Sitemap to your deployed origin (VITE_SITE_URL) + /sitemap.xml when available.
+User-agent: *
+Allow: /
+
+# Sitemap: https://your-domain.com/sitemap.xml

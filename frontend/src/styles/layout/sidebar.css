@@ -16,8 +16,8 @@
 
 .sidebar-header {
   position: relative;
-  padding: 20px 48px;
-  height: 64px;
+  padding: 16px 44px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -30,6 +30,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 100%;
   font-weight: 600;
   font-size: 1rem;
   color: var(--text-primary);
@@ -37,8 +38,11 @@
   transition: gap 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.logo-icon {
+.logo-wordmark {
   flex: 0 0 auto;
+  height: 15px;
+  width: auto;
+  max-width: 136px;
 }
 
 .logo-text,
@@ -71,7 +75,7 @@
   flex: 0 0 auto;
   position: absolute;
   right: 12px;
-  top: 18px;
+  top: 14px;
   opacity: 1;
   transform: scale(1);
   transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -213,7 +217,7 @@
 
 .sidebar.is-collapsed .sidebar-header {
   padding: 0;
-  height: 64px;
+  height: 56px;
   flex-direction: row;
   justify-content: center;
 }

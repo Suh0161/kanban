@@ -37,16 +37,8 @@
   color: var(--text-primary);
 }
 
-.legal-nav-brand-icon {
-  width: 20px;
-  height: auto;
+.legal-nav-brand-wordmark {
   flex: 0 0 auto;
-  display: block;
-}
-
-.legal-nav-brand span {
-  font-size: 0.9rem;
-  font-weight: 600;
 }
 
 .legal-nav-back {

@@ -8,19 +8,18 @@
  *   3. Strip the fragment from history (so a back-tap doesn't re-process).
  *   4. Replace-navigate to `next` (or `/workspace` by default).
  *
- * Failures (no token, bad token) bounce back to /?oauth_error=... so the
+ * Failures (no token, bad token) bounce back to /login?oauth_error=... so the
  * login page can show a friendly banner.
  */
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../../api/client.js';
+import { applyAuthSession } from '../../../hooks/useAuth.js';
 import { Logo } from '../../ui';
 import { parseOauthFragment } from '../../../utils/oauth.js';
+import { LOGIN_PATH } from '../../../config/urls.js';
 import './css/oauth-callback.css';
-
-const TOKEN_KEY = 'Elevate-token';
-const STORAGE_KEY = 'Elevate-auth';
 
 export default function OauthCallback() {
   const navigate = useNavigate();
@@ -34,26 +33,25 @@ export default function OauthCallback() {
     }
 
     if (!token) {
-      navigate('/?oauth_error=missing_token', { replace: true });
+      navigate(`${LOGIN_PATH}?oauth_error=missing_token`, { replace: true });
       return;
     }
 
     let cancelled = false;
     (async () => {
       try {
-        localStorage.setItem(TOKEN_KEY, token);
+        applyAuthSession(null, { token });
         const me = await apiFetch('/auth/me');
         if (cancelled) return;
-        if (me?.user) localStorage.setItem(STORAGE_KEY, JSON.stringify(me.user));
+        applyAuthSession(me?.user);
         sessionStorage.setItem('Elevate-welcome', '1');
         navigate(next, { replace: true });
       } catch (err) {
         if (cancelled) return;
         // Token was bad / network down — clear and bounce to login.
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(STORAGE_KEY);
+        applyAuthSession(null);
         setError(err?.message || 'Sign-in failed');
-        const target = `/?oauth_error=${encodeURIComponent('session_failed')}`;
+        const target = `${LOGIN_PATH}?oauth_error=${encodeURIComponent('session_failed')}`;
         setTimeout(() => navigate(target, { replace: true }), 800);
       }
     })();
@@ -65,7 +63,7 @@ export default function OauthCallback() {
     <main className="oauth-callback">
       <div className="oauth-callback-card">
         <div className="oauth-callback-icon">
-          <Logo size={32} />
+          <Logo variant="wordmark" className="oauth-callback-wordmark" />
         </div>
         <h1>Signing you in…</h1>
         <p>{error || 'Hang tight while we complete the handshake.'}</p>
