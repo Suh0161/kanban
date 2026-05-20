@@ -41,7 +41,7 @@ export function buildOpenApiDocument() {
   // docs portal show the public base URL for copy/examples. PUBLIC_API_URL
   // overrides the default app host when set (e.g. Fly). Try It uses the
   // page origin at runtime (see docs/assets/api-urls.js), not servers[0].
-  const CANONICAL_API_ORIGIN = 'https://app.arcnvd.com';
+  const CANONICAL_API_ORIGIN = 'https://api.arcnvd.com';
   const publicApiUrl = process.env.PUBLIC_API_URL?.trim();
   const productionOrigin = (publicApiUrl || CANONICAL_API_ORIGIN).replace(/\/$/, '');
   const servers = [

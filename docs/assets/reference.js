@@ -1080,9 +1080,9 @@
   function render() {
     const urls = window.ElevateDocsUrls || {};
     const displayBaseUrl =
-      urls.CANONICAL_API_BASE ||
       (urls.resolveDisplayBaseUrl && urls.resolveDisplayBaseUrl(spec)) ||
-      'https://app.arcnvd.com/api/v1';
+      urls.CANONICAL_API_BASE ||
+      'https://api.arcnvd.com/api/v1';
     const tryItBaseUrl =
       (urls.resolveTryItBaseUrl && urls.resolveTryItBaseUrl(spec)) ||
       displayBaseUrl;

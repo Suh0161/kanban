@@ -6,7 +6,7 @@ const DOCS_THEME_STORAGE_KEY = 'elevate-docs-theme';
   const node = document.querySelector('[data-elevate-api-base]');
   const base =
     (window.ElevateDocsUrls && window.ElevateDocsUrls.CANONICAL_API_BASE) ||
-    'https://app.arcnvd.com/api/v1';
+    'https://api.arcnvd.com/api/v1';
   if (node) node.textContent = base;
 })();
 

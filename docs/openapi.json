@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "https://app.arcnvd.com/api/v1",
+      "url": "https://api.arcnvd.com/api/v1",
       "description": "Production"
     },
     {
@@ -432,6 +432,340 @@
     "parameters": {}
   },
   "paths": {
+    "/workspaces/{workspaceId}/activity": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Get activity log",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "nullable": true,
+              "minimum": 0,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity list"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/api-keys": {
+      "get": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "List API keys",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key list"
+          },
+          "403": {
+            "description": "User session required"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Create API key",
+        "description": "The raw key value is returned only once at creation time. Viewers cannot create API keys.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "scopes": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "API key created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiKey"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "description": "Returned only once. Store securely."
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "created_at"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "User session required"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/api-keys/{keyId}": {
+      "delete": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Revoke API key",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "keyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked"
+          },
+          "403": {
+            "description": "User session required"
+          },
+          "404": {
+            "description": "API key not found"
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/attachments": {
+      "post": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Upload attachment",
+        "description": "Image upload (JPEG/PNG/GIF/WebP), max 5 MB. The response carries the public URL the client should use.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "task_id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "mime_type": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "size": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "task_id",
+                    "type",
+                    "url",
+                    "name"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid file"
+          }
+        }
+      }
+    },
+    "/attachments/{id}/file": {
+      "get": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Download attachment file",
+        "description": "Streams the attachment bytes. Authenticated via either the standard session/API-key headers, or via a signed `?token=` query parameter (used by `<img>` tags which cannot send headers). Tokens expire after 1 hour and are bound to the requesting user.",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "token",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File stream"
+          },
+          "401": {
+            "description": "Missing or invalid credentials"
+          },
+          "404": {
+            "description": "Attachment not found"
+          }
+        }
+      }
+    },
+    "/attachments/{id}": {
+      "delete": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Delete attachment",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
     "/auth/register": {
       "post": {
         "tags": [
@@ -629,6 +963,604 @@
         }
       }
     },
+    "/auth/avatar": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Upload my avatar",
+        "description": "Replaces the calling user's avatar. Bytes go to object storage; the user row only keeps a URL pointer (~tens of bytes).",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar saved"
+          },
+          "400": {
+            "description": "Invalid file"
+          },
+          "403": {
+            "description": "User session required"
+          }
+        }
+      }
+    },
+    "/avatars/{userId}/{filename}": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Stream avatar bytes",
+        "description": "Public read endpoint so <img> tags can render avatars without an Authorization header. Same posture as Slack / GitHub user-content URLs.",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w.-]+$"
+            },
+            "required": true,
+            "name": "filename",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avatar bytes"
+          },
+          "404": {
+            "description": "Avatar not found"
+          }
+        }
+      }
+    },
+    "/board/{workspaceId}": {
+      "get": {
+        "tags": [
+          "Board"
+        ],
+        "summary": "Get full board",
+        "description": "Returns the full board state for a workspace: all tasks, columns, and the column order.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "priority",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated tags"
+            },
+            "required": false,
+            "description": "Comma-separated tags",
+            "name": "tags",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Board state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tasks": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/components/schemas/Task"
+                      }
+                    },
+                    "columns": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/components/schemas/Column"
+                      }
+                    },
+                    "columnOrder": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "tasks",
+                    "columns",
+                    "columnOrder"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/checklists": {
+      "post": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Create checklist",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checklist"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checklists/{id}": {
+      "delete": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Delete checklist",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/checklists/{id}/items": {
+      "post": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Add checklist item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "targetCount": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Item added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checklist-items/{id}": {
+      "patch": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Update checklist item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "done": {
+                    "type": "boolean"
+                  },
+                  "currentCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Delete checklist item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/columns": {
+      "post": {
+        "tags": [
+          "Columns"
+        ],
+        "summary": "Create column",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workspaceId": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9-]+$",
+                    "example": "trust-and-safety"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "workspaceId",
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Column created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Column"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/columns/{id}": {
+      "patch": {
+        "tags": [
+          "Columns"
+        ],
+        "summary": "Rename column",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Column"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Columns"
+        ],
+        "summary": "Delete column",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/columns/reorder": {
+      "post": {
+        "tags": [
+          "Columns"
+        ],
+        "summary": "Reorder columns",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workspaceId": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9-]+$",
+                    "example": "trust-and-safety"
+                  },
+                  "columnOrder": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "workspaceId",
+                  "columnOrder"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reordered"
+          }
+        }
+      }
+    },
+    "/columns/archive/{id}": {
+      "post": {
+        "tags": [
+          "Columns"
+        ],
+        "summary": "Archive column",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived"
+          }
+        }
+      }
+    },
+    "/columns/restore/{id}": {
+      "post": {
+        "tags": [
+          "Columns"
+        ],
+        "summary": "Restore column",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored"
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/comments": {
+      "post": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Add comment",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comment"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/oauth/providers": {
       "get": {
         "tags": [
@@ -745,13 +1677,723 @@
         }
       }
     },
-    "/auth/avatar": {
+    "/workspaces/{workspaceId}/presence/heartbeat": {
       "post": {
         "tags": [
-          "Auth"
+          "Presence"
         ],
-        "summary": "Upload my avatar",
-        "description": "Replaces the calling user's avatar. Bytes go to object storage; the user row only keeps a URL pointer (~tens of bytes).",
+        "summary": "Send heartbeat",
+        "description": "Call every 30 seconds to mark the user as active in a workspace.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/presence": {
+      "get": {
+        "tags": [
+          "Presence"
+        ],
+        "summary": "Get online users",
+        "description": "Returns users seen in the last 60 seconds.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Online users"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health check",
+        "description": "Returns ok=true when the API is up.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Create task",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "columnId": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9-]+$",
+                    "example": "trust-and-safety"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "Critical",
+                      "High",
+                      "Medium",
+                      "Low"
+                    ],
+                    "example": "High"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "dueDate": {
+                    "type": "string"
+                  },
+                  "assigneeId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "columnId",
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "patch": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Update task",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "Critical",
+                      "High",
+                      "Medium",
+                      "Low"
+                    ],
+                    "example": "High"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "dueDate": {
+                    "type": "string"
+                  },
+                  "assigneeId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "customFields": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "nullable": true
+                    }
+                  },
+                  "labelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "sprintId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Delete task",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/tasks/{id}/move": {
+      "patch": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Move task",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "targetColumnId": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9-]+$",
+                    "example": "trust-and-safety"
+                  }
+                },
+                "required": [
+                  "targetColumnId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Moved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/batch/move": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Batch move tasks",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "taskIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "targetColumnId": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9-]+$",
+                    "example": "trust-and-safety"
+                  }
+                },
+                "required": [
+                  "taskIds",
+                  "targetColumnId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch moved"
+          }
+        }
+      }
+    },
+    "/tasks/{id}/archive": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Archive task",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived"
+          }
+        }
+      }
+    },
+    "/tasks/{id}/restore": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Restore task",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored"
+          }
+        }
+      }
+    },
+    "/tasks/purge-archived": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Purge archived tasks older than 30 days",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workspaceId": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9-]+$",
+                    "example": "trust-and-safety"
+                  }
+                },
+                "required": [
+                  "workspaceId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Purged"
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}/watchers": {
+      "get": {
+        "tags": [
+          "Watchers"
+        ],
+        "summary": "List task watchers",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Watcher list + caller status"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Watchers"
+        ],
+        "summary": "Watch task",
+        "description": "Adds the calling user as a watcher. Idempotent.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated watcher list"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Watchers"
+        ],
+        "summary": "Unwatch task",
+        "description": "Removes the calling user from watchers. Idempotent.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated watcher list"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/webhooks": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List webhooks",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook list"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Create webhook",
+        "description": "Returns the signing secret only once at creation time.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "format": "uri"
+                  },
+                  "events": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Webhook"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "secret": {
+                          "type": "string",
+                          "description": "Returned only once. Store securely."
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret",
+                        "created_at"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/webhooks/{id}": {
+      "patch": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Update webhook",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "format": "uri"
+                  },
+                  "events": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          },
+          "404": {
+            "description": "Webhook not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Delete webhook",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Webhook not found"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/webhooks/{id}/test": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Send test ping",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Test ping sent"
+          },
+          "404": {
+            "description": "Webhook not found"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/logo": {
+      "post": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Upload workspace logo",
+        "description": "Replaces the workspace logo. Max 2 MB. Owner / admin only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -769,33 +2411,34 @@
         },
         "responses": {
           "200": {
-            "description": "Avatar saved"
+            "description": "Logo saved"
           },
           "400": {
             "description": "Invalid file"
           },
           "403": {
-            "description": "User session required"
+            "description": "Insufficient role"
           }
         }
       }
     },
-    "/avatars/{userId}/{filename}": {
+    "/logos/{workspaceId}/{filename}": {
       "get": {
         "tags": [
-          "Auth"
+          "Workspaces"
         ],
-        "summary": "Stream avatar bytes",
-        "description": "Public read endpoint so <img> tags can render avatars without an Authorization header. Same posture as Slack / GitHub user-content URLs.",
+        "summary": "Stream workspace logo",
+        "description": "Public so `<img>` tags can render without auth headers. URL changes when the logo is replaced, so a 1-week immutable cache is safe.",
         "security": [],
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "minLength": 1,
+              "maxLength": 200
             },
             "required": true,
-            "name": "userId",
+            "name": "workspaceId",
             "in": "path"
           },
           {
@@ -810,10 +2453,96 @@
         ],
         "responses": {
           "200": {
-            "description": "Avatar bytes"
+            "description": "Logo bytes"
           },
           "404": {
-            "description": "Avatar not found"
+            "description": "Logo not found"
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/background": {
+      "post": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Upload board background image",
+        "description": "Replaces the board background image. Max 5 MB. Owner / admin only. Set the workspace `background` field directly to clear the image or use a CSS color instead.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Background saved"
+          },
+          "400": {
+            "description": "Invalid file"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/backgrounds/{workspaceId}/{filename}": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Stream board background image",
+        "description": "Public so `<img>` tags can render without auth headers. URL changes when replaced, so a 1-week immutable cache is safe.",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w.-]+$"
+            },
+            "required": true,
+            "name": "filename",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Background bytes"
+          },
+          "404": {
+            "description": "Background not found"
           }
         }
       }
@@ -1338,1735 +3067,6 @@
           },
           "404": {
             "description": "New owner is not a member"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/logo": {
-      "post": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Upload workspace logo",
-        "description": "Replaces the workspace logo. Max 2 MB. Owner / admin only.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Logo saved"
-          },
-          "400": {
-            "description": "Invalid file"
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
-    "/logos/{workspaceId}/{filename}": {
-      "get": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Stream workspace logo",
-        "description": "Public so `<img>` tags can render without auth headers. URL changes when the logo is replaced, so a 1-week immutable cache is safe.",
-        "security": [],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "pattern": "^[\\w.-]+$"
-            },
-            "required": true,
-            "name": "filename",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Logo bytes"
-          },
-          "404": {
-            "description": "Logo not found"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/background": {
-      "post": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Upload board background image",
-        "description": "Replaces the board background image. Max 5 MB. Owner / admin only. Set the workspace `background` field directly to clear the image or use a CSS color instead.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Background saved"
-          },
-          "400": {
-            "description": "Invalid file"
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
-    "/backgrounds/{workspaceId}/{filename}": {
-      "get": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Stream board background image",
-        "description": "Public so `<img>` tags can render without auth headers. URL changes when replaced, so a 1-week immutable cache is safe.",
-        "security": [],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "pattern": "^[\\w.-]+$"
-            },
-            "required": true,
-            "name": "filename",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Background bytes"
-          },
-          "404": {
-            "description": "Background not found"
-          }
-        }
-      }
-    },
-    "/board/{workspaceId}": {
-      "get": {
-        "tags": [
-          "Board"
-        ],
-        "summary": "Get full board",
-        "description": "Returns the full board state for a workspace: all tasks, columns, and the column order.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "search",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "priority",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Comma-separated tags"
-            },
-            "required": false,
-            "description": "Comma-separated tags",
-            "name": "tags",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Board state",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "tasks": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "$ref": "#/components/schemas/Task"
-                      }
-                    },
-                    "columns": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "$ref": "#/components/schemas/Column"
-                      }
-                    },
-                    "columnOrder": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "required": [
-                    "tasks",
-                    "columns",
-                    "columnOrder"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/columns": {
-      "post": {
-        "tags": [
-          "Columns"
-        ],
-        "summary": "Create column",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "workspaceId": {
-                    "type": "string",
-                    "pattern": "^[a-zA-Z0-9-]+$",
-                    "example": "trust-and-safety"
-                  },
-                  "title": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200
-                  }
-                },
-                "required": [
-                  "workspaceId",
-                  "title"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Column created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Column"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/columns/{id}": {
-      "patch": {
-        "tags": [
-          "Columns"
-        ],
-        "summary": "Rename column",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "title": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200
-                  }
-                },
-                "required": [
-                  "title"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Column"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Columns"
-        ],
-        "summary": "Delete column",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          }
-        }
-      }
-    },
-    "/columns/reorder": {
-      "post": {
-        "tags": [
-          "Columns"
-        ],
-        "summary": "Reorder columns",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "workspaceId": {
-                    "type": "string",
-                    "pattern": "^[a-zA-Z0-9-]+$",
-                    "example": "trust-and-safety"
-                  },
-                  "columnOrder": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "workspaceId",
-                  "columnOrder"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Reordered"
-          }
-        }
-      }
-    },
-    "/columns/archive/{id}": {
-      "post": {
-        "tags": [
-          "Columns"
-        ],
-        "summary": "Archive column",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Archived"
-          }
-        }
-      }
-    },
-    "/columns/restore/{id}": {
-      "post": {
-        "tags": [
-          "Columns"
-        ],
-        "summary": "Restore column",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Restored"
-          }
-        }
-      }
-    },
-    "/tasks": {
-      "post": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "Create task",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "columnId": {
-                    "type": "string",
-                    "pattern": "^[a-zA-Z0-9-]+$",
-                    "example": "trust-and-safety"
-                  },
-                  "title": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 500
-                  },
-                  "priority": {
-                    "type": "string",
-                    "enum": [
-                      "Critical",
-                      "High",
-                      "Medium",
-                      "Low"
-                    ],
-                    "example": "High"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "description": {
-                    "type": "string",
-                    "maxLength": 10000
-                  },
-                  "dueDate": {
-                    "type": "string"
-                  },
-                  "assigneeId": {
-                    "type": "string",
-                    "nullable": true
-                  }
-                },
-                "required": [
-                  "columnId",
-                  "title"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Task created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Task"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/tasks/{id}": {
-      "patch": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "Update task",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "title": {
-                    "type": "string",
-                    "maxLength": 500
-                  },
-                  "priority": {
-                    "type": "string",
-                    "enum": [
-                      "Critical",
-                      "High",
-                      "Medium",
-                      "Low"
-                    ],
-                    "example": "High"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "description": {
-                    "type": "string",
-                    "maxLength": 10000
-                  },
-                  "dueDate": {
-                    "type": "string"
-                  },
-                  "assigneeId": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "customFields": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
-                  },
-                  "labelIds": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "sprintId": {
-                    "type": "string",
-                    "nullable": true
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Task"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "Delete task",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          }
-        }
-      }
-    },
-    "/tasks/{id}/move": {
-      "patch": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "Move task",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "targetColumnId": {
-                    "type": "string",
-                    "pattern": "^[a-zA-Z0-9-]+$",
-                    "example": "trust-and-safety"
-                  }
-                },
-                "required": [
-                  "targetColumnId"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Moved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Task"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/tasks/batch/move": {
-      "post": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "Batch move tasks",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "taskIds": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "targetColumnId": {
-                    "type": "string",
-                    "pattern": "^[a-zA-Z0-9-]+$",
-                    "example": "trust-and-safety"
-                  }
-                },
-                "required": [
-                  "taskIds",
-                  "targetColumnId"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Batch moved"
-          }
-        }
-      }
-    },
-    "/tasks/{id}/archive": {
-      "post": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "Archive task",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Archived"
-          }
-        }
-      }
-    },
-    "/tasks/{id}/restore": {
-      "post": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "Restore task",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Restored"
-          }
-        }
-      }
-    },
-    "/tasks/purge-archived": {
-      "post": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "Purge archived tasks older than 30 days",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "workspaceId": {
-                    "type": "string",
-                    "pattern": "^[a-zA-Z0-9-]+$",
-                    "example": "trust-and-safety"
-                  }
-                },
-                "required": [
-                  "workspaceId"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Purged"
-          }
-        }
-      }
-    },
-    "/tasks/{taskId}/comments": {
-      "post": {
-        "tags": [
-          "Comments"
-        ],
-        "summary": "Add comment",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 5000
-                  }
-                },
-                "required": [
-                  "text"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Comment added",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Comment"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/tasks/{taskId}/attachments": {
-      "post": {
-        "tags": [
-          "Attachments"
-        ],
-        "summary": "Upload attachment",
-        "description": "Image upload (JPEG/PNG/GIF/WebP), max 5 MB. The response carries the public URL the client should use.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Uploaded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "task_id": {
-                      "type": "string"
-                    },
-                    "type": {
-                      "type": "string"
-                    },
-                    "url": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "mime_type": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "size": {
-                      "type": "number",
-                      "nullable": true
-                    },
-                    "sha256": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "task_id",
-                    "type",
-                    "url",
-                    "name"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid file"
-          }
-        }
-      }
-    },
-    "/attachments/{id}/file": {
-      "get": {
-        "tags": [
-          "Attachments"
-        ],
-        "summary": "Download attachment file",
-        "description": "Streams the attachment bytes. Authenticated via either the standard session/API-key headers, or via a signed `?token=` query parameter (used by `<img>` tags which cannot send headers). Tokens expire after 1 hour and are bound to the requesting user.",
-        "security": [],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "token",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "File stream"
-          },
-          "401": {
-            "description": "Missing or invalid credentials"
-          },
-          "404": {
-            "description": "Attachment not found"
-          }
-        }
-      }
-    },
-    "/attachments/{id}": {
-      "delete": {
-        "tags": [
-          "Attachments"
-        ],
-        "summary": "Delete attachment",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          }
-        }
-      }
-    },
-    "/tasks/{taskId}/checklists": {
-      "post": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Create checklist",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "title": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200
-                  }
-                },
-                "required": [
-                  "title"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Checklist"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/checklists/{id}": {
-      "delete": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Delete checklist",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          }
-        }
-      }
-    },
-    "/checklists/{id}/items": {
-      "post": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Add checklist item",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 500
-                  },
-                  "targetCount": {
-                    "type": "integer",
-                    "minimum": 1
-                  }
-                },
-                "required": [
-                  "text"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Item added",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChecklistItem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/checklist-items/{id}": {
-      "patch": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Update checklist item",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "done": {
-                    "type": "boolean"
-                  },
-                  "currentCount": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChecklistItem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Checklists"
-        ],
-        "summary": "Delete checklist item",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          }
-        }
-      }
-    },
-    "/tasks/{taskId}/watchers": {
-      "get": {
-        "tags": [
-          "Watchers"
-        ],
-        "summary": "List task watchers",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Watcher list + caller status"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Watchers"
-        ],
-        "summary": "Watch task",
-        "description": "Adds the calling user as a watcher. Idempotent.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Updated watcher list"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Watchers"
-        ],
-        "summary": "Unwatch task",
-        "description": "Removes the calling user from watchers. Idempotent.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "taskId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Updated watcher list"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/activity": {
-      "get": {
-        "tags": [
-          "Workspaces"
-        ],
-        "summary": "Get activity log",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "default": 50
-            },
-            "required": false,
-            "name": "limit",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "nullable": true,
-              "minimum": 0,
-              "default": 0
-            },
-            "required": false,
-            "name": "offset",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Activity list"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/presence/heartbeat": {
-      "post": {
-        "tags": [
-          "Presence"
-        ],
-        "summary": "Send heartbeat",
-        "description": "Call every 30 seconds to mark the user as active in a workspace.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/presence": {
-      "get": {
-        "tags": [
-          "Presence"
-        ],
-        "summary": "Get online users",
-        "description": "Returns users seen in the last 60 seconds.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Online users"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/api-keys": {
-      "get": {
-        "tags": [
-          "API Keys"
-        ],
-        "summary": "List API keys",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "API key list"
-          },
-          "403": {
-            "description": "User session required"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "API Keys"
-        ],
-        "summary": "Create API key",
-        "description": "The raw key value is returned only once at creation time. Viewers cannot create API keys.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  },
-                  "scopes": {
-                    "type": "string",
-                    "maxLength": 200
-                  },
-                  "expires_at": {
-                    "type": "string",
-                    "maxLength": 64
-                  }
-                },
-                "required": [
-                  "name"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "API key created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/ApiKey"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "key": {
-                          "type": "string",
-                          "description": "Returned only once. Store securely."
-                        },
-                        "created_at": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "key",
-                        "created_at"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "User session required"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/api-keys/{keyId}": {
-      "delete": {
-        "tags": [
-          "API Keys"
-        ],
-        "summary": "Revoke API key",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "keyId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Revoked"
-          },
-          "403": {
-            "description": "User session required"
-          },
-          "404": {
-            "description": "API key not found"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/webhooks": {
-      "get": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "List webhooks",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Webhook list"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Create webhook",
-        "description": "Returns the signing secret only once at creation time.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "url": {
-                    "type": "string",
-                    "maxLength": 500,
-                    "format": "uri"
-                  },
-                  "events": {
-                    "type": "string",
-                    "maxLength": 500
-                  },
-                  "active": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Webhook created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/Webhook"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "secret": {
-                          "type": "string",
-                          "description": "Returned only once. Store securely."
-                        },
-                        "created_at": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "secret",
-                        "created_at"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/webhooks/{id}": {
-      "patch": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Update webhook",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "url": {
-                    "type": "string",
-                    "maxLength": 500,
-                    "format": "uri"
-                  },
-                  "events": {
-                    "type": "string",
-                    "maxLength": 500
-                  },
-                  "active": {
-                    "type": "boolean"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated"
-          },
-          "404": {
-            "description": "Webhook not found"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Delete webhook",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted"
-          },
-          "404": {
-            "description": "Webhook not found"
-          }
-        }
-      }
-    },
-    "/workspaces/{workspaceId}/webhooks/{id}/test": {
-      "post": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Send test ping",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "workspaceId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Test ping sent"
-          },
-          "404": {
-            "description": "Webhook not found"
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "tags": [
-          "System"
-        ],
-        "summary": "Health check",
-        "description": "Returns ok=true when the API is up.",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Service is healthy"
           }
         }
       }

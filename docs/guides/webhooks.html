@@ -89,7 +89,7 @@
         <div class="code-head-left"><span class="method method-post">POST</span><span>/workspaces/{id}/webhooks</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://app.arcnvd.com/api/v1/workspaces/trust-and-safety/webhooks <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://api.arcnvd.com/api/v1/workspaces/trust-and-safety/webhooks <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"url":"https://example.com/webhook","events":"task.created,task.updated","active":true}'</span></code></pre>
@@ -184,7 +184,7 @@ app.post<span class="tk-pun">(</span><span class="tk-str">'/webhook'</span><span
         <div class="code-head-left"><span class="method method-post">POST</span><span>/workspaces/{wid}/webhooks/{whid}/test</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://app.arcnvd.com/api/v1/workspaces/trust-and-safety/webhooks/wh_abc123/test <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://api.arcnvd.com/api/v1/workspaces/trust-and-safety/webhooks/wh_abc123/test <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span></code></pre>
     </div>
     <p>If the call returns <code>200</code> on our side and your endpoint logs receipt of a <code>ping</code> event, you're set. If you don't see anything land, the most common culprits are: signature verification failing on the test, a firewall blocking inbound from Elevate, or your endpoint requiring auth that the webhook can't satisfy. Local development tools like <a href="https://ngrok.com">ngrok</a> or <a href="https://www.cloudflare.com/products/tunnel/">Cloudflare Tunnel</a> are the easiest way to test from your laptop.</p>
@@ -196,7 +196,7 @@ app.post<span class="tk-pun">(</span><span class="tk-str">'/webhook'</span><span
         <div class="code-head-left"><span class="method method-get">GET</span><span>/workspaces/{id}/webhooks</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> https://app.arcnvd.com/api/v1/workspaces/trust-and-safety/webhooks <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> https://api.arcnvd.com/api/v1/workspaces/trust-and-safety/webhooks <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span></code></pre>
     </div>
 
@@ -206,7 +206,7 @@ app.post<span class="tk-pun">(</span><span class="tk-str">'/webhook'</span><span
         <div class="code-head-left"><span class="method method-patch">PATCH</span><span>/workspaces/{wid}/webhooks/{whid}</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH https://app.arcnvd.com/api/v1/workspaces/trust-and-safety/webhooks/wh_abc123 <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH https://api.arcnvd.com/api/v1/workspaces/trust-and-safety/webhooks/wh_abc123 <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"active":false}'</span></code></pre>

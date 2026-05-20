@@ -87,7 +87,7 @@
         <div class="code-head-left"><span class="method method-get">GET</span><span>/board/{workspaceId}</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> https://app.arcnvd.com/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> https://api.arcnvd.com/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span></code></pre>
     </div>
 
@@ -101,7 +101,7 @@
         <div class="code-head-left"><span class="method method-post">POST</span><span>/tasks</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://app.arcnvd.com/api/v1/tasks <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://api.arcnvd.com/api/v1/tasks <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"columnId":"col-1","title":"Fix login bug","priority":"High","tags":["bug"]}'</span></code></pre>
@@ -118,7 +118,7 @@
         <div class="code-head-left"><span class="method method-patch">PATCH</span><span>/tasks/{taskId}/move</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH https://app.arcnvd.com/api/v1/tasks/task-1/move <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> PATCH https://api.arcnvd.com/api/v1/tasks/task-1/move <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_your_key_here"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"targetColumnId":"col-2"}'</span></code></pre>

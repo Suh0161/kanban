@@ -3,7 +3,7 @@
  * Loaded before docs.js / reference.js (no modules — CSP-safe).
  */
 (function (global) {
-  const CANONICAL_API_BASE = 'https://app.arcnvd.com/api/v1';
+  const CANONICAL_API_BASE = 'https://api.arcnvd.com/api/v1';
   const LOCALHOST_RE =
     /^https?:\/\/(localhost|127(?:\.\d+){0,2}\.\d+|0\.0\.0\.0)(?::\d+)?/i;
 

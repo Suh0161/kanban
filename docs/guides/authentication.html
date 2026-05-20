@@ -79,7 +79,7 @@
         <div class="code-head-left"><span class="method method-post">POST</span><span>/auth/login</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://app.arcnvd.com/api/v1/auth/login <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> <span class="tk-flag">-X</span> POST https://api.arcnvd.com/api/v1/auth/login <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Content-Type: application/json"</span> <span class="tk-pun">\</span>
   <span class="tk-flag">-d</span> <span class="tk-str">'{"email":"user@example.com","password":"your-password"}'</span></code></pre>
     </div>
@@ -92,7 +92,7 @@
         <div class="code-head-left"><span class="method method-get">GET</span><span>/auth/me</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> https://app.arcnvd.com/api/v1/auth/me <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> https://api.arcnvd.com/api/v1/auth/me <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."</span></code></pre>
     </div>
 
@@ -119,7 +119,7 @@
         <div class="code-head-left"><span class="method method-get">GET</span><span>/board/{workspaceId}</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> https://app.arcnvd.com/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> https://api.arcnvd.com/api/v1/board/trust-and-safety <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span></code></pre>
     </div>
 
@@ -138,7 +138,7 @@
         <div class="code-head-left"><span class="method method-get">GET</span><span>/workspaces/{id}/api-keys</span></div>
         <button class="copy-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
       </div>
-      <pre><code><span class="tk-cmd">curl</span> https://app.arcnvd.com/api/v1/workspaces/trust-and-safety/api-keys <span class="tk-pun">\</span>
+      <pre><code><span class="tk-cmd">curl</span> https://api.arcnvd.com/api/v1/workspaces/trust-and-safety/api-keys <span class="tk-pun">\</span>
   <span class="tk-flag">-H</span> <span class="tk-str">"X-API-Key: Elevate_abc123def456"</span></code></pre>
     </div>
     <p>Note that the response only ever returns the key prefix and metadata — the raw key value isn't stored anywhere we could give back. If a key leaks, revoke it with <code>DELETE</code> and create a new one. Revocations take effect immediately.</p>
