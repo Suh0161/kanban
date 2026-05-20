@@ -39,9 +39,12 @@ sharedUser = normalizeUser(getStoredUser());
 
 /** Sync shared auth state after OAuth or other out-of-band token writes. */
 export function applyAuthSession(user, { token } = {}) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else if (!user) {
+    localStorage.removeItem(TOKEN_KEY);
+  }
   setSharedUser(user ?? null);
-  if (!user) localStorage.removeItem(TOKEN_KEY);
 }
 
 setSessionClearHandler(() => setSharedUser(null));
