@@ -68,7 +68,7 @@ docs/
 
 ### Brand assets
 
-Use the right file for each surface. Copy sources from `website/public/` when refreshing brand art.
+Use the right file for each surface. Brand PNG/SVG sources live in `docs/assets/`.
 
 | Asset | Role | Where used |
 | --- | --- | --- |

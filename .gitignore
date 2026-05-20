@@ -44,9 +44,5 @@ tmp-test-*
 *.scratch.test.*
 *.scratch.*
 
-# -- website/ -----------------------------------------------------------------
-# Explicit entries so it's obvious what belongs to the marketing site.
-website/node_modules/
-website/dist/
-website/.env.local
-website/.env.*.local
+# Marketing site (separate private repo — keep a local copy out of git)
+website/
