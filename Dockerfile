@@ -29,8 +29,8 @@ FROM node:20-alpine AS runtime
 RUN addgroup -S app && adduser -S app -G app
 
 # tini reaps zombies and handles SIGINT/SIGTERM cleanly so Fly can drain
-# in-flight requests during deploys.
-RUN apk add --no-cache tini
+# in-flight requests during deploys. su-exec drops root after fixing volume perms.
+RUN apk add --no-cache tini su-exec
 
 WORKDIR /app
 
@@ -53,10 +53,13 @@ COPY database/schema.sql ./database/schema.sql
 # them relative to backend/, so the layout has to mirror the dev tree.
 COPY docs ./docs
 
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 # Volume mount target. Railway / Fly mount a persistent volume here at runtime.
 RUN mkdir -p /data && chown -R app:app /data /app
 
-USER app
+# Entrypoint runs as root briefly to chown the mounted volume, then su-exec app.
 WORKDIR /app/backend
 
 EXPOSE 3001
@@ -64,5 +67,4 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3001/api/health || exit 1
 
-ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "src/server.js"]
+ENTRYPOINT ["/sbin/tini", "--", "/docker-entrypoint.sh"]
