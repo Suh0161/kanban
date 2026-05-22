@@ -16,6 +16,15 @@ pnpm-debug.log*
 database/*.db
 database/*.db-shm
 database/*.db-wal
+/*.db
+/*.db-shm
+/*.db-wal
+
+# Repo-root migration / ops artifacts (Fly→Railway copies — never commit)
+/*.b64
+/uploads/
+/uploads.tgz
+/avatar.png
 
 # Environment files (secrets)
 .env

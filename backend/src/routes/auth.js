@@ -21,7 +21,7 @@ const RegisterBody = z.object({
 
 const LoginBody = z.object({
   email: Email,
-  password: z.string().min(1),
+  password: z.string().min(1).max(128),
 });
 
 const AuthSuccess = z.object({

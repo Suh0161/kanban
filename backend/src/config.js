@@ -13,6 +13,25 @@ function requireEnv(key, fallback) {
   return value;
 }
 
+/** Trim whitespace/tabs, drop blanks, normalize to origin for CORS matching. */
+function parseOriginList(raw) {
+  return String(raw)
+    .trim()
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      try {
+        const url = new URL(entry.includes('://') ? entry : `https://${entry}`);
+        if (!url.protocol.startsWith('http')) return null;
+        return url.origin;
+      } catch {
+        return entry.replace(/\/+$/, '');
+      }
+    })
+    .filter(Boolean);
+}
+
 export const NODE_ENV = requireEnv('NODE_ENV', 'development');
 export const PORT = parseInt(requireEnv('PORT', '3001'), 10);
 export const DB_PATH = requireEnv('DB_PATH', '../database/Elevate.db');
@@ -23,7 +42,11 @@ export const IS_PROD = NODE_ENV === 'production';
 // JWT secret. Required in production; dev/test gets an ephemeral secret when
 // none is configured, so missing env no longer means a predictable signer.
 export const JWT_SECRET = (() => {
-  const value = process.env.JWT_SECRET;
+  const raw = process.env.JWT_SECRET;
+  const value = raw?.trim();
+  if (raw && value !== raw) {
+    console.warn('[config] JWT_SECRET had leading/trailing whitespace; trimmed.');
+  }
   if (!value || value === 'change-me-to-a-long-random-string-min-32-chars') {
     if (IS_PROD) {
       throw new Error('JWT_SECRET is required and must not be the example value in production');
@@ -37,18 +60,29 @@ export const JWT_SECRET = (() => {
   return value;
 })();
 
-// CORS: accept a comma-separated list, trim entries, drop blanks.
+// CORS: comma-separated origins; trim tabs/whitespace, normalize to origin.
 const RAW_FRONTEND_URL = requireEnv('FRONTEND_URL', 'http://localhost:5173');
-export const FRONTEND_URLS = RAW_FRONTEND_URL
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+export const FRONTEND_URLS = parseOriginList(RAW_FRONTEND_URL);
+if (IS_PROD && FRONTEND_URLS.length === 0) {
+  throw new Error('FRONTEND_URL must include at least one valid origin in production');
+}
 // Back-compat alias for code that expects a single string.
 export const FRONTEND_URL = FRONTEND_URLS[0];
 
-// Public API origin (e.g. https://app.arcnvd.com). Optional locally;
+// Public API origin (e.g. https://api.arcnvd.com). Optional locally;
 // set in production so OAuth callback URLs pin to the canonical host.
-export const PUBLIC_API_URL = process.env.PUBLIC_API_URL?.trim() || null;
+export const PUBLIC_API_URL = (() => {
+  const trimmed = process.env.PUBLIC_API_URL?.trim();
+  if (!trimmed) return null;
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    if (IS_PROD) {
+      throw new Error('PUBLIC_API_URL must be a valid absolute URL in production');
+    }
+    return trimmed.replace(/\/+$/, '');
+  }
+})();
 
 // Audit logging config
 export const AUDIT_LOG_ENABLED = requireEnv('AUDIT_LOG_ENABLED', 'true') === 'true';

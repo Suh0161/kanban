@@ -176,12 +176,13 @@ export default function LoginPage() {
           {visibleError && <div className="lp-banner lp-error">{visibleError}</div>}
 
           {mode === 'login' ? (
-            <form onSubmit={handleLogin} className="lp-form">
+            <form onSubmit={handleLogin} className="lp-form" method="post" autoComplete="on">
               <div className="lp-field">
                 <label htmlFor="l-email">Email address</label>
                 <div className="lp-input-wrap">
                   <Mail size={15} />
-                  <input id="l-email" type="email" autoFocus
+                  <input id="l-email" name="email" type="email" autoFocus autoComplete="email"
+                    autoCapitalize="none" autoCorrect="off" spellCheck={false}
                     placeholder="Enter your email" value={email}
                     onChange={e => setEmail(e.target.value)} required />
                 </div>
@@ -190,11 +191,14 @@ export default function LoginPage() {
                 <label htmlFor="l-pw">Password</label>
                 <div className="lp-input-wrap">
                   <Lock size={15} />
-                  <input id="l-pw" type={showPw ? 'text' : 'password'}
+                  <input id="l-pw" name="password" type={showPw ? 'text' : 'password'}
+                    autoComplete="current-password" spellCheck={false}
                     placeholder="Enter your password" value={password}
                     onChange={e => setPassword(e.target.value)} required />
-                  <button type="button" className="lp-eye" onClick={() => setShowPw(v => !v)} tabIndex={-1}>
-                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  <button type="button" className="lp-eye" onClick={() => setShowPw(v => !v)}
+                    aria-label={showPw ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPw}>
+                    {showPw ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
                   </button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
@@ -206,12 +210,12 @@ export default function LoginPage() {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleRegister} className="lp-form">
+            <form onSubmit={handleRegister} className="lp-form" method="post" autoComplete="on">
               <div className="lp-field">
                 <label htmlFor="r-name">Full name</label>
                 <div className="lp-input-wrap">
                   <User size={15} />
-                  <input id="r-name" type="text" autoFocus
+                  <input id="r-name" name="name" type="text" autoFocus autoComplete="name"
                     placeholder="Jane Doe" value={rName}
                     onChange={e => setRName(e.target.value)} required />
                 </div>
@@ -220,7 +224,8 @@ export default function LoginPage() {
                 <label htmlFor="r-email">Email address</label>
                 <div className="lp-input-wrap">
                   <Mail size={15} />
-                  <input id="r-email" type="email"
+                  <input id="r-email" name="email" type="email" autoComplete="email"
+                    autoCapitalize="none" autoCorrect="off" spellCheck={false}
                     placeholder="Enter your email" value={rEmail}
                     onChange={e => setREmail(e.target.value)} required />
                 </div>
@@ -229,11 +234,14 @@ export default function LoginPage() {
                 <label htmlFor="r-pw">Password</label>
                 <div className="lp-input-wrap">
                   <Lock size={15} />
-                  <input id="r-pw" type={showRPw ? 'text' : 'password'}
+                  <input id="r-pw" name="new-password" type={showRPw ? 'text' : 'password'}
+                    autoComplete="new-password" spellCheck={false}
                     placeholder="Create a strong password" value={rPw}
                     onChange={e => setRPw(e.target.value)} required />
-                  <button type="button" className="lp-eye" onClick={() => setShowRPw(v => !v)} tabIndex={-1}>
-                    {showRPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  <button type="button" className="lp-eye" onClick={() => setShowRPw(v => !v)}
+                    aria-label={showRPw ? 'Hide password' : 'Show password'}
+                    aria-pressed={showRPw}>
+                    {showRPw ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
                   </button>
                 </div>
               </div>

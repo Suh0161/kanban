@@ -150,7 +150,7 @@ export default function ProfileModal({ onClose }) {
 
         {/* ── PROFILE TAB ── */}
         {tab === 'profile' && (
-          <form onSubmit={handleSaveProfile} className="profile-body">
+          <form onSubmit={handleSaveProfile} className="profile-body" autoComplete="on">
 
             {/* Avatar preview + upload actions */}
             <div className="profile-avatar-section">
@@ -235,7 +235,9 @@ export default function ProfileModal({ onClose }) {
               <label htmlFor="profile-name">Display name</label>
               <input
                 id="profile-name"
+                name="name"
                 type="text"
+                autoComplete="name"
                 className="profile-input"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -252,6 +254,7 @@ export default function ProfileModal({ onClose }) {
                 type="email"
                 className="profile-input profile-input-readonly"
                 value={user?.email || ''}
+                autoComplete="email"
                 readOnly
                 tabIndex={-1}
               />
@@ -271,14 +274,17 @@ export default function ProfileModal({ onClose }) {
 
         {/* ── PASSWORD TAB ── */}
         {tab === 'password' && (
-          <form onSubmit={handleChangePassword} className="profile-body">
+          <form onSubmit={handleChangePassword} className="profile-body" method="post" autoComplete="on">
             <div className="profile-field">
               <label htmlFor="current-pw">Current password</label>
               <div className="profile-pw-row">
-                <input id="current-pw" type={showCurrent ? 'text' : 'password'} className="profile-input"
+                <input id="current-pw" name="current-password" type={showCurrent ? 'text' : 'password'}
+                  autoComplete="current-password" spellCheck={false} className="profile-input"
                   value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Enter current password" required />
-                <button type="button" className="profile-pw-toggle" onClick={() => setShowCurrent(v => !v)} tabIndex={-1}>
-                  {showCurrent ? <EyeOff size={14} /> : <Eye size={14} />}
+                <button type="button" className="profile-pw-toggle" onClick={() => setShowCurrent(v => !v)}
+                  aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
+                  aria-pressed={showCurrent}>
+                  {showCurrent ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                 </button>
               </div>
             </div>
@@ -286,17 +292,21 @@ export default function ProfileModal({ onClose }) {
             <div className="profile-field">
               <label htmlFor="new-pw">New password</label>
               <div className="profile-pw-row">
-                <input id="new-pw" type={showNew ? 'text' : 'password'} className="profile-input"
+                <input id="new-pw" name="new-password" type={showNew ? 'text' : 'password'}
+                  autoComplete="new-password" spellCheck={false} className="profile-input"
                   value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Min 8 chars, uppercase, number, symbol" required />
-                <button type="button" className="profile-pw-toggle" onClick={() => setShowNew(v => !v)} tabIndex={-1}>
-                  {showNew ? <EyeOff size={14} /> : <Eye size={14} />}
+                <button type="button" className="profile-pw-toggle" onClick={() => setShowNew(v => !v)}
+                  aria-label={showNew ? 'Hide new password' : 'Show new password'}
+                  aria-pressed={showNew}>
+                  {showNew ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                 </button>
               </div>
             </div>
 
             <div className="profile-field">
               <label htmlFor="confirm-pw">Confirm new password</label>
-              <input id="confirm-pw" type="password" className="profile-input"
+              <input id="confirm-pw" name="confirm-password" type="password"
+                autoComplete="new-password" spellCheck={false} className="profile-input"
                 value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Repeat new password" required />
             </div>
 

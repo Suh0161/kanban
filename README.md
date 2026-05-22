@@ -346,7 +346,7 @@ All uploads do magic-byte sniffing, store SHA-256 + size + mime metadata in the 
 
 ## Deployment notes
 
-- **Frontend on Vercel.** Set `VITE_API_BASE` to `https://app.arcnvd.com/api/v1`.
+- **Frontend on Vercel.** Set `VITE_API_BASE` to `https://api.arcnvd.com/api/v1`.
 - **Backend on Railway.** Docker + volume at `/data`. Set `JWT_SECRET`, `FRONTEND_URL`, `PUBLIC_API_URL`, `DB_PATH=/data/elevate.db`, `UPLOADS_DIR=/data/uploads`. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 - **SQLite on Railway volume.** Single replica; backup `/data/elevate.db` periodically.
 - **Postgres / Supabase.** `database/supabase/schema.sql` is a migration target, not the current runtime DB path. Supabase Storage can be used for uploads only; it does not make the main database Supabase unless the DB layer is migrated to `DATABASE_URL`. Migration notes are in `docs/SECURITY.md`.

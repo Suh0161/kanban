@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { apiFetch, apiUpload, resolveServerUrl, setSessionClearHandler } from '../api/client.js';
+import {
+  apiFetch, apiUpload, resolveServerUrl, setSessionClearHandler, clearAuthSession,
+} from '../api/client.js';
 import { ALLOWED_IMAGE_LABEL, isAllowedImageFile } from '../utils/fileTypes.js';
 
 const STORAGE_KEY = 'Elevate-auth';
@@ -76,8 +78,7 @@ export function useAuth() {
         setSharedUser(data.user);
       })
       .catch(() => {
-        setSharedUser(null);
-        localStorage.removeItem(TOKEN_KEY);
+        clearAuthSession();
       })
       .finally(() => setLoading(false));
   }, []);
@@ -97,8 +98,7 @@ export function useAuth() {
   }, []);
 
   const logout = useCallback(() => {
-    setSharedUser(null);
-    localStorage.removeItem(TOKEN_KEY);
+    clearAuthSession();
   }, []);
 
   const updateProfile = useCallback(async (updates) => {

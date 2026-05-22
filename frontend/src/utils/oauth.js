@@ -1,5 +1,17 @@
 const DEFAULT_NEXT_PATH = '/workspace';
 const NEXT_URL_BASE = 'https://elevate.local';
+const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const MAX_TOKEN_LENGTH = 4096;
+
+/** Reject garbage fragments before persisting anything to storage. */
+export function isPlausibleJwt(token) {
+  return (
+    typeof token === 'string'
+    && token.length > 0
+    && token.length <= MAX_TOKEN_LENGTH
+    && JWT_PATTERN.test(token)
+  );
+}
 
 function currentOrigin() {
   if (typeof window === 'undefined') return NEXT_URL_BASE;
@@ -32,8 +44,9 @@ export function parseOauthFragment(hash) {
   if (!raw) return { token: '', next: DEFAULT_NEXT_PATH };
 
   const params = new URLSearchParams(raw);
+  const token = params.get('token') || '';
   return {
-    token: params.get('token') || '',
+    token: isPlausibleJwt(token) ? token : '',
     next: getSafeOauthNextPath(params.get('next')),
   };
 }

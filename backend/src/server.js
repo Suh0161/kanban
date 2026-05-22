@@ -3,14 +3,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
 import net from 'node:net';
 
-import { PORT, FRONTEND_URLS, IS_DEV, IS_PROD, JWT_SECRET } from './config.js';
+import { PORT, FRONTEND_URLS, IS_DEV, IS_PROD, PUBLIC_API_URL } from './config.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { requestLogger } from './middleware/logger.js';
 import { auditMiddleware } from './middleware/audit.js';
 import { requireApiKey } from './middleware/apikey.js';
+import { verifySessionToken } from './middleware/auth.js';
 
 import './db.js';
 
@@ -55,7 +55,7 @@ app.use(helmet({
       scriptSrc: IS_PROD ? ["'self'"] : ["'self'", "'unsafe-inline'"],
       scriptSrcAttr: ["'none'"],
       imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-      connectSrc: ["'self'", ...FRONTEND_URLS],
+      connectSrc: ["'self'", ...FRONTEND_URLS, ...(PUBLIC_API_URL ? [PUBLIC_API_URL] : [])],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://fonts.googleapis.com', 'data:'],
       workerSrc: ["'self'", 'blob:'],
       objectSrc: ["'none'"],
@@ -84,12 +84,7 @@ app.use(helmet({
 // always sends one even for same-origin requests. Without this exception
 // the docs panel would 403 every Try-It call.
 const allowedOrigins = new Set(FRONTEND_URLS);
-const apiPublicOrigin = (() => {
-  const raw = process.env.PUBLIC_API_URL?.trim();
-  if (!raw) return null;
-  try { return new URL(raw).origin; } catch { return null; }
-})();
-if (apiPublicOrigin) allowedOrigins.add(apiPublicOrigin);
+if (PUBLIC_API_URL) allowedOrigins.add(PUBLIC_API_URL);
 
 app.use(cors({
   origin(origin, cb) {
@@ -124,10 +119,8 @@ app.use((req, _res, next) => {
   if (req.userId) return next();
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const decoded = jwt.verify(authHeader.slice(7), JWT_SECRET);
-      if (decoded?.userId) req.userId = decoded.userId;
-    } catch { /* invalid token — leave anonymous, real auth runs later */ }
+    const decoded = verifySessionToken(authHeader.slice(7));
+    if (decoded?.userId) req.userId = decoded.userId;
   }
   next();
 });

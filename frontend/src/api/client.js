@@ -73,6 +73,11 @@ function clearToken() {
   if (sessionClearHandler) sessionClearHandler();
 }
 
+/** Clear persisted credentials and in-memory auth subscribers. */
+export function clearAuthSession() {
+  clearToken();
+}
+
 /**
  * Custom error class so callers can branch on `err.code` / `err.status`.
  * Network failures still surface as plain Errors with `name = 'NetworkError'`.
@@ -99,6 +104,7 @@ export async function apiFetch(path, options = {}) {
     ...options.headers,
   };
   const token = getToken();
+  const sentAuth = !!token;
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -115,9 +121,12 @@ export async function apiFetch(path, options = {}) {
   const requestId = res.headers.get('X-Request-Id') || null;
 
   if (res.status === 401) {
-    // Token expired/invalid — purge and notify the app to redirect.
-    clearToken();
-    if (unauthorizedHandler) unauthorizedHandler();
+    // Only purge session when we sent a bearer token (expired/invalid session).
+    // Bare 401s on /auth/login or /auth/register mean wrong credentials.
+    if (sentAuth) {
+      clearToken();
+      if (unauthorizedHandler) unauthorizedHandler();
+    }
     throw new ApiError({ message: 'Unauthorized', code: 'UNAUTHORIZED', status: 401, requestId });
   }
 
@@ -176,6 +185,7 @@ export async function apiUpload(path, formData) {
   const url = `${API_BASE}${path}`;
   const headers = {};
   const token = getToken();
+  const sentAuth = !!token;
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   let res;
@@ -190,8 +200,10 @@ export async function apiUpload(path, formData) {
   const requestId = res.headers.get('X-Request-Id') || null;
 
   if (res.status === 401) {
-    clearToken();
-    if (unauthorizedHandler) unauthorizedHandler();
+    if (sentAuth) {
+      clearToken();
+      if (unauthorizedHandler) unauthorizedHandler();
+    }
     throw new ApiError({ message: 'Unauthorized', code: 'UNAUTHORIZED', status: 401, requestId });
   }
   if (!res.ok) {

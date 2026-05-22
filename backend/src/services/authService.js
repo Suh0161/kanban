@@ -8,10 +8,12 @@ const failedAttempts = new Map();
 
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 const MAX_FAILED_ATTEMPTS = 5;
+// Always run bcrypt on login so missing users don't leak via timing.
+const TIMING_DUMMY_HASH = bcrypt.hashSync('elevate-timing-guard', 12);
 
 function generateToken(userId) {
   const now = Math.floor(Date.now() / 1000);
-  return jwt.sign({ userId, iat: now }, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ userId, iat: now }, JWT_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
 }
 
 function sanitizeUser(user) {
@@ -95,22 +97,18 @@ export function loginUser(db, { email, password }) {
   }
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-  if (!user || !user.password_hash) {
-    // No row, or this account was created via OAuth and has no password.
-    // Surface an actionable error in the second case.
+  const storedHash = user?.password_hash ?? TIMING_DUMMY_HASH;
+  const passwordValid = bcrypt.compareSync(password, storedHash) && Boolean(user?.password_hash);
+
+  if (!passwordValid) {
+    recordFailedAttempt(email);
     if (user && !user.password_hash) {
-      recordFailedAttempt(email);
       throw new AppError(
         'This account was created with single sign-on. Use the social login button instead.',
         401,
         'OAUTH_ONLY_ACCOUNT'
       );
     }
-    recordFailedAttempt(email);
-    throw new AppError('Invalid credentials', 401, 'UNAUTHORIZED');
-  }
-  if (!bcrypt.compareSync(password, user.password_hash)) {
-    recordFailedAttempt(email);
     throw new AppError('Invalid credentials', 401, 'UNAUTHORIZED');
   }
 

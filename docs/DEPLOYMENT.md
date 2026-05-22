@@ -13,8 +13,8 @@ storage for SQLite plus user uploads. Recommended targets:
 
 Production URLs used below:
 
-- API + docs: `https://app.arcnvd.com`
-- App SPA: `https://app.arcnvd.com` (same host or separate Vercel project)
+- API + docs: `https://api.arcnvd.com`
+- App SPA: `https://app.arcnvd.com`
 - Marketing: `https://arcnvd.com`
 
 ---
@@ -58,7 +58,7 @@ health checks. Railway builds the same image Fly used.
 2. Railway detects `railway.toml` + `Dockerfile`. Root directory = repo root
    (not `backend/`).
 3. **Settings → Networking → Generate domain** (e.g. `your-app.up.railway.app`)
-   or add custom domain **`app.arcnvd.com`** (CNAME to Railway).
+   or add custom domain **`api.arcnvd.com`** (CNAME to Railway).
 
 ### 3b. Attach a persistent volume (required for SQLite)
 
@@ -82,14 +82,14 @@ Set these as **service variables** (Railway → Variables):
 | `DB_PATH` | `/data/elevate.db` |
 | `UPLOADS_DIR` | `/data/uploads` |
 | `JWT_SECRET` | 48+ random bytes (see below) |
-| `FRONTEND_URL` | `https://app.arcnvd.com,https://arcnvd.com` |
-| `PUBLIC_API_URL` | `https://app.arcnvd.com` |
+| `FRONTEND_URL` | `https://app.arcnvd.com,https://arcnvd.com` (no leading tabs/spaces) |
+| `PUBLIC_API_URL` | `https://api.arcnvd.com` |
 | `AUDIT_LOG_ENABLED` | `true` |
 
-Generate JWT secret:
+Generate JWT secret (prefer **base64url** — no `+` or `/` characters):
 
 ```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ```
 
 OAuth (if configured):
@@ -118,7 +118,7 @@ mounts `/data`, and runs health checks on `/api/health`.
 Smoke test:
 
 ```bash
-curl https://app.arcnvd.com/api/health
+curl https://api.arcnvd.com/api/health
 # {"ok":true,"env":"production"}
 ```
 
@@ -151,8 +151,8 @@ railway shell
 
 Or use Railway’s volume backup/restore if you prefer their UI.
 
-4. Update DNS: point **`app.arcnvd.com`** CNAME to Railway (remove Fly).
-5. Update OAuth provider callback URLs to `https://app.arcnvd.com/api/v1/auth/oauth/.../callback`.
+4. Update DNS: point **`api.arcnvd.com`** CNAME to Railway (remove Fly).
+5. Update OAuth provider callback URLs to `https://api.arcnvd.com/api/v1/auth/oauth/.../callback`.
 6. Decommission Fly after smoke tests pass.
 
 ---
@@ -164,11 +164,11 @@ Or use Railway’s volume backup/restore if you prefer their UI.
 
    | Name             | Value                                  |
    | ---------------- | -------------------------------------- |
-   | `VITE_API_BASE`  | `https://app.arcnvd.com/api/v1` |
+   | `VITE_API_BASE`  | `https://api.arcnvd.com/api/v1` |
 
-3. Deploy. Custom domain: **`app.arcnvd.com`** (or subdomain of your choice).
+3. Deploy. Custom domain: **`app.arcnvd.com`**.
 
-`frontend/vercel.json` CSP `connect-src` includes `https://app.arcnvd.com`.
+`frontend/vercel.json` CSP `connect-src` includes `https://api.arcnvd.com`.
 
 ---
 
@@ -181,7 +181,7 @@ Or use Railway’s volume backup/restore if you prefer their UI.
    | ----------------- | ------------------------------------------- |
    | `VITE_SITE_URL`   | `https://arcnvd.com`                        |
    | `VITE_APP_URL`    | `https://app.arcnvd.com`                    |
-   | `VITE_DOCS_URL`   | `https://app.arcnvd.com/api/docs`           |
+   | `VITE_DOCS_URL`   | `https://api.arcnvd.com/api/docs`           |
 
 3. Apex domain **`arcnvd.com`** on this project.
 
@@ -189,26 +189,58 @@ Or use Railway’s volume backup/restore if you prefer their UI.
 
 ## 6. Verify the deploy
 
-- `https://app.arcnvd.com/api/health` → `{ ok: true }`
-- `https://app.arcnvd.com/api/docs` → docs portal, Try It works (same origin)
-- `https://app.arcnvd.com/` → login (if app hosted there)
+- `https://api.arcnvd.com/api/health` → `{ ok: true }`
+- `https://api.arcnvd.com/api/docs` → docs portal, Try It works (same origin)
+- `https://app.arcnvd.com/` → login
 - Sign in, create workspace, upload avatar → files under `/data/uploads` on volume
 
 ---
 
-## 7. Rotating secrets
+## 7. Production security checklist
+
+Before pointing traffic at production, confirm:
+
+| Check | Where | Expected |
+| ----- | ----- | -------- |
+| `JWT_SECRET` | Railway | 32+ chars, **base64url** preferred; paste raw value (no quotes). If you used standard base64 with `+`, verify the stored value still contains `+` (not spaces). |
+| `FRONTEND_URL` | Railway | `https://app.arcnvd.com,https://arcnvd.com` — **no leading tab/space** before the first URL |
+| `PUBLIC_API_URL` | Railway | `https://api.arcnvd.com` (API host, not the Vercel SPA host) |
+| `VITE_API_BASE` | Vercel (frontend) | `https://api.arcnvd.com/api/v1` |
+| HSTS preload | Vercel `vercel.json` + Railway Helmet | `max-age=31536000; includeSubDomains; preload` |
+| OAuth callbacks | Google/GitHub console | `https://api.arcnvd.com/api/v1/auth/oauth/google/callback` (and `/github/callback`) |
+| Volume mount | Railway | `/data` with `DB_PATH=/data/elevate.db`, `UPLOADS_DIR=/data/uploads` |
+| Single replica | Railway | One container while on SQLite (no shared WAL across replicas) |
+
+**Fix common Railway env mistakes** (Railway CLI linked to the backend service):
+
+```bash
+# Re-set FRONTEND_URL without a leading tab
+railway variables set FRONTEND_URL="https://app.arcnvd.com,https://arcnvd.com"
+
+# Pin OAuth/docs to the API host
+railway variables set PUBLIC_API_URL="https://api.arcnvd.com"
+
+# Regenerate JWT secret (logs everyone out) — base64url avoids +/ issues
+railway variables set JWT_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))")"
+```
+
+After changing variables, redeploy the Railway service and verify CORS from the browser console on `https://app.arcnvd.com` (no `CORS: origin ... not allowed` on API calls).
+
+---
+
+## 8. Rotating secrets
 
 Railway → service → **Variables** → update `JWT_SECRET` (logs everyone out).
 
 ---
 
-## 8. Legacy: Fly.io
+## 9. Legacy: Fly.io
 
 `fly.toml` remains in the repo for reference. New deploys should use Railway.
 Do not run Fly and Railway against the same production DB simultaneously.
 
 ---
 
-## 9. Postgres migration (future)
+## 10. Postgres migration (future)
 
 Unchanged — see `database/supabase/schema.sql` and `docs/SECURITY.md`.

@@ -27,7 +27,7 @@ export default function OauthCallback() {
 
   useEffect(() => {
     const { token, next } = parseOauthFragment();
-    // Clear the fragment so refresh / back-button don't re-run this.
+    // Strip the fragment immediately so refresh / back / Referer never retain it.
     if (window.history.replaceState) {
       window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
     }
@@ -46,13 +46,11 @@ export default function OauthCallback() {
         applyAuthSession(me?.user);
         sessionStorage.setItem('Elevate-welcome', '1');
         navigate(next, { replace: true });
-      } catch (err) {
+      } catch {
         if (cancelled) return;
-        // Token was bad / network down — clear and bounce to login.
         applyAuthSession(null);
-        setError(err?.message || 'Sign-in failed');
-        const target = `${LOGIN_PATH}?oauth_error=${encodeURIComponent('session_failed')}`;
-        setTimeout(() => navigate(target, { replace: true }), 800);
+        setError('Sign-in failed');
+        setTimeout(() => navigate(`${LOGIN_PATH}?oauth_error=session_failed`, { replace: true }), 800);
       }
     })();
 
