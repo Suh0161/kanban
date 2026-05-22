@@ -2,11 +2,12 @@
  * OAuth round-trip landing page.
  *
  * The backend redirects here after a successful provider login with the
- * JWT in the URL fragment (`#token=...&next=/workspace`). We:
+ * access JWT in the URL fragment (`#token=...&next=/workspace`). We:
  *   1. Parse the fragment.
- *   2. Persist the token + a refreshed user via /auth/me.
- *   3. Strip the fragment from history (so a back-tap doesn't re-process).
- *   4. Replace-navigate to `next` (or `/workspace` by default).
+ *   2. Exchange the token for HttpOnly refresh cookies via POST /auth/oauth/exchange.
+ *   3. Persist the short-lived access token + user in memory.
+ *   4. Strip the fragment from history (so a back-tap doesn't re-process).
+ *   5. Replace-navigate to `next` (or `/workspace` by default).
  *
  * Failures (no token, bad token) bounce back to /login?oauth_error=... so the
  * login page can show a friendly banner.
@@ -14,7 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiFetch } from '../../../api/client.js';
+import { apiFetch, exchangeOauthToken } from '../../../api/client.js';
 import { applyAuthSession } from '../../../hooks/useAuth.js';
 import { Logo } from '../../ui';
 import { parseOauthFragment } from '../../../utils/oauth.js';
@@ -40,10 +41,21 @@ export default function OauthCallback() {
     let cancelled = false;
     (async () => {
       try {
-        applyAuthSession(null, { token });
-        const me = await apiFetch('/auth/me');
-        if (cancelled) return;
-        applyAuthSession(me?.user);
+        let user;
+        try {
+          const data = await exchangeOauthToken(token);
+          user = data.user;
+          applyAuthSession(user, { token: data.token, csrfToken: data.csrfToken });
+        } catch (err) {
+          // Only fall back when the exchange route is not deployed yet (404).
+          const missingExchange = err?.status === 404 || err?.code === 'NOT_FOUND';
+          if (!missingExchange) throw err;
+          applyAuthSession(null, { token });
+          const me = await apiFetch('/auth/me');
+          user = me.user;
+          applyAuthSession(user);
+        }
+        if (cancelled || !user) return;
         sessionStorage.setItem('Elevate-welcome', '1');
         navigate(next, { replace: true });
       } catch {

@@ -818,11 +818,16 @@
                     "token": {
                       "type": "string",
                       "example": "eyJhbGciOiJIUzI1NiIs..."
+                    },
+                    "csrfToken": {
+                      "type": "string",
+                      "example": "dGVzdC1jc3JmLXRva2Vu"
                     }
                   },
                   "required": [
                     "user",
-                    "token"
+                    "token",
+                    "csrfToken"
                   ]
                 }
               }
@@ -880,11 +885,16 @@
                     "token": {
                       "type": "string",
                       "example": "eyJhbGciOiJIUzI1NiIs..."
+                    },
+                    "csrfToken": {
+                      "type": "string",
+                      "example": "dGVzdC1jc3JmLXRva2Vu"
                     }
                   },
                   "required": [
                     "user",
-                    "token"
+                    "token",
+                    "csrfToken"
                   ]
                 }
               }
@@ -895,6 +905,45 @@
           },
           "429": {
             "description": "Account temporarily locked due to failed attempts"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh access token",
+        "description": "Reads the HttpOnly `elevate_refresh` cookie, validates the double-submit CSRF token, rotates the refresh cookie, and returns a new short-lived access JWT.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "New access token"
+          },
+          "401": {
+            "description": "Invalid or expired session"
+          },
+          "403": {
+            "description": "Invalid CSRF token"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "Revokes the refresh-token family, clears session cookies, and requires the double-submit CSRF token.",
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "Logged out"
+          },
+          "403": {
+            "description": "Invalid CSRF token"
           }
         }
       }
@@ -1573,6 +1622,42 @@
         "responses": {
           "200": {
             "description": "Configured providers"
+          }
+        }
+      }
+    },
+    "/auth/oauth/exchange": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Exchange OAuth access token for session cookies",
+        "description": "Accepts the short-lived access JWT from the OAuth callback URL fragment, verifies it, ensures refresh + CSRF cookies are set on the API origin, and returns `{ user, token, csrfToken }` for cross-origin SPAs.",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session established"
+          },
+          "401": {
+            "description": "Invalid or expired token"
           }
         }
       }

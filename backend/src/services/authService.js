@@ -11,9 +11,10 @@ const MAX_FAILED_ATTEMPTS = 5;
 // Always run bcrypt on login so missing users don't leak via timing.
 const TIMING_DUMMY_HASH = bcrypt.hashSync('elevate-timing-guard', 12);
 
-function generateToken(userId) {
+/** Short-lived access JWT (refresh cookie holds the long-lived session). */
+export function generateAccessToken(userId) {
   const now = Math.floor(Date.now() / 1000);
-  return jwt.sign({ userId, iat: now }, JWT_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
+  return jwt.sign({ userId, iat: now }, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
 }
 
 function sanitizeUser(user) {
@@ -82,7 +83,7 @@ export function registerUser(db, { email, name, password }) {
   }
 
   const user = { id, email, name, avatar: null };
-  const token = generateToken(user.id);
+  const token = generateAccessToken(user.id);
   return { user: sanitizeUser(user), token };
 }
 
@@ -113,7 +114,7 @@ export function loginUser(db, { email, password }) {
   }
 
   clearFailedAttempts(email);
-  const token = generateToken(user.id);
+  const token = generateAccessToken(user.id);
   return { user: sanitizeUser(user), token };
 }
 
@@ -220,7 +221,7 @@ export function findOrCreateOAuthUser(db, { provider, providerUserId, email, nam
     // would silently revert any profile change made via /auth/me.
     return {
       user: sanitizeUser(linked),
-      token: generateToken(linked.id),
+      token: generateAccessToken(linked.id),
     };
   }
 
@@ -229,7 +230,7 @@ export function findOrCreateOAuthUser(db, { provider, providerUserId, email, nam
     db.prepare(
       'INSERT OR IGNORE INTO oauth_identities (user_id, provider, provider_user_id) VALUES (?, ?, ?)'
     ).run(existingByEmail.id, provider, providerUserId);
-    return { user: sanitizeUser(existingByEmail), token: generateToken(existingByEmail.id) };
+    return { user: sanitizeUser(existingByEmail), token: generateAccessToken(existingByEmail.id) };
   }
 
   // First time we've seen this person — create a fresh row, link it.
@@ -244,5 +245,5 @@ export function findOrCreateOAuthUser(db, { provider, providerUserId, email, nam
   })();
 
   const user = { id, email, name, avatar: avatar || null };
-  return { user: sanitizeUser(user), token: generateToken(user.id) };
+  return { user: sanitizeUser(user), token: generateAccessToken(user.id) };
 }

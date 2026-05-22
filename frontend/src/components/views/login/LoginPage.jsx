@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ShieldCheck, User } from 'lucide-react';
-import { useAuth } from '../../../hooks/useAuth.js';
+import { Mail, Lock, ShieldCheck, User } from 'lucide-react';
+import { useAuth, applyAuthSession } from '../../../hooks/useAuth.js';
 import { useOauthProviders } from '../../../hooks/useOauthProviders.js';
 import { apiFetch, getOauthStartUrl } from '../../../api/client.js';
-import { Logo } from '../../ui';
+import { Logo, SecurePasswordInput } from '../../ui';
 import { LOGIN_FRESH_PARAM, SITE_URL } from '../../../config/urls.js';
 import './css/login.css';
 
@@ -50,14 +50,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw]     = useState(false);
+  const [email, setEmail] = useState('');
 
-  const [rName, setRName]       = useState('');
-  const [rEmail, setREmail]     = useState('');
-  const [rPw, setRPw]           = useState('');
-  const [showRPw, setShowRPw]   = useState(false);
+  const loginPwRef = useRef(null);
+  const registerPwRef = useRef(null);
+  const [loginPwEmpty, setLoginPwEmpty] = useState(true);
+  const [registerPwEmpty, setRegisterPwEmpty] = useState(true);
+
+  const [rName, setRName] = useState('');
+  const [rEmail, setREmail] = useState('');
 
   // Surface OAuth errors that the backend redirected back with as
   // `?oauth_error=...`. Derived from the URL during render so we don't
@@ -102,7 +103,10 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    const password = loginPwRef.current?.getValue() ?? '';
+    if (!email || !password) return;
+    setError('');
+    setLoading(true);
     const result = await login(email, password);
     if (result.success) {
       sessionStorage.setItem('Elevate-welcome', '1');
@@ -115,15 +119,18 @@ export default function LoginPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    const password = registerPwRef.current?.getValue() ?? '';
+    if (!rName || !rEmail || !password) return;
     setError('');
     setLoading(true);
     try {
-      await apiFetch('/auth/register', {
+      const data = await apiFetch('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email: rEmail.trim().toLowerCase(), name: rName.trim(), password: rPw }),
+        body: JSON.stringify({ email: rEmail.trim().toLowerCase(), name: rName.trim(), password }),
       });
-      switchMode('login');
-      setEmail(rEmail.trim().toLowerCase());
+      applyAuthSession(data.user, { token: data.token, csrfToken: data.csrfToken });
+      sessionStorage.setItem('Elevate-welcome', '1');
+      navigate('/workspace');
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -191,21 +198,22 @@ export default function LoginPage() {
                 <label htmlFor="l-pw">Password</label>
                 <div className="lp-input-wrap">
                   <Lock size={15} />
-                  <input id="l-pw" name="password" type={showPw ? 'text' : 'password'}
-                    autoComplete="current-password" spellCheck={false}
-                    placeholder="Enter your password" value={password}
-                    onChange={e => setPassword(e.target.value)} required />
-                  <button type="button" className="lp-eye" onClick={() => setShowPw(v => !v)}
-                    aria-label={showPw ? 'Hide password' : 'Show password'}
-                    aria-pressed={showPw}>
-                    {showPw ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
-                  </button>
+                  <SecurePasswordInput
+                    ref={loginPwRef}
+                    id="l-pw"
+                    name="password"
+                    variant="login"
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    required
+                    onEmptyChange={setLoginPwEmpty}
+                  />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
                   <button type="button" className="lp-ghost-btn">Forgot password?</button>
                 </div>
               </div>
-              <button type="submit" className="lp-submit" disabled={loading || !email || !password}>
+              <button type="submit" className="lp-submit" disabled={loading || !email || loginPwEmpty}>
                 {loading ? <span className="lp-spinner" /> : 'Login'}
               </button>
             </form>
@@ -234,19 +242,20 @@ export default function LoginPage() {
                 <label htmlFor="r-pw">Password</label>
                 <div className="lp-input-wrap">
                   <Lock size={15} />
-                  <input id="r-pw" name="new-password" type={showRPw ? 'text' : 'password'}
-                    autoComplete="new-password" spellCheck={false}
-                    placeholder="Create a strong password" value={rPw}
-                    onChange={e => setRPw(e.target.value)} required />
-                  <button type="button" className="lp-eye" onClick={() => setShowRPw(v => !v)}
-                    aria-label={showRPw ? 'Hide password' : 'Show password'}
-                    aria-pressed={showRPw}>
-                    {showRPw ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
-                  </button>
+                  <SecurePasswordInput
+                    ref={registerPwRef}
+                    id="r-pw"
+                    name="new-password"
+                    variant="login"
+                    autoComplete="new-password"
+                    placeholder="Create a strong password"
+                    required
+                    onEmptyChange={setRegisterPwEmpty}
+                  />
                 </div>
               </div>
               <button type="submit" className="lp-submit"
-                disabled={loading || !rName || !rEmail || !rPw}>
+                disabled={loading || !rName || !rEmail || registerPwEmpty}>
                 {loading ? <span className="lp-spinner" /> : 'Sign up'}
               </button>
             </form>

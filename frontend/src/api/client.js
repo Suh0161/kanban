@@ -10,7 +10,11 @@ function resolveApiBase() {
 }
 
 const API_BASE = resolveApiBase();
-const TOKEN_KEY = 'Elevate-token';
+const ACCESS_TOKEN_SS_KEY = 'Elevate-access';
+const CSRF_SS_KEY = 'Elevate-csrf';
+const LEGACY_TOKEN_KEY = 'Elevate-token';
+const AUTH_USER_KEY = 'Elevate-auth';
+const CSRF_COOKIE = 'elevate_csrf';
 
 // API_ORIGIN is API_BASE without the /api/v1 suffix, used to resolve
 // relative storage URLs the server returns (e.g. /api/v1/avatars/...).
@@ -48,12 +52,86 @@ export function resolveServerUrl(url) {
   return url;
 }
 
-function getToken() {
+let accessToken = null;
+let csrfToken = null;
+let refreshPromise = null;
+
+function readCookie(name) {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  if (!match) return null;
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return decodeURIComponent(match[1]);
   } catch {
-    return null;
+    return match[1];
   }
+}
+
+export function getAccessToken() {
+  return accessToken;
+}
+
+function setAccessToken(token) {
+  accessToken = token || null;
+  try {
+    if (token) sessionStorage.setItem(ACCESS_TOKEN_SS_KEY, token);
+    else sessionStorage.removeItem(ACCESS_TOKEN_SS_KEY);
+  } catch {
+    // sessionStorage unavailable — in-memory token still works for this tab.
+  }
+}
+
+function setCsrfToken(token) {
+  csrfToken = token || null;
+  try {
+    if (token) sessionStorage.setItem(CSRF_SS_KEY, token);
+    else sessionStorage.removeItem(CSRF_SS_KEY);
+  } catch {
+    // sessionStorage unavailable — in-memory token still works for this tab.
+  }
+}
+
+function getCsrfToken() {
+  return csrfToken || readCookie(CSRF_COOKIE) || null;
+}
+
+/** Hydrate in-memory access + CSRF tokens from sessionStorage on boot. */
+export function hydrateAccessTokenFromSessionStorage() {
+  try {
+    if (!accessToken) {
+      const stored = sessionStorage.getItem(ACCESS_TOKEN_SS_KEY);
+      if (stored) accessToken = stored;
+    }
+    if (!csrfToken) {
+      const storedCsrf = sessionStorage.getItem(CSRF_SS_KEY);
+      if (storedCsrf) csrfToken = storedCsrf;
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/** One-time migration from localStorage JWT storage to refresh-cookie sessions. */
+export function migrateLegacyAccessToken() {
+  try {
+    const legacy = localStorage.getItem(LEGACY_TOKEN_KEY);
+    if (!legacy) return;
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    if (!accessToken) setAccessToken(legacy);
+  } catch {
+    // ignore
+  }
+}
+
+/** Persist tokens returned by login / refresh / OAuth exchange. */
+export function setAuthTokens({ token, csrfToken: csrf } = {}) {
+  if (token) setAccessToken(token);
+  if (csrf) setCsrfToken(csrf);
+}
+
+function applyAuthResponse(data) {
+  if (data?.token) setAccessToken(data.token);
+  if (data?.csrfToken) setCsrfToken(data.csrfToken);
 }
 
 let sessionClearHandler = null;
@@ -63,19 +141,24 @@ export function setSessionClearHandler(fn) {
   sessionClearHandler = typeof fn === 'function' ? fn : null;
 }
 
-function clearToken() {
+function clearAuthStorage() {
+  setAccessToken(null);
+  setCsrfToken(null);
+  refreshPromise = null;
   try {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem('Elevate-auth');
+    sessionStorage.removeItem(ACCESS_TOKEN_SS_KEY);
+    sessionStorage.removeItem(CSRF_SS_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
   } catch {
-    // localStorage unavailable — ignore.
+    // storage unavailable — ignore.
   }
   if (sessionClearHandler) sessionClearHandler();
 }
 
 /** Clear persisted credentials and in-memory auth subscribers. */
 export function clearAuthSession() {
-  clearToken();
+  clearAuthStorage();
 }
 
 /**
@@ -97,21 +180,104 @@ export function setUnauthorizedHandler(fn) {
   unauthorizedHandler = typeof fn === 'function' ? fn : null;
 }
 
+function authMutationHeaders(extra = {}) {
+  const headers = { 'Content-Type': 'application/json', ...extra };
+  const csrf = getCsrfToken();
+  if (csrf) headers['X-CSRF-Token'] = csrf;
+  return headers;
+}
+
+function shouldSendCredentials(path) {
+  return path.startsWith('/auth');
+}
+
+async function parseJsonResponse(res) {
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function postAuthMutation(path, body = undefined) {
+  const url = `${API_BASE}${path}`;
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: authMutationHeaders(),
+      credentials: 'include',
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (err) {
+    const e = new Error(err?.message || 'Network error');
+    e.name = 'NetworkError';
+    throw e;
+  }
+
+  const requestId = res.headers.get('X-Request-Id') || null;
+
+  if (!res.ok) {
+    let payload = {};
+    try { payload = await res.json(); } catch { /* ignore */ }
+    throw new ApiError({
+      message: payload.error || `HTTP ${res.status}`,
+      code: payload.code || `HTTP_${res.status}`,
+      status: res.status,
+      requestId,
+    });
+  }
+
+  const data = await parseJsonResponse(res);
+  applyAuthResponse(data);
+  return data;
+}
+
+/** Silent session restore on app boot — uses HttpOnly refresh cookie. */
+export async function restoreSessionFromRefresh() {
+  return postAuthMutation('/auth/refresh');
+}
+
+/** Exchange OAuth fragment JWT for refresh cookies + short-lived access token. */
+export async function exchangeOauthToken(token) {
+  return postAuthMutation('/auth/oauth/exchange', { token });
+}
+
+/** Revoke refresh cookie server-side, then clear local session. */
+export async function logoutSession() {
+  try {
+    await postAuthMutation('/auth/logout');
+  } catch {
+    // Network failure still clears local state below.
+  } finally {
+    clearAuthSession();
+  }
+}
+
+async function tryRefreshSession() {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = restoreSessionFromRefresh().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
 export async function apiFetch(path, options = {}) {
   const url = `${API_BASE}${path}`;
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  const token = getToken();
+  const token = getAccessToken();
   const sentAuth = !!token;
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
+
+  const credentials = shouldSendCredentials(path) || options.credentials === 'include'
+    ? 'include'
+    : 'omit';
 
   let res;
   try {
-    res = await fetch(url, { ...options, headers, credentials: 'omit' });
+    res = await fetch(url, { ...options, headers, credentials });
   } catch (err) {
     const e = new Error(err?.message || 'Network error');
     e.name = 'NetworkError';
@@ -121,10 +287,25 @@ export async function apiFetch(path, options = {}) {
   const requestId = res.headers.get('X-Request-Id') || null;
 
   if (res.status === 401) {
-    // Only purge session when we sent a bearer token (expired/invalid session).
-    // Bare 401s on /auth/login or /auth/register mean wrong credentials.
+    const canRetry = sentAuth
+      && !options._retriedAfterRefresh
+      && path !== '/auth/refresh'
+      && path !== '/auth/login'
+      && path !== '/auth/register';
+
+    if (canRetry) {
+      try {
+        await tryRefreshSession();
+        return apiFetch(path, { ...options, _retriedAfterRefresh: true });
+      } catch {
+        clearAuthSession();
+        if (unauthorizedHandler) unauthorizedHandler();
+        throw new ApiError({ message: 'Unauthorized', code: 'UNAUTHORIZED', status: 401, requestId });
+      }
+    }
+
     if (sentAuth) {
-      clearToken();
+      clearAuthSession();
       if (unauthorizedHandler) unauthorizedHandler();
     }
     throw new ApiError({ message: 'Unauthorized', code: 'UNAUTHORIZED', status: 401, requestId });
@@ -141,8 +322,9 @@ export async function apiFetch(path, options = {}) {
     });
   }
 
-  if (res.status === 204) return null;
-  return res.json();
+  const data = await parseJsonResponse(res);
+  if (path.startsWith('/auth') && data) applyAuthResponse(data);
+  return data;
 }
 
 export function apiGet(path) {
@@ -181,16 +363,21 @@ export function apiDelete(path) {
  * Upload a file to a multipart endpoint. Browsers set the multipart
  * boundary header automatically — we only attach the auth token.
  */
-export async function apiUpload(path, formData) {
+export async function apiUpload(path, formData, options = {}) {
   const url = `${API_BASE}${path}`;
-  const headers = {};
-  const token = getToken();
+  const headers = { ...options.headers };
+  const token = getAccessToken();
   const sentAuth = !!token;
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   let res;
   try {
-    res = await fetch(url, { method: 'POST', headers, body: formData, credentials: 'omit' });
+    res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: shouldSendCredentials(path) ? 'include' : 'omit',
+    });
   } catch (err) {
     const e = new Error(err?.message || 'Network error');
     e.name = 'NetworkError';
@@ -200,8 +387,19 @@ export async function apiUpload(path, formData) {
   const requestId = res.headers.get('X-Request-Id') || null;
 
   if (res.status === 401) {
+    const canRetry = sentAuth && !options._retriedAfterRefresh;
+    if (canRetry) {
+      try {
+        await tryRefreshSession();
+        return apiUpload(path, formData, { ...options, _retriedAfterRefresh: true });
+      } catch {
+        clearAuthSession();
+        if (unauthorizedHandler) unauthorizedHandler();
+        throw new ApiError({ message: 'Unauthorized', code: 'UNAUTHORIZED', status: 401, requestId });
+      }
+    }
     if (sentAuth) {
-      clearToken();
+      clearAuthSession();
       if (unauthorizedHandler) unauthorizedHandler();
     }
     throw new ApiError({ message: 'Unauthorized', code: 'UNAUTHORIZED', status: 401, requestId });

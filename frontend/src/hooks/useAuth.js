@@ -1,11 +1,20 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
-  apiFetch, apiUpload, resolveServerUrl, setSessionClearHandler, clearAuthSession,
+  apiFetch,
+  apiUpload,
+  resolveServerUrl,
+  setSessionClearHandler,
+  clearAuthSession,
+  setAuthTokens,
+  restoreSessionFromRefresh,
+  logoutSession,
+  getAccessToken,
+  hydrateAccessTokenFromSessionStorage,
+  migrateLegacyAccessToken,
 } from '../api/client.js';
 import { ALLOWED_IMAGE_LABEL, isAllowedImageFile } from '../utils/fileTypes.js';
 
 const STORAGE_KEY = 'Elevate-auth';
-const TOKEN_KEY = 'Elevate-token';
 
 // Shared listeners so all useAuth() instances stay in sync
 const listeners = new Set();
@@ -36,15 +45,15 @@ function setSharedUser(user) {
   listeners.forEach(fn => fn(sharedUser));
 }
 
-// Initialize from storage
+// Initialize from storage (display name/avatar while refresh runs).
 sharedUser = normalizeUser(getStoredUser());
 
 /** Sync shared auth state after OAuth or other out-of-band token writes. */
-export function applyAuthSession(user, { token } = {}) {
-  if (token) {
-    localStorage.setItem(TOKEN_KEY, token);
+export function applyAuthSession(user, { token, csrfToken } = {}) {
+  if (token || csrfToken) {
+    setAuthTokens({ token, csrfToken });
   } else if (!user) {
-    localStorage.removeItem(TOKEN_KEY);
+    clearAuthSession();
   }
   setSharedUser(user ?? null);
 }
@@ -53,10 +62,7 @@ setSessionClearHandler(() => setSharedUser(null));
 
 export function useAuth() {
   const [user, setUser] = useState(() => sharedUser ?? getStoredUser());
-  const [loading, setLoading] = useState(() => {
-    // If no token, not loading
-    return !!localStorage.getItem(TOKEN_KEY);
-  });
+  const [loading, setLoading] = useState(true);
 
   // Subscribe to shared user updates
   useEffect(() => {
@@ -65,22 +71,51 @@ export function useAuth() {
     return () => listeners.delete(listener);
   }, []);
 
-  // On mount, validate token
+  // On mount, restore session via refresh cookie (fallback: cached access token).
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      // Use a microtask to avoid setState-in-effect warning
-      Promise.resolve().then(() => setLoading(false));
-      return;
-    }
-    apiFetch('/auth/me')
-      .then((data) => {
-        setSharedUser(data.user);
-      })
-      .catch(() => {
-        clearAuthSession();
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    (async () => {
+      migrateLegacyAccessToken();
+      hydrateAccessTokenFromSessionStorage();
+
+      try {
+        const data = await restoreSessionFromRefresh();
+        if (cancelled) return;
+        if (data?.user) {
+          setSharedUser(data.user);
+          return;
+        }
+        if (data?.token) {
+          const me = await apiFetch('/auth/me');
+          if (!cancelled) setSharedUser(me.user);
+          return;
+        }
+      } catch {
+        // Refresh may 403 without a readable CSRF token cross-origin — fall back.
+      }
+
+      if (cancelled) return;
+
+      if (getAccessToken()) {
+        try {
+          const me = await apiFetch('/auth/me');
+          if (!cancelled) setSharedUser(me.user);
+          return;
+        } catch {
+          if (!cancelled) clearAuthSession();
+          return;
+        }
+      }
+
+      if (!cancelled) {
+        setSharedUser(null);
+      }
+    })().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => { cancelled = true; };
   }, []);
 
   const login = useCallback(async (email, password) => {
@@ -90,15 +125,15 @@ export function useAuth() {
         body: JSON.stringify({ email, password }),
       });
       setSharedUser(data.user);
-      localStorage.setItem(TOKEN_KEY, data.token);
+      setAuthTokens({ token: data.token, csrfToken: data.csrfToken });
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
     }
   }, []);
 
-  const logout = useCallback(() => {
-    clearAuthSession();
+  const logout = useCallback(async () => {
+    await logoutSession();
   }, []);
 
   const updateProfile = useCallback(async (updates) => {
@@ -113,10 +148,6 @@ export function useAuth() {
   /**
    * Upload an avatar via multipart and refresh the cached user with the
    * new URL the server returned. Returns the new avatar URL.
-   *
-   * Avatars are stored in object storage (small URL pointer in the DB),
-   * not as base64 — keeps the users row tiny and lets the browser cache
-   * the image. See backend `services/avatarService.js`.
    */
   const uploadAvatar = useCallback(async (file) => {
     if (!file) throw new Error('No file selected');
@@ -127,7 +158,6 @@ export function useAuth() {
     fd.append('file', file);
     const { url } = await apiUpload('/auth/avatar', fd);
 
-    // Refresh /auth/me so the cached user has the new avatar URL.
     const me = await apiFetch('/auth/me');
     setSharedUser(me.user);
     return url;

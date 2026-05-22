@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, Check, Eye, EyeOff, Lock, Upload, User, X, Link } from 'lucide-react';
+import { Camera, Check, Lock, Upload, User, X, Link } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth.js';
-import { Avatar } from '../../ui';
+import { Avatar, SecurePasswordInput } from '../../ui';
 import { ALLOWED_IMAGE_ACCEPT, ALLOWED_IMAGE_LABEL, isAllowedImageFile } from '../../../utils/fileTypes.js';
 import './css/profile.css';
 
@@ -14,6 +14,14 @@ const AVATAR_SEEDS = [
 function presetUrl(seed) {
   return `https://api.dicebear.com/7.x/notionists-neutral/png?seed=${encodeURIComponent(seed)}`;
 }
+
+const EMPTY_PW_METRICS = {
+  length: 0,
+  hasUpper: false,
+  hasLower: false,
+  hasDigit: false,
+  hasSpecial: false,
+};
 
 export default function ProfileModal({ onClose }) {
   const { user, updateProfile, uploadAvatar } = useAuth();
@@ -32,12 +40,14 @@ export default function ProfileModal({ onClose }) {
   const [profileError, setProfileError] = useState(null);
   const [profileSaved, setProfileSaved] = useState(false);
 
-  // Password state
-  const [currentPw, setCurrentPw] = useState('');
-  const [newPw, setNewPw] = useState('');
-  const [confirmPw, setConfirmPw] = useState('');
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
+  // Password refs — plaintext never stored in React state
+  const currentPwRef = useRef(null);
+  const newPwRef = useRef(null);
+  const confirmPwRef = useRef(null);
+  const [currentPwEmpty, setCurrentPwEmpty] = useState(true);
+  const [newPwEmpty, setNewPwEmpty] = useState(true);
+  const [confirmPwEmpty, setConfirmPwEmpty] = useState(true);
+  const [newPwMetrics, setNewPwMetrics] = useState(EMPTY_PW_METRICS);
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState(null);
   const [pwSaved, setPwSaved] = useState(false);
@@ -109,14 +119,20 @@ export default function ProfileModal({ onClose }) {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (newPw !== confirmPw) { setPwError('Passwords do not match'); return; }
-    if (newPw.length < 8) { setPwError('Password must be at least 8 characters'); return; }
+    const currentPassword = currentPwRef.current?.getValue() ?? '';
+    const newPassword = newPwRef.current?.getValue() ?? '';
+    const confirmPassword = confirmPwRef.current?.getValue() ?? '';
+    if (newPassword !== confirmPassword) { setPwError('Passwords do not match'); return; }
+    if (newPassword.length < 8) { setPwError('Password must be at least 8 characters'); return; }
     setPwSaving(true);
     setPwError(null);
     setPwSaved(false);
     try {
-      await updateProfile({ password: newPw, currentPassword: currentPw });
-      setCurrentPw(''); setNewPw(''); setConfirmPw('');
+      await updateProfile({ password: newPassword, currentPassword });
+      currentPwRef.current?.clear();
+      newPwRef.current?.clear();
+      confirmPwRef.current?.clear();
+      setNewPwMetrics(EMPTY_PW_METRICS);
       setPwSaved(true);
       setTimeout(() => setPwSaved(false), 2500);
     } catch (err) {
@@ -278,45 +294,62 @@ export default function ProfileModal({ onClose }) {
             <div className="profile-field">
               <label htmlFor="current-pw">Current password</label>
               <div className="profile-pw-row">
-                <input id="current-pw" name="current-password" type={showCurrent ? 'text' : 'password'}
-                  autoComplete="current-password" spellCheck={false} className="profile-input"
-                  value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Enter current password" required />
-                <button type="button" className="profile-pw-toggle" onClick={() => setShowCurrent(v => !v)}
-                  aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
-                  aria-pressed={showCurrent}>
-                  {showCurrent ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
-                </button>
+                <SecurePasswordInput
+                  ref={currentPwRef}
+                  id="current-pw"
+                  name="current-password"
+                  variant="profile"
+                  autoComplete="current-password"
+                  placeholder="Enter current password"
+                  required
+                  showLabel="Show current password"
+                  hideLabel="Hide current password"
+                  onEmptyChange={setCurrentPwEmpty}
+                />
               </div>
             </div>
 
             <div className="profile-field">
               <label htmlFor="new-pw">New password</label>
               <div className="profile-pw-row">
-                <input id="new-pw" name="new-password" type={showNew ? 'text' : 'password'}
-                  autoComplete="new-password" spellCheck={false} className="profile-input"
-                  value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Min 8 chars, uppercase, number, symbol" required />
-                <button type="button" className="profile-pw-toggle" onClick={() => setShowNew(v => !v)}
-                  aria-label={showNew ? 'Hide new password' : 'Show new password'}
-                  aria-pressed={showNew}>
-                  {showNew ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
-                </button>
+                <SecurePasswordInput
+                  ref={newPwRef}
+                  id="new-pw"
+                  name="new-password"
+                  variant="profile"
+                  autoComplete="new-password"
+                  placeholder="Min 8 chars, uppercase, number, symbol"
+                  required
+                  showLabel="Show new password"
+                  hideLabel="Hide new password"
+                  onEmptyChange={setNewPwEmpty}
+                  onMetricsChange={setNewPwMetrics}
+                />
               </div>
             </div>
 
             <div className="profile-field">
               <label htmlFor="confirm-pw">Confirm new password</label>
-              <input id="confirm-pw" name="confirm-password" type="password"
-                autoComplete="new-password" spellCheck={false} className="profile-input"
-                value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Repeat new password" required />
+              <SecurePasswordInput
+                ref={confirmPwRef}
+                id="confirm-pw"
+                name="confirm-password"
+                variant="profile"
+                autoComplete="new-password"
+                placeholder="Repeat new password"
+                required
+                showToggle={false}
+                onEmptyChange={setConfirmPwEmpty}
+              />
             </div>
 
             <div className="profile-pw-hints">
               {[
-                { label: 'At least 8 characters', ok: newPw.length >= 8 },
-                { label: 'Uppercase letter', ok: /[A-Z]/.test(newPw) },
-                { label: 'Lowercase letter', ok: /[a-z]/.test(newPw) },
-                { label: 'Number', ok: /\d/.test(newPw) },
-                { label: 'Special character', ok: /[^A-Za-z0-9]/.test(newPw) },
+                { label: 'At least 8 characters', ok: newPwMetrics.length >= 8 },
+                { label: 'Uppercase letter', ok: newPwMetrics.hasUpper },
+                { label: 'Lowercase letter', ok: newPwMetrics.hasLower },
+                { label: 'Number', ok: newPwMetrics.hasDigit },
+                { label: 'Special character', ok: newPwMetrics.hasSpecial },
               ].map(({ label, ok }) => (
                 <span key={label} className={`profile-pw-hint ${ok ? 'ok' : ''}`}>
                   <Check size={10} /> {label}
@@ -328,7 +361,7 @@ export default function ProfileModal({ onClose }) {
 
             <div className="profile-actions">
               <button type="button" className="btn btn-outline btn-sm" onClick={onClose}>Cancel</button>
-              <button type="submit" className="btn btn-primary btn-sm" disabled={pwSaving || !currentPw || !newPw || !confirmPw}>
+              <button type="submit" className="btn btn-primary btn-sm" disabled={pwSaving || currentPwEmpty || newPwEmpty || confirmPwEmpty}>
                 {pwSaved ? <><Check size={13} /> Changed</> : pwSaving ? 'Saving...' : 'Change password'}
               </button>
             </div>

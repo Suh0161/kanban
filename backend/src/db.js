@@ -135,6 +135,21 @@ export function createDb(dbPath = DB_PATH) {
   `);
   migrate(db, 'CREATE INDEX IF NOT EXISTS idx_oauth_identities_user ON oauth_identities(user_id)');
 
+  // Refresh tokens — HttpOnly cookie sessions with rotation + reuse detection.
+  migrate(db, `
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL UNIQUE,
+      family_id TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      revoked_at TEXT
+    )
+  `);
+  migrate(db, 'CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id)');
+  migrate(db, 'CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family ON refresh_tokens(family_id)');
+
   // Task watchers — many-to-many join created lazily for old databases.
   migrate(db, `
     CREATE TABLE IF NOT EXISTS task_watchers (
@@ -249,6 +264,7 @@ export function createDb(dbPath = DB_PATH) {
     ['workspace_invites', 'created_at'], ['workspace_invites', 'responded_at'],
     ['api_keys', 'created_at'], ['api_keys', 'last_used_at'], ['api_keys', 'expires_at'],
     ['webhooks', 'created_at'], ['webhooks', 'updated_at'],
+    ['refresh_tokens', 'created_at'], ['refresh_tokens', 'expires_at'], ['refresh_tokens', 'revoked_at'],
   ]) {
     try { db.exec(NORMALIZE_TS(table, column)); } catch { /* table or column may not exist on old DBs */ }
   }

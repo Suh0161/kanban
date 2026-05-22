@@ -203,10 +203,11 @@ export default function PrivacyPage() {
 
           <section className="legal-section" id="cookies">
             <h2 className="legal-section-title">Cookies & Local Storage</h2>
-            <p>Elevate uses browser local storage (not cookies) to store:</p>
+            <p>Elevate uses browser storage and HttpOnly session cookies:</p>
             <ul>
-              <li><code>Elevate-token</code> — Your JWT session token for authentication.</li>
-              <li><code>Elevate-auth</code> — Your profile data cache to avoid repeated API calls.</li>
+              <li><strong>HttpOnly cookies</strong> — Long-lived refresh token on our API domain (not readable by page scripts).</li>
+              <li><code>Elevate-access</code> — Short-lived access token in session storage for API requests.</li>
+              <li><code>Elevate-auth</code> — Your profile data cache in local storage to avoid repeated API calls.</li>
               <li><strong>UI preferences</strong> — Sidebar state and active view, stored per workspace.</li>
             </ul>
             <p>We do <strong>not</strong> use tracking cookies, advertising cookies, or third-party analytics.</p>

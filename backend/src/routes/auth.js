@@ -6,6 +6,8 @@ import { AppError } from '../middleware/error.js';
 import { sanitizeString } from '../middleware/validate.js';
 import { auditLog } from '../middleware/audit.js';
 import { registerUser, loginUser, getUserById, updateUser } from '../services/authService.js';
+import { establishSession, rotateRefreshToken, revokeRefreshToken } from '../services/refreshTokenService.js';
+import { assertCsrfToken, clearSessionCookies, readRefreshCookie } from '../utils/authCookies.js';
 import { defineRoute, withPrefix } from '../openapi/route.js';
 import { User, Email, errorResponse, jsonContent } from '../openapi/schemas.js';
 
@@ -27,6 +29,13 @@ const LoginBody = z.object({
 const AuthSuccess = z.object({
   user: User,
   token: z.string().openapi({ example: 'eyJhbGciOiJIUzI1NiIs...' }),
+  csrfToken: z.string().openapi({ example: 'dGVzdC1jc3JmLXRva2Vu' }),
+});
+
+const RefreshSuccess = z.object({
+  token: z.string().openapi({ example: 'eyJhbGciOiJIUzI1NiIs...' }),
+  csrfToken: z.string().openapi({ example: 'dGVzdC1jc3JmLXRva2Vu' }),
+  user: User.optional(),
 });
 
 // ---------- Routes ----------
@@ -50,8 +59,9 @@ defineRoute(
       const email = sanitizeString(req.body.email, 254).trim().toLowerCase();
       const name = sanitizeString(req.body.name, 100);
       const result = registerUser(db, { email, name, password: req.body.password });
+      const session = establishSession(db, res, result.user.id);
       auditLog('REGISTER', { email, userId: result.user.id });
-      res.status(201).json(result);
+      res.status(201).json({ user: result.user, token: session.accessToken, csrfToken: session.csrfToken });
     } catch (err) {
       next(err);
     }
@@ -87,8 +97,63 @@ defineRoute(
         }
         throw err;
       }
+      const session = establishSession(db, res, result.user.id);
       auditLog('LOGIN_SUCCESS', { email, userId: result.user.id });
-      res.json(result);
+      res.json({ user: result.user, token: session.accessToken, csrfToken: session.csrfToken });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+defineRoute(
+  router,
+  {
+    method: 'post',
+    path: '/refresh',
+    tag: 'Auth',
+    summary: 'Refresh access token',
+    description: 'Reads the HttpOnly `elevate_refresh` cookie, validates the double-submit CSRF token, rotates the refresh cookie, and returns a new short-lived access JWT.',
+    public: true,
+    responses: {
+      200: jsonContent(RefreshSuccess, 'New access token'),
+      401: errorResponse('Invalid or expired session'),
+      403: errorResponse('Invalid CSRF token'),
+    },
+  },
+  (req, res, next) => {
+    try {
+      assertCsrfToken(req);
+      const rawRefresh = readRefreshCookie(req);
+      const session = rotateRefreshToken(db, res, rawRefresh);
+      const user = getUserById(db, session.userId);
+      res.json({ token: session.accessToken, csrfToken: session.csrfToken, user });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+defineRoute(
+  router,
+  {
+    method: 'post',
+    path: '/logout',
+    tag: 'Auth',
+    summary: 'Logout',
+    description: 'Revokes the refresh-token family, clears session cookies, and requires the double-submit CSRF token.',
+    public: true,
+    responses: {
+      204: { description: 'Logged out' },
+      403: errorResponse('Invalid CSRF token'),
+    },
+  },
+  (req, res, next) => {
+    try {
+      assertCsrfToken(req);
+      revokeRefreshToken(db, res, readRefreshCookie(req));
+      clearSessionCookies(res);
+      res.status(204).end();
     } catch (err) {
       next(err);
     }
@@ -155,7 +220,6 @@ defineRoute(
         updates.currentPassword = req.body.currentPassword;
       }
       const user = updateUser(db, req.userId, updates);
-      // Refresh stored user in localStorage via response
       res.json({ user });
     } catch (err) {
       next(err);
